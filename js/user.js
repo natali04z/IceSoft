@@ -8,6 +8,29 @@ let originalUsers = [];
 let currentPage = 1;
 const rowsPerPage = 10;
 
+// Función para abrir un modal
+function openModal(modalId) {
+  document.getElementById(modalId).style.display = "flex";
+}
+
+// Función para cerrar un modal
+function closeModal(modalId) {
+  document.getElementById(modalId).style.display = "none";
+}
+
+// Cerrar el modal si el usuario hace clic fuera del contenido
+window.onclick = function(event) {
+  const registerModal = document.getElementById("registerModal");
+  const editModal = document.getElementById("editModal");
+  
+  if (event.target === registerModal) {
+    registerModal.style.display = "none";
+  }
+  if (event.target === editModal) {
+    editModal.style.display = "none";
+  }
+};
+
 // Renderizar tabla de usuarios
 const renderUsersTable = (page = 1) => {
   const tbody = document.getElementById("userTableBody");
@@ -119,20 +142,6 @@ const listUsers = async () => {
   }
 };
 
-// Mostrar formulario de registro
-const showRegisterForm = () => {
-  hideForms();
-  document.getElementById("registerFormSection").style.display = "block";
-  document.getElementById("formTitle").textContent = "Registrar Usuario";
-  window.scrollTo(0, document.body.scrollHeight);
-};
-
-// Ocultar formulario de registro
-const hideRegisterForm = () => {
-  document.getElementById("registerFormSection").style.display = "none";
-  document.getElementById("userForm").reset();
-};
-
 // Registrar usuario
 const registerUser = async () => {
   const token = localStorage.getItem("token");
@@ -166,7 +175,7 @@ const registerUser = async () => {
       title: 'Operación cancelada',
       text: 'No se ha registrado ningún usuario',
     });
-    hideRegisterForm();
+    closeModal('registerModal');
     return;
   }
 
@@ -185,7 +194,8 @@ const registerUser = async () => {
     const data = await res.json();
     if (res.status === 201 || res.ok) {
       showSuccess("Usuario registrado correctamente.");
-      hideRegisterForm();
+      closeModal('registerModal');
+      document.getElementById("userForm").reset();
       listUsers();
     } else {
       showError(data.message || "Error al registrar usuario.");
@@ -232,8 +242,6 @@ const fillEditForm = async (id) => {
     }
 
     const user = await res.json();
-    console.log("Usuario cargado:", user);
-
     document.getElementById("editId").value = user._id || "";
     document.getElementById("editName").value = user.name || "";
     document.getElementById("editLastname").value = user.lastname || "";
@@ -241,15 +249,7 @@ const fillEditForm = async (id) => {
     document.getElementById("editEmail").value = user.email || "";
     document.getElementById("editRole").value = user.role?._id || "";
 
-    hideForms();
-    document.getElementById("editFormSection").style.display = "block";
-    window.scrollTo(0, document.body.scrollHeight);
-
-    const editForm = document.getElementById("editForm");
-    editForm.onsubmit = async (event) => {
-      event.preventDefault();
-      await updateUser(id);
-    };
+    openModal("editModal");
   } catch (err) {
     console.error("Error al cargar el usuario:", err);
     showError(`Ocurrió un error: ${err.message || err}`);
@@ -257,13 +257,14 @@ const fillEditForm = async (id) => {
 };
 
 // Actualizar usuario
-const updateUser = async (id) => {
+const updateUser = async () => {
   const token = localStorage.getItem("token");
   if (!token) {
     showError("Token no encontrado. Inicie sesión nuevamente.");
     return;
   }
 
+  const id = document.getElementById("editId").value;
   const name = document.getElementById("editName").value.trim();
   const lastname = document.getElementById("editLastname").value.trim();
   const contact_number = document.getElementById("editContact").value.trim();
@@ -282,7 +283,14 @@ const updateUser = async (id) => {
     cancelText: "Cancelar"
   });
 
-  if (!confirmed) return;
+  if (!confirmed) {
+    Swal.fire({
+      icon: 'info',
+      title: 'Operación cancelada',
+      text: 'No se actualizará el usuario',
+    });
+    return;
+  }
 
   try {
     const res = await fetch(`${API_URL}/${id}`, {
@@ -299,7 +307,8 @@ const updateUser = async (id) => {
 
     if (res.ok) {
       showSuccess("Usuario actualizado correctamente.");
-      hideForms();
+      closeModal("editModal");
+      document.getElementById("editForm").reset();
       listUsers();
     } else {
       showError(data.message || "Error al actualizar el usuario.");
@@ -355,20 +364,25 @@ const searchUser = () => {
   renderUsersTable(currentPage);
 };
 
-// Ocultar formularios (registro y edición)
-const hideForms = () => {
-  document.getElementById("registerFormSection").style.display = "none";
-  document.getElementById("editFormSection").style.display = "none";
-};
-
 // Eventos al cargar el DOM
 document.addEventListener("DOMContentLoaded", () => {
   listUsers();
-  document.getElementById("mobileAddButton").onclick = showRegisterForm;
+  document.getElementById("mobileAddButton").onclick = () => openModal('registerModal');
   document.getElementById("registerButton").onclick = registerUser;
   document.getElementById("searchInput").addEventListener("keyup", searchUser);
+
+  // Añadir evento de submit para el formulario de edición
+  const editForm = document.getElementById("editForm");
+  if (editForm) {
+    editForm.onsubmit = async (event) => {
+      event.preventDefault();
+      await updateUser();
+    };
+  }
 });
 
 // Hacer funciones globales si es necesario
 window.fillEditForm = fillEditForm;
 window.deleteUser = deleteUser;
+window.openModal = openModal;
+window.closeModal = closeModal;
