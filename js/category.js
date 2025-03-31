@@ -219,15 +219,17 @@ const registerCategory = async () => {
   }
 };
 
-// Llenar formulario de edición de categoría
 const fillEditForm = async (id) => {
   const token = localStorage.getItem("token");
+
   const confirmed = await showConfirm({
     title: "¿Deseas editar esta categoría?",
     text: "Vas a modificar la información de esta categoría.",
     confirmText: "Editar",
     cancelText: "Cancelar"
   });
+
+  console.log("Confirmación del usuario:", confirmed);
   if (!confirmed) {
     Swal.fire({
       icon: 'info',
@@ -236,6 +238,7 @@ const fillEditForm = async (id) => {
     });
     return;
   }
+
   try {
     const res = await fetch(`${API_URL}/${id}`, {
       method: "GET",
@@ -244,13 +247,16 @@ const fillEditForm = async (id) => {
         Authorization: `Bearer ${token}`
       }
     });
+
     if (!res.ok) {
       const data = await res.json();
       showError(data.message || "Error al cargar los datos de la categoría.");
       return;
     }
+
     const category = await res.json();
     console.log("Categoría cargada:", category);
+
     document.getElementById("editId").value = category._id;
     document.getElementById("editName").value = category.name || "";
     document.getElementById("editDescription").value = category.description || "";
@@ -270,10 +276,13 @@ const updateCategory = async () => {
     showError("Token no encontrado. Inicie sesión nuevamente.");
     return;
   }
+
   const id = document.getElementById("editId").value;
   const name = document.getElementById("editName").value.trim();
   const description = document.getElementById("editDescription").value.trim();
   const status = document.getElementById("editStatus").checked ? "active" : "inactive";
+
+  console.log("Valores a enviar:", { id, name, description, status });
 
   if (!name || !description) {
     showValidation("Todos los campos son obligatorios.");
@@ -286,9 +295,13 @@ const updateCategory = async () => {
     confirmText: "Actualizar",
     cancelText: "Cancelar"
   });
+
+  console.log("Confirmación del usuario:", confirmed);
   if (!confirmed) return;
 
   try {
+    console.log("URL de la API:", `${API_URL}/${id}`);
+    
     const res = await fetch(`${API_URL}/${id}`, {
       method: "PUT",
       headers: {
@@ -297,8 +310,10 @@ const updateCategory = async () => {
       },
       body: JSON.stringify({ name, description, status })
     });
+
     const data = await res.json();
     console.log("Respuesta del servidor:", data);
+
     if (res.ok) {
       showSuccess("Categoría actualizada correctamente.");
       closeModal('editModal');

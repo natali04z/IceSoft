@@ -35,7 +35,7 @@
                 <li><a href="category.html"><i class="material-icons">label</i><span>CATEGORÍAS</span></a></li>
                 <li><a href="products.html"><i class="material-icons">local_offer</i><span>PRODUCTOS</span></a></li>
                 <li><a href="providers.html"><i class="material-icons">local_shipping</i><span>PROVEEDORES</span></a></li>
-                <li><a href="shopping.html"><i class="material-icons">shopping_cart</i><span>COMPRAS</span></a></li>
+                <li><a href="purchases.html"><i class="material-icons">shopping_cart</i><span>COMPRAS</span></a></li>
             </ul>
           </li>
           <li class="divider-menu-h"></li>
@@ -117,78 +117,88 @@
       </section>
   
       <!-- Formulario de Registro de Proveedor -->
-      <section class="form-card" id="registerFormSection" style="display: none;">
-        <div class="card-header">
-          <h3 id="formTitle">Registrar Proveedor</h3>
+      <!-- Modal de Registro de Proveedor -->
+      <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('registerModal')">&times;</span>
+            <section class="form-card">
+                <div class="card-header">
+                    <h3 id="formTitle">Registrar Proveedor</h3>
+                </div>
+                <div class="card-body">
+                    <form id="providerForm">
+                        <div class="form-field">
+                            <input type="text" class="field-element" id="name" placeholder="Nombre">
+                        </div>
+                        <div class="form-field">
+                            <input type="number" class="field-element" id="contact_number" placeholder="N° Contacto">
+                        </div>
+                        <div class="form-field">
+                            <input type="text" class="field-element" id="address" placeholder="Dirección">
+                        </div>
+                        <div class="form-field">
+                            <input type="text" class="field-element" id="email" placeholder="Correo">
+                        </div>
+                        <div class="form-field">
+                            <input type="number" class="field-element" id="personal_phone" placeholder="N° Personal">
+                        </div>
+                        <div class="form-field">
+                            <label>Estado:</label>
+                            <label class="switch">
+                                <input type="checkbox" id="status">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="controls-container">
+                            <button type="button" class="action-button" id="registerButton">Registrar</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
         </div>
-        <div class="card-body">
-          <form id="providerForm">
-            <div class="form-field">
-              <input type="text" class="field-element" id="name" placeholder="Nombre">
-            </div>
-            <div class="form-field">
-              <input type="number" class="field-element" id="contact_number" placeholder="N° Contacto">
-            </div>
-            <div class="form-field">
-              <input type="text" class="field-element" id="address" placeholder="Dirección">
-            </div>
-            <div class="form-field">
-              <input type="text" class="field-element" id="email" placeholder="Correo">
-            </div>
-            <div class="form-field">
-              <input type="number" class="field-element" id="personal_phone" placeholder="N° Personal">
-            </div>
-            <div class="form-field">
-                <label>Estado:</label>
-                <label class="switch">
-                  <input type="checkbox" id="editStatus">
-                  <span class="slider"></span>
-                </label>
-              </div>
-            <!-- Se puede omitir el estado en registro si se asigna por defecto -->
-            <div class="controls-container">
-              <button type="button" class="action-button" id="registerButton">Registrar</button>
-            </div>
-          </form>
+      </div>
+
+      <!-- Modal de Edición de Proveedor -->
+      <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('editModal')">&times;</span>
+            <section class="form-card">
+                <div class="card-header">
+                    <h3 id="editFormTitle">Editar Proveedor</h3>
+                </div>
+                <div class="card-body">
+                    <form id="editForm">
+                        <input type="hidden" id="editId">
+                        <div class="form-field">
+                            <input type="text" class="field-element" id="editName" placeholder="Nombre">
+                        </div>
+                        <div class="form-field">
+                            <input type="number" class="field-element" id="editContactNumber" placeholder="N° Contacto">
+                        </div>
+                        <div class="form-field">
+                            <input type="text" class="field-element" id="editAddress" placeholder="Dirección">
+                        </div>
+                        <div class="form-field">
+                            <input type="text" class="field-element" id="editEmail" placeholder="Correo">
+                        </div>
+                        <div class="form-field">
+                            <input type="number" class="field-element" id="editPersonalPhone" placeholder="N° Personal">
+                        </div>
+                        <div class="form-field">
+                            <label>Estado:</label>
+                            <label class="switch">
+                                <input type="checkbox" id="editStatus">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="controls-container">
+                            <button type="submit" class="action-button">Actualizar</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
         </div>
-      </section>
-  
-      <!-- Formulario de Edición de Proveedor -->
-      <section class="form-card" id="editFormSection" style="display: none;">
-        <div class="card-header">
-            <h3 id="editFormTitle">Editar Proveedor</h3>
-        </div>
-        <div class="card-body">
-            <form id="editForm">
-                <input type="hidden" id="editId">
-                <div class="form-field">
-                    <input type="text" class="field-element" id="editName" placeholder="Nombre">
-                </div>
-                <div class="form-field">
-                    <input type="number" class="field-element" id="editContactNumber" placeholder="N° Contacto">
-                </div>
-                <div class="form-field">
-                    <input type="text" class="field-element" id="editAddress" placeholder="Dirección">
-                </div>
-                <div class="form-field">
-                    <input type="text" class="field-element" id="editEmail" placeholder="Correo">
-                </div>
-                <div class="form-field">
-                    <input type="number" class="field-element" id="editPersonalPhone" placeholder="N° Personal">
-                </div>
-                <div class="form-field">
-                    <label>Estado:</label>
-                    <label class="switch">
-                        <input type="checkbox" id="editStatus">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                <div class="controls-container">
-                    <button type="submit" class="action-button">Actualizar</button>
-                </div>
-            </form>
-        </div>
-    </section>    
+      </div>    
     </div>
   </main>
  

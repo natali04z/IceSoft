@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Usuarios | ICESOFT</title>
+  <title>Compras | ICESOFT</title>
   <link rel="icon" href="assets/icesoft.png" type="image/png">
   <link rel="stylesheet" href="css/style.css">
   <script src="js/alerts.js"></script>
@@ -32,10 +32,10 @@
           <li>
             <a href="#" class="btn-subMenu"><i class="material-icons">work</i><span>COMPRAS</span><span class="material-icons arrow">chevron_left</span></a>
             <ul class="sub-menu-options">
-              <li><a href="category.html"><i class="material-icons">label</i><span>CATEGORÍAS</span></a></li>
-              <li><a href="products.html"><i class="material-icons">local_offer</i><span>PRODUCTOS</span></a></li>
-              <li><a href="providers.html"><i class="material-icons">local_shipping</i><span>PROVEEDORES</span></a></li>
-              <li><a href="purchases.html"><i class="material-icons">shopping_cart</i><span>COMPRAS</span></a></li>
+                <li><a href="category.html"><i class="material-icons">label</i><span>CATEGORÍAS</span></a></li>
+                <li><a href="products.html"><i class="material-icons">local_offer</i><span>PRODUCTOS</span></a></li>
+                <li><a href="providers.html"><i class="material-icons">local_shipping</i><span>PROVEEDORES</span></a></li>
+                <li><a href="purchases.html"><i class="material-icons">shopping_cart</i><span>COMPRAS</span></a></li>
             </ul>
           </li>
           <li class="divider-menu-h"></li>
@@ -70,22 +70,20 @@
 
   <main class="main-content">
     <div class="container">
-      <h2 class="title">Gestión de Usuarios</h2>
-
-      <!-- Search container -->
+      <h2 class="title">Gestión de Compras</h2>
+  
       <div class="search-container">
         <div class="search-box">
-          <input type="text" id="searchInput" placeholder="Buscar usuario...">
-          <button onclick="searchUser()"><i class="material-icons">search</i></button>
+          <input type="text" id="searchInput" placeholder="Buscar compra...">
+          <button onclick="searchPurchase()"><i class="material-icons">search</i></button>
         </div>
       </div>
-
-      <!-- Tabla de Usuarios -->
+  
       <section class="table-card">
         <div class="card-header card-header-flex">
-          <h3>Listado de Usuarios</h3>
+          <h3>Listado de Compras</h3>
           <button type="button" class="add-button" id="mobileAddButton">
-            <i class="material-icons">person_add</i> Añadir
+            <i class="material-icons">add</i> Añadir
           </button>
         </div>
         <div class="card-body">
@@ -93,60 +91,48 @@
             <table class="users-table">
               <thead>
                 <tr>
-                  <th>Nombre</th>
-                  <th>Apellido</th>
-                  <th>Teléfono</th>
-                  <th>Correo</th>
-                  <th>Rol</th>
+                  <th>ID</th>
+                  <th>Producto</th>
+                  <th>Fecha de Compra</th>
+                  <th>Proveedor</th>
+                  <th>Total</th>
+                  <th>Detalles</th>
                   <th>Acciones</th>
                 </tr>
               </thead>
-              <tbody id="userTableBody">
-                <!-- Usuarios cargados dinámicamente -->
-              </tbody>
+              <tbody id="purcharseTableBody"></tbody>
             </table>
-          </div>
-          <div class="pagination">
-            <div class="page-info">Mostrando <span style="font-weight: 500;">10 filas</span></div>
-            <div class="page-info">1-10 de 0</div>
-            <div class="page-numbers"></div>
           </div>
         </div>
       </section>
-
-      <!-- Formulario de Registro -->
-      <!-- Modal de Registro de Usuario -->
+  
       <div id="registerModal" class="modal">
         <div class="modal-content">
           <span class="close" onclick="closeModal('registerModal')">&times;</span>
           <section class="form-card">
             <div class="card-header">
-              <h3 id="formTitle">Registrar Usuario</h3>
+              <h3 id="formTitle">Registrar Compra</h3>
             </div>
             <div class="card-body">
-              <form id="userForm">
+              <form id="purchaseForm">
                 <div class="form-field">
-                  <input type="text" class="field-element" id="name" placeholder="Nombre">
-                </div>
-                <div class="form-field">
-                  <input type="text" class="field-element" id="lastname" placeholder="Apellido">
-                </div>
-                <div class="form-field">
-                  <input type="text" class="field-element" id="contact_number" placeholder="Teléfono">
-                </div>
-                <div class="form-field">
-                  <input type="email" class="field-element" id="email" placeholder="Correo electrónico">
-                </div>
-                <div class="form-field">
-                  <input type="password" class="field-element" id="password" placeholder="Contraseña">
-                </div>
-                <div class="form-field">
-                  <select class="field-element" id="role">
-                    <option value="" disabled selected hidden>Seleccionar rol</option>
-                    <option value="admin">Administrador</option>
-                    <option value="assistant">Asistente</option>
-                    <option value="employee">Empleado</option>
+                  <select class="field-element" id="product">
+                    <option value="" disabled selected hidden>Seleccionar producto</option>
                   </select>
+                </div>
+                <div class="form-field">
+                  <input type="date" class="field-element" id="purchaseDate">
+                </div>
+                <div class="form-field">
+                  <select class="field-element" id="provider">
+                    <option value="" disabled selected hidden>Seleccionar proveedor</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <input type="number" class="field-element" id="total" placeholder="Total">
+                </div>
+                <div class="form-field">
+                  <textarea class="field-element" id="details" placeholder="Detalles"></textarea>
                 </div>
                 <div class="controls-container">
                   <button type="button" class="action-button" id="registerButton">Registrar</button>
@@ -156,40 +142,38 @@
           </section>
         </div>
       </div>
-
-      <!-- Modal de Edición de Usuario -->
+  
       <div id="editModal" class="modal">
         <div class="modal-content">
           <span class="close" onclick="closeModal('editModal')">&times;</span>
           <section class="form-card">
             <div class="card-header">
-              <h3 id="editFormTitle">Editar Usuario</h3>
+              <h3 id="editFormTitle">Editar Compra</h3>
             </div>
             <div class="card-body">
               <form id="editForm">
                 <input type="hidden" id="editId">
                 <div class="form-field">
-                  <input type="text" class="field-element" id="editName" placeholder="Nombre">
-                </div>
-                <div class="form-field">
-                  <input type="text" class="field-element" id="editLastname" placeholder="Apellido">
-                </div>
-                <div class="form-field">
-                  <input type="text" class="field-element" id="editContact" placeholder="Teléfono">
-                </div>
-                <div class="form-field">
-                  <input type="email" class="field-element" id="editEmail" placeholder="Correo electrónico">
-                </div>
-                <div class="form-field">
-                  <select class="field-element" id="editRole">
-                    <option value="" disabled selected hidden>Seleccionar rol</option>
-                    <option value="admin">Administrador</option>
-                    <option value="assistant">Asistente</option>
-                    <option value="employee">Empleado</option>
+                  <select class="field-element" id="editProduct">
+                    <option value="" disabled selected hidden>Seleccionar producto</option>
                   </select>
                 </div>
+                <div class="form-field">
+                  <input type="date" class="field-element" id="editPurchaseDate">
+                </div>
+                <div class="form-field">
+                  <select class="field-element" id="editProvider">
+                    <option value="" disabled selected hidden>Seleccionar proveedor</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <input type="number" class="field-element" id="editTotal" placeholder="Total">
+                </div>
+                <div class="form-field">
+                  <textarea class="field-element" id="editDetails" placeholder="Detalles"></textarea>
+                </div>
                 <div class="controls-container">
-                  <button type="button" class="action-button" onclick="updateUser()">Actualizar</button>
+                  <button type="button" class="action-button" id="updateButton" onclick="updatePurchase()">Actualizar</button>
                 </div>
               </form>
             </div>
@@ -197,9 +181,11 @@
         </div>
       </div>
     </div>
-  </main>
-
+  </main>  
+ 
   <script src="js/menu.js"></script>
-  <script src="js/user.js"></script>
+  <script src="js/purchases.js"></script>
+  <script src="js/products.js"></script>
+  <script src="js/providers.js"></script>
 </body>
 </html>

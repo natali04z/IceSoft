@@ -7,6 +7,29 @@ let originalProviders = [];
 let currentPage = 1;
 const rowsPerPage = 10;
 
+// Función para abrir un modal
+function openModal(modalId) {
+  document.getElementById(modalId).style.display = "flex";
+}
+
+// Función para cerrar un modal
+function closeModal(modalId) {
+  document.getElementById(modalId).style.display = "none";
+}
+
+// Cerrar el modal si el usuario hace clic fuera del contenido
+window.onclick = function(event) {
+  const registerModal = document.getElementById("registerModal");
+  const editModal = document.getElementById("editModal");
+  
+  if (event.target === registerModal) {
+    registerModal.style.display = "none";
+  }
+  if (event.target === editModal) {
+    editModal.style.display = "none";
+  }
+};
+
 // Renderizar tabla de proveedores
 const renderProvidersTable = (page = 1) => {
   const tbody = document.getElementById("providerTableBody");
@@ -123,20 +146,6 @@ const listProviders = async () => {
   }
 };
 
-// Mostrar formulario de registro
-const showRegisterForm = () => {
-  hideForms();
-  document.getElementById("registerFormSection").style.display = "block";
-  document.getElementById("formTitle").textContent = "Registrar Proveedor";
-  window.scrollTo(0, document.body.scrollHeight);
-};
-
-// Ocultar formulario de registro
-const hideRegisterForm = () => {
-  document.getElementById("registerFormSection").style.display = "none";
-  document.getElementById("providerForm").reset();
-};
-
 // Registrar proveedor
 const registerProvider = async () => {
   const token = localStorage.getItem("token");
@@ -151,12 +160,10 @@ const registerProvider = async () => {
   const email = document.getElementById("email").value.trim();
   const personal_phone = document.getElementById("personal_phone").value.trim();
   
-  // Para el registro, el estado se controla por el switch
   const status = document.getElementById("status") 
     ? (document.getElementById("status").checked ? "active" : "inactive")
     : "active";
 
-  // Validación básica de campos
   if (!name || !contact_number || !address || !email || !personal_phone) {
     showValidation("Todos los campos son obligatorios.");
     return;
@@ -175,7 +182,7 @@ const registerProvider = async () => {
       title: 'Operación cancelada',
       text: 'No se ha registrado ningún proveedor',
     });
-    hideRegisterForm();
+    closeModal('registerModal');
     return;
   }
 
@@ -199,7 +206,8 @@ const registerProvider = async () => {
     const data = await res.json();
     if (res.status === 201 || res.ok) {
       showSuccess("Proveedor registrado correctamente.");
-      hideRegisterForm();
+      closeModal('registerModal');
+      document.getElementById("providerForm").reset();
       listProviders();
     } else {
       showError(data.message || "Error al registrar proveedor.");
@@ -210,12 +218,9 @@ const registerProvider = async () => {
   }
 };
 
-// Llenar formulario de edición de proveedor
 // Llenar formulario de edición
 const fillEditForm = async (id) => {
     const token = localStorage.getItem("token");
-
-    console.log("ID recibido en fillEditForm:", id); // Verifica que el ID es correcto
 
     const confirmed = await showConfirm({
         title: "¿Deseas editar este proveedor?",
@@ -249,8 +254,6 @@ const fillEditForm = async (id) => {
             return;
         }
 
-        console.log("Proveedor recibido:", data); // Verifica la estructura de la respuesta
-
         // Llenar los campos del formulario de edición
         document.getElementById("editId").value = data._id;
         document.getElementById("editName").value = data.name || "";
@@ -260,29 +263,22 @@ const fillEditForm = async (id) => {
         document.getElementById("editPersonalPhone").value = data.personal_phone || "";
         document.getElementById("editStatus").checked = data.status === "active";
 
-        hideForms();
-        document.getElementById("editFormSection").style.display = "block";
-        window.scrollTo(0, document.body.scrollHeight);
-
-        const editForm = document.getElementById("editForm");
-        editForm.onsubmit = async (event) => {
-            event.preventDefault();
-            await updateProvider(id);
-        };
+        openModal("editModal");
     } catch (err) {
         console.error("Error al cargar el proveedor:", err);
         showError(`Ocurrió un error: ${err.message || err}`);
     }
 };
 
-// Función para actualizar un proveedor
-const updateProvider = async (id) => {
+// Actualizar proveedor
+const updateProvider = async () => {
     const token = localStorage.getItem("token");
     if (!token) {
       showError("Token no encontrado. Inicie sesión nuevamente.");
       return;
     }
 
+    const id = document.getElementById("editId").value;
     const name = document.getElementById("editName").value.trim();
     const contact_number = document.getElementById("editContactNumber").value.trim();
     const address = document.getElementById("editAddress").value.trim();
@@ -315,11 +311,11 @@ const updateProvider = async (id) => {
         });
 
         const data = await res.json();
-        console.log("Respuesta del servidor:", data);
 
         if (res.ok) {
             showSuccess("Proveedor actualizado correctamente.");
-            hideForms();
+            closeModal("editModal");
+            document.getElementById("editForm").reset();
             listProviders();
         } else {
             showError(data.message || "Error al actualizar el proveedor.");
@@ -328,7 +324,40 @@ const updateProvider = async (id) => {
         console.error("Error al actualizar proveedor:", err);
         showError(`Ocurrió un error: ${err.message || err}`);
     }
-};  
+};
+
+// Eliminar proveedor 
+const deleteProvider = async (id) => {
+    const token = localStorage.getItem("token");
+    const confirmed = await showConfirm({
+        title: "¿Estás seguro de eliminar este proveedor?",
+        text: "Esta acción no se puede deshacer.",
+        confirmText: "Eliminar",
+        cancelText: "Cancelar"
+    });
+  
+    if (!confirmed) return;
+
+    try {
+        const res = await fetch(`${API_PROVIDERS}/${id}`, {
+            method: "DELETE",
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+    
+        const data = await res.json();
+        if (res.ok) {
+            showSuccess("Proveedor eliminado");
+            listProviders();
+        } else {
+            showError(data.message || "No se pudo eliminar el proveedor");
+        }
+    } catch (err) {
+        console.error("Error al eliminar proveedor:", err);
+        showError("Error al eliminar proveedor");
+    }
+};
 
 // Buscar proveedor
 const searchProvider = () => {
@@ -342,20 +371,25 @@ const searchProvider = () => {
     renderProvidersTable(currentPage);
 };
 
-// Ocultar formularios (registro y edición)
-const hideForms = () => {
-  document.getElementById("registerFormSection").style.display = "none";
-  document.getElementById("editFormSection").style.display = "none";
-};
-
 // Eventos al cargar el DOM
 document.addEventListener("DOMContentLoaded", () => {
   listProviders();
-  document.getElementById("mobileAddButton").onclick = showRegisterForm;
+  document.getElementById("mobileAddButton").onclick = () => openModal('registerModal');
   document.getElementById("registerButton").onclick = registerProvider;
   document.getElementById("searchInput").addEventListener("keyup", searchProvider);
+
+  // Añadir evento de submit para el formulario de edición
+  const editForm = document.getElementById("editForm");
+  if (editForm) {
+    editForm.onsubmit = async (event) => {
+      event.preventDefault();
+      await updateProvider();
+    };
+  }
 });
 
 // Hacer funciones globales si es necesario
 window.fillEditForm = fillEditForm;
 window.deleteProvider = deleteProvider;
+window.openModal = openModal;
+window.closeModal = closeModal;
