@@ -1,6 +1,6 @@
 // Endpoints de la API
-const API_URL = "http://localhost:3001/api/users";
-const API_AUTH = "http://localhost:3001/api/auth/register";
+const API_URL = "https://backend-icesoft.onrender.com/api/users";
+const API_AUTH = "https://backend-icesoft.onrender.com/api/auth/register";
 
 // Variables globales para usuarios y paginación
 let allUsers = [];
@@ -207,6 +207,7 @@ const registerUser = async () => {
 };
 
 // Llenar formulario de edición con datos del usuario
+// Función para llenar el formulario de edición
 const fillEditForm = async (id) => {
   const token = localStorage.getItem("token");
 
@@ -235,19 +236,30 @@ const fillEditForm = async (id) => {
       }
     });
 
+    // Primero obtén los datos como JSON
+    const data = await res.json();
+    
     if (!res.ok) {
-      const data = await res.json();
       showError(data.message || "Error al cargar los datos del usuario.");
       return;
     }
 
-    const user = await res.json();
+    // Ahora usa los datos ya parseados
+    const user = data;
     document.getElementById("editId").value = user._id || "";
     document.getElementById("editName").value = user.name || "";
     document.getElementById("editLastname").value = user.lastname || "";
     document.getElementById("editContact").value = user.contact_number || "";
     document.getElementById("editEmail").value = user.email || "";
-    document.getElementById("editRole").value = user.role?._id || "";
+    
+    // Manejar correctamente el valor del rol
+    if (user.role && typeof user.role === 'object' && user.role._id) {
+      document.getElementById("editRole").value = user.role._id;
+    } else if (user.role) {
+      document.getElementById("editRole").value = user.role;
+    } else {
+      document.getElementById("editRole").value = "";
+    }
 
     openModal("editModal");
   } catch (err) {
@@ -257,32 +269,49 @@ const fillEditForm = async (id) => {
 };
 
 // Actualizar usuario
+// Actualizar usuario
 const updateUser = async () => {
   const token = localStorage.getItem("token");
   if (!token) {
     showError("Token no encontrado. Inicie sesión nuevamente.");
     return;
   }
-
+  
   const id = document.getElementById("editId").value;
   const name = document.getElementById("editName").value.trim();
   const lastname = document.getElementById("editLastname").value.trim();
   const contact_number = document.getElementById("editContact").value.trim();
   const email = document.getElementById("editEmail").value.trim();
-  const role = document.getElementById("editRole").value;
-
-  if (!name || !lastname || !email || !contact_number || !role) {
-    showValidation("Todos los campos son obligatorios.");
+  const roleSelect = document.getElementById("editRole");
+  
+  if (!name || !lastname || !email || !contact_number) {
+    showValidation("Los campos nombre, apellido, correo y teléfono son obligatorios.");
     return;
   }
-
+  
+  // Crear objeto de datos del usuario
+  const userData = { 
+    name, 
+    lastname, 
+    email, 
+    contact_number 
+  };
+  
+  // Solo incluir role si está seleccionado y no es vacío
+  if (roleSelect && roleSelect.value && roleSelect.value.trim() !== "") {
+    userData.role = roleSelect.value.trim();
+    console.log("Rol seleccionado:", userData.role);
+  }
+  
+  console.log("Datos a enviar:", JSON.stringify(userData));
+  
   const confirmed = await showConfirm({
-    title: "¿Confirmas actualizar este usuario?", 
-    text: "Se guardarán los cambios realizados.", 
-    confirmText: "Actualizar", 
+    title: "¿Confirmas actualizar este usuario?",
+    text: "Se guardarán los cambios realizados.",
+    confirmText: "Actualizar",
     cancelText: "Cancelar"
   });
-
+  
   if (!confirmed) {
     Swal.fire({
       icon: 'info',
@@ -291,31 +320,59 @@ const updateUser = async () => {
     });
     return;
   }
-
+  
   try {
+    // Mostrar indicador de carga
+    // Swal.fire({
+    //   title: 'Actualizando...',
+    //   text: 'Por favor espere',
+    //   allowOutsideClick: false,
+    //   didOpen: () => {
+    //     Swal.showLoading();
+    //   }
+    // });
+    
     const res = await fetch(`${API_URL}/${id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`
       },
-      body: JSON.stringify({ name, lastname, email, contact_number, role })
+      body: JSON.stringify(userData)
     });
-
-    const data = await res.json();
-    console.log("Respuesta del servidor:", data);
-
+    
+    // Cerrar indicador de carga
+    Swal.close();
+    
+    // Log de respuesta
+    console.log("Código de estado:", res.status);
+    
+    // Intentar parsear la respuesta como JSON
+    let data;
+    try {
+      data = await res.json();
+      console.log("Datos de la respuesta:", data);
+    } catch (jsonError) {
+      console.error("Error al parsear JSON:", jsonError);
+      data = { message: "Error en formato de respuesta" };
+    }
+    
     if (res.ok) {
       showSuccess("Usuario actualizado correctamente.");
       closeModal("editModal");
       document.getElementById("editForm").reset();
       listUsers();
     } else {
-      showError(data.message || "Error al actualizar el usuario.");
+      // Mensaje de error más detallado
+      let errorMsg = data.message || `Error al actualizar el usuario (${res.status})`;
+      if (data.error) {
+        errorMsg += `: ${data.error}`;
+      }
+      showError(errorMsg);
     }
   } catch (err) {
     console.error("Error al actualizar usuario:", err);
-    showError(`Ocurrió un error: ${err.message || err}`);
+    showError(`Ocurrió un error de red: ${err.message || err}`);
   }
 };
 

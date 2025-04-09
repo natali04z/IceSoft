@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 if (token) {
   try {
-    const res = await fetch("http://localhost:3001/api/auth/me", {
+    const res = await fetch("https://backend-icesoft.onrender.com/api/auth/me", {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
