@@ -1,7 +1,7 @@
 // Endpoints de la API
-const API_PURCHASES = "http://localhost:3001/api/purchases";
-const API_PRODUCTS = "http://localhost:3001/api/products";
-const API_PROVIDERS = "http://localhost:3001/api/providers";
+const API_PURCHASES = "https://backend-icesoft.onrender.com/api/purchases";
+const API_PRODUCTS = "https://backend-icesoft.onrender.com/api/products";
+const API_PROVIDERS = "https://backend-icesoft.onrender.com/api/providers";
 
 // Variables globales para compras y paginación
 let allPurchases = [];
@@ -55,9 +55,56 @@ const formatCurrency = (amount) => {
   }
 };
 
+// Mostrar mensajes de error
+const showError = (message) => {
+  Swal.fire({
+    icon: 'error',
+    title: 'Error',
+    text: message
+  });
+};
+
+// Mostrar mensajes de éxito
+const showSuccess = (message) => {
+  Swal.fire({
+    icon: 'success',
+    title: 'Éxito',
+    text: message
+  });
+};
+
+// Mostrar mensajes de validación
+const showValidation = (message) => {
+  Swal.fire({
+    icon: 'warning',
+    title: 'Validación',
+    text: message
+  });
+};
+
+// Mostrar diálogo de confirmación
+const showConfirm = async ({ title, text, confirmText, cancelText }) => {
+  const result = await Swal.fire({
+    title,
+    text,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: confirmText,
+    cancelButtonText: cancelText
+  });
+  return result.isConfirmed;
+};
+
 // Renderizar tabla de compras
 const renderPurchasesTable = (page = 1) => {
+  console.log("Renderizando tabla de compras con datos:", allPurchases);
   const tbody = document.getElementById("purchaseTableBody");
+  
+  if (!tbody) {
+    console.error("No se encontró el elemento tbody con ID 'purchaseTableBody'");
+    return;
+  }
+  
   tbody.innerHTML = "";
 
   const start = (page - 1) * rowsPerPage;
@@ -71,7 +118,7 @@ const renderPurchasesTable = (page = 1) => {
   }
 
   purchasesToShow.forEach(purchase => {
-    const purchaseId = purchase._id || purchase.id || "";
+    const purchaseId = purchase._id || "";
     const displayId = purchase.id || purchaseId;
     const productName = purchase.product?.name || "Sin Producto";
     const providerName = purchase.provider?.name || "Sin Proveedor";
@@ -106,6 +153,11 @@ const renderPaginationControls = () => {
   const totalPages = Math.ceil(allPurchases.length / rowsPerPage);
   const container = document.querySelector(".page-numbers");
   const info = document.querySelector(".pagination .page-info");
+  
+  if (!container) {
+    console.error("No se encontró el elemento con clase 'page-numbers'");
+    return;
+  }
 
   container.innerHTML = "";
 
@@ -148,46 +200,6 @@ const changePage = (page) => {
   renderPurchasesTable(currentPage);
 };
 
-// Mostrar mensajes de error
-const showError = (message) => {
-  Swal.fire({
-    icon: 'error',
-    title: 'Error',
-    text: message
-  });
-};
-
-// Mostrar mensajes de éxito
-const showSuccess = (message) => {
-  Swal.fire({
-    icon: 'success',
-    title: 'Éxito',
-    text: message
-  });
-};
-
-// Mostrar mensajes de validación
-const showValidation = (message) => {
-  Swal.fire({
-    icon: 'warning',
-    title: 'Validación',
-    text: message
-  });
-};
-
-// Mostrar diálogo de confirmación
-const showConfirm = async ({ title, text, confirmText, cancelText }) => {
-  const result = await Swal.fire({
-    title,
-    text,
-    icon: 'question',
-    showCancelButton: true,
-    confirmButtonText: confirmText,
-    cancelButtonText: cancelText
-  });
-  return result.isConfirmed;
-};
-
 // Cargar los productos para los selects
 const loadProducts = async () => {
   try {
@@ -203,24 +215,27 @@ const loadProducts = async () => {
         Authorization: `Bearer ${token}`
       }
     });
-    const data = await res.json();
-    if (res.ok) {
-      const products = data.products || data;
-      const productSelect = document.getElementById("product");
-      const editProductSelect = document.getElementById("editProduct");
-      
-      // Reiniciar opciones
-      productSelect.innerHTML = `<option value="" disabled selected hidden>Seleccionar producto</option>`;
-      editProductSelect.innerHTML = `<option value="" disabled selected hidden>Seleccionar producto</option>`;
-      
-      products.forEach(prod => {
-        const option = `<option value="${prod._id}">${prod.name}</option>`;
-        productSelect.innerHTML += option;
-        editProductSelect.innerHTML += option;
-      });
-    } else {
+    
+    if (!res.ok) {
+      const data = await res.json();
       showError(data.message || "Error al cargar productos.");
+      return;
     }
+    
+    const data = await res.json();
+    const products = data.products || data;
+    const productSelect = document.getElementById("product");
+    const editProductSelect = document.getElementById("editProduct");
+    
+    // Reiniciar opciones
+    productSelect.innerHTML = `<option value="" disabled selected hidden>Seleccionar producto</option>`;
+    editProductSelect.innerHTML = `<option value="" disabled selected hidden>Seleccionar producto</option>`;
+    
+    products.forEach(prod => {
+      const option = `<option value="${prod._id}">${prod.name}</option>`;
+      productSelect.innerHTML += option;
+      editProductSelect.innerHTML += option;
+    });
   } catch (err) {
     console.error("Error al cargar productos:", err);
     showError("Error al cargar productos.");
@@ -242,24 +257,27 @@ const loadProviders = async () => {
         Authorization: `Bearer ${token}`
       }
     });
-    const data = await res.json();
-    if (res.ok) {
-      const providers = data.providers || data;
-      const providerSelect = document.getElementById("provider");
-      const editProviderSelect = document.getElementById("editProvider");
-      
-      // Reiniciar opciones
-      providerSelect.innerHTML = `<option value="" disabled selected hidden>Seleccionar proveedor</option>`;
-      editProviderSelect.innerHTML = `<option value="" disabled selected hidden>Seleccionar proveedor</option>`;
-      
-      providers.forEach(prov => {
-        const option = `<option value="${prov._id}">${prov.name}</option>`;
-        providerSelect.innerHTML += option;
-        editProviderSelect.innerHTML += option;
-      });
-    } else {
+    
+    if (!res.ok) {
+      const data = await res.json();
       showError(data.message || "Error al cargar proveedores.");
+      return;
     }
+    
+    const data = await res.json();
+    const providers = data.providers || data;
+    const providerSelect = document.getElementById("provider");
+    const editProviderSelect = document.getElementById("editProvider");
+    
+    // Reiniciar opciones
+    providerSelect.innerHTML = `<option value="" disabled selected hidden>Seleccionar proveedor</option>`;
+    editProviderSelect.innerHTML = `<option value="" disabled selected hidden>Seleccionar proveedor</option>`;
+    
+    providers.forEach(prov => {
+      const option = `<option value="${prov._id}">${prov.name}</option>`;
+      providerSelect.innerHTML += option;
+      editProviderSelect.innerHTML += option;
+    });
   } catch (err) {
     console.error("Error al cargar proveedores:", err);
     showError("Error al cargar proveedores.");
@@ -311,15 +329,18 @@ const registerPurchase = async () => {
       },
       body: JSON.stringify({ product, purchaseDate, provider, total, details })
     });
-    const data = await res.json();
-    if (res.status === 201 || res.ok) {
-      showSuccess("Compra registrada correctamente.");
-      closeModal('registerModal');
-      document.getElementById("purchaseForm").reset();
-      listPurchases();
-    } else {
+    
+    if (!res.ok) {
+      const data = await res.json();
       showError(data.message || "Error al registrar compra.");
+      return;
     }
+    
+    const data = await res.json();
+    showSuccess(data.message || "Compra registrada correctamente.");
+    closeModal('registerModal');
+    document.getElementById("purchaseForm").reset();
+    listPurchases();
   } catch (err) {
     console.error("Error al registrar compra:", err);
     showError("Error al registrar compra");
@@ -328,6 +349,7 @@ const registerPurchase = async () => {
 
 // Llenar formulario de edición de compra
 const fillEditForm = async (id) => {
+  console.log("Editando compra con ID:", id);
   const token = localStorage.getItem("token");
   const confirmed = await showConfirm({
     title: "¿Deseas editar esta compra?",
@@ -361,20 +383,11 @@ const fillEditForm = async (id) => {
     }
 
     const purchase = await res.json();
+    console.log("Datos de compra recibidos:", purchase);
+    
     document.getElementById("editId").value = purchase._id;
     document.getElementById("editProduct").value = purchase.product?._id || "";
-    
-    // Formatear fecha para el input date
-    let dateValue = "";
-    if (purchase.purchaseDate) {
-      const date = new Date(purchase.purchaseDate);
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      dateValue = `${year}-${month}-${day}`;
-    }
-    document.getElementById("editPurchaseDate").value = dateValue;
-    
+    document.getElementById("editPurchaseDate").value = purchase.purchaseDate || "";
     document.getElementById("editProvider").value = purchase.provider?._id || "";
     document.getElementById("editTotal").value = purchase.total || "";
     document.getElementById("editDetails").value = purchase.details || "";
@@ -425,15 +438,17 @@ const updatePurchase = async () => {
       body: JSON.stringify({ product, purchaseDate, provider, total, details }),
     });
 
-    const data = await res.json();
-    if (res.ok) {
-      showSuccess("Compra actualizada correctamente.");
-      closeModal("editModal");
-      document.getElementById("editForm").reset();
-      listPurchases();
-    } else {
+    if (!res.ok) {
+      const data = await res.json();
       showError(data.message || "Error al actualizar la compra.");
+      return;
     }
+
+    const data = await res.json();
+    showSuccess(data.message || "Compra actualizada correctamente.");
+    closeModal("editModal");
+    document.getElementById("editForm").reset();
+    listPurchases();
   } catch (err) {
     console.error("Error al actualizar compra:", err);
     showError(`Ocurrió un error: ${err.message || err}`);
@@ -442,12 +457,15 @@ const updatePurchase = async () => {
 
 // Listar compras desde el backend
 const listPurchases = async () => {
+  console.log("Iniciando listado de compras");
   try {
     const token = localStorage.getItem("token");
     if (!token) {
       showError("Token no encontrado. Inicie sesión nuevamente.");
       return;
     }
+    
+    console.log("Realizando petición a:", API_PURCHASES);
     const res = await fetch(API_PURCHASES, {
       method: "GET",
       headers: {
@@ -456,26 +474,20 @@ const listPurchases = async () => {
       }
     });
     
+    console.log("Respuesta:", res.status, res.statusText);
+    
     if (!res.ok) {
-      const errorData = await res.text();
-      try {
-        const errorJson = JSON.parse(errorData);
-        showError(errorJson.message || "Error al listar compras.");
-      } catch {
-        showError("Error al listar compras. Respuesta del servidor: " + errorData);
-      }
+      const data = await res.json();
+      showError(data.message || "Error al listar compras.");
       return;
     }
     
     const data = await res.json();
+    console.log("Datos recibidos:", data);
     
-    // Accept either an array directly or a property containing the array
-    originalPurchases = Array.isArray(data) ? data : (data.purchases || []);
-    
-    if (!Array.isArray(originalPurchases)) {
-      showError("Formato de datos incorrecto al listar compras.");
-      return;
-    }
+    // Directamente usar los datos recibidos, ya que el backend ya nos da el array
+    originalPurchases = Array.isArray(data) ? data : [];
+    console.log("Compras cargadas:", originalPurchases.length);
     
     allPurchases = [...originalPurchases];
     currentPage = 1;
@@ -488,6 +500,7 @@ const listPurchases = async () => {
 
 // Eliminar compra
 const deletePurchase = async (id) => {
+  console.log("Eliminando compra con ID:", id);
   const token = localStorage.getItem("token");
   const confirmed = await showConfirm({
     title: "¿Estás seguro de eliminar esta compra?",
@@ -506,13 +519,14 @@ const deletePurchase = async (id) => {
       }
     });
     
-    if (res.ok) {
-      showSuccess("Compra eliminada correctamente.");
-      listPurchases();
-    } else {
-      const errorData = await res.json();
-      showError(errorData.message || "No se pudo eliminar la compra");
+    if (!res.ok) {
+      const data = await res.json();
+      showError(data.message || "No se pudo eliminar la compra");
+      return;
     }
+    
+    showSuccess("Compra eliminada correctamente.");
+    listPurchases();
   } catch (err) {
     console.error("Error al eliminar compra:", err);
     showError("Error al eliminar compra");
@@ -522,6 +536,7 @@ const deletePurchase = async (id) => {
 // Buscar compra
 const searchPurchase = () => {
   const term = document.getElementById("searchInput").value.toLowerCase().trim();
+  console.log("Buscando:", term);
   
   if (!term) {
     allPurchases = [...originalPurchases];
@@ -536,6 +551,7 @@ const searchPurchase = () => {
     });
   }
   
+  console.log("Resultados:", allPurchases.length);
   currentPage = 1;
   renderPurchasesTable(currentPage);
 };
@@ -559,17 +575,36 @@ const checkAuth = () => {
 
 // Eventos al cargar el DOM
 document.addEventListener("DOMContentLoaded", () => {
+  console.log("DOM cargado. Verificando autenticación...");
   if (!checkAuth()) return;
   
+  console.log("Cargando datos iniciales...");
   // Cargar datos iniciales
   listPurchases();
   loadProducts();
   loadProviders();
   
   // Configurar eventos de UI
-  document.getElementById("mobileAddButton").onclick = () => openModal('registerModal');
-  document.getElementById("registerButton").onclick = registerPurchase;
-  document.getElementById("searchInput").addEventListener("keyup", searchPurchase);
+  const mobileAddButton = document.getElementById("mobileAddButton");
+  if (mobileAddButton) {
+    mobileAddButton.onclick = () => openModal('registerModal');
+  } else {
+    console.error("No se encontró el elemento mobileAddButton");
+  }
+  
+  const registerButton = document.getElementById("registerButton");
+  if (registerButton) {
+    registerButton.onclick = registerPurchase;
+  } else {
+    console.error("No se encontró el elemento registerButton");
+  }
+  
+  const searchInput = document.getElementById("searchInput");
+  if (searchInput) {
+    searchInput.addEventListener("keyup", searchPurchase);
+  } else {
+    console.error("No se encontró el elemento searchInput");
+  }
 
   // Añadir evento de submit para el formulario de edición
   const editForm = document.getElementById("editForm");
@@ -578,6 +613,8 @@ document.addEventListener("DOMContentLoaded", () => {
       event.preventDefault();
       await updatePurchase();
     };
+  } else {
+    console.error("No se encontró el elemento editForm");
   }
 });
 
@@ -587,3 +624,4 @@ window.deletePurchase = deletePurchase;
 window.updatePurchase = updatePurchase;
 window.openModal = openModal;
 window.closeModal = closeModal;
+window.searchPurchase = searchPurchase;

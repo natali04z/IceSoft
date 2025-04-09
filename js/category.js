@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:3001/api/categories";
+const API_URL = "https://backend-icesoft.onrender.com/api/categories";
   
 // Variables globales para categorías y paginación
 let allCategories = [];

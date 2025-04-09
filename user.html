@@ -42,10 +42,13 @@
           <li>
             <a href="#" class="btn-subMenu"><i class="material-icons">attach_money</i><span>VENTAS</span><span class="material-icons arrow">chevron_left</span></a>
             <ul class="sub-menu-options">
-              <li><a href="ventas.html"><i class="material-icons">receipt</i><span>FACTURACIÓN</span></a></li>
-              <li><a href="clientes.html"><i class="material-icons">people</i><span>CLIENTES</span></a></li>
+              <li><a href="sale.html"><i class="material-icons">receipt</i><span>COMPROBANTE DE PAGO</span></a></li>
+              <li><a href="customer.html"><i class="material-icons">people</i><span>CLIENTES</span></a></li>
+              <li><a href="branches.html"><i class="material-icons">receipt</i><span>SUCURSALES</span></a></li>
             </ul>
           </li>
+          <li class="divider-menu-h"></li>
+          <li><a href="config.html"><i class="material-icons">settings</i><span>CONFIGURACIÓN</span></a></li>
         </ul>
       </nav>
       <div class="logout-button">
@@ -57,13 +60,9 @@
   <header class="dashboard-header">
     <button class="open-menu-btn btn-menu"><i class="material-icons">menu</i></button>
     <div class="user-dropdown-container">
-      <div class="user-info" onclick="toggleUserDropdown()">
+      <div class="user-info">
         <i class="material-icons user-icon">account_circle</i>
         <span class="user-name" id="loggedUserName">Usuario</span>
-        <i class="material-icons arrow-icon">expand_more</i>
-      </div>
-      <div class="user-dropdown-menu" id="userDropdownMenu" style="display: none;">
-        <a href="configuracion.html"><i class="material-icons">settings</i> Configuración</a>
       </div>
     </div>
   </header>
@@ -85,7 +84,7 @@
         <div class="card-header card-header-flex">
           <h3>Listado de Usuarios</h3>
           <button type="button" class="add-button" id="mobileAddButton">
-            <i class="material-icons">person_add</i> Añadir
+            <i class="material-icons">add</i> Añadir
           </button>
         </div>
         <div class="card-body">

@@ -1,5 +1,5 @@
 // Endpoints de la API
-const API_PROVIDERS = "http://localhost:3001/api/providers";
+const API_PROVIDERS = "https://backend-icesoft.onrender.com/api/providers";
 
 // Variables globales para proveedores y paginación
 let allProviders = [];

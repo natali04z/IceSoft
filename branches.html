@@ -3,138 +3,179 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ICESOFT</title>
+  <title>Sucursales | ICESOFT</title>
   <link rel="icon" href="assets/icesoft.png" type="image/png">
   <link rel="stylesheet" href="css/style.css">
+  <script src="js/alerts.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.materialdesignicons.com/6.5.95/css/materialdesignicons.min.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body class="dashboard-page">
-
-  <!-- Menú lateral -->
   <section class="navLateral">
     <div class="navLateral-bg btn-menu"></div>
     <div class="navLateral-body">
       <div class="navLateral-body-logo">
         <a href="home.html">
-          <img src="./assets/icesoft.png" class="logo-img" alt="Logo" style="cursor: pointer;">
+          <img src="assets/icesoft.png" class="logo-img" alt="Logo">
         </a>
         <span class="logo-text">ICESOFT</span>
       </div>
-
       <nav>
         <ul class="menu-principal">
+          <li><a href="home.html"><i class="material-icons">dashboard</i><span>DASHBOARD</span></a></li>
+          <li class="divider-menu-h"></li>
+          <li><a href="user.html"><i class="material-icons">person</i><span>USUARIO</span></a></li>
+          <li class="divider-menu-h"></li>
           <li>
-            <a href="home.html" data-title="Dashboard">
-              <i class="material-icons">dashboard</i>
-              <span>DASHBOARD</span>
-            </a>
-          </li>
-
-          <li class="divider-menu-h" id="menuUsuariosDivider"></li>
-
-          <li id="menuUsuarios">
-            <a href="user.html" data-title="Usuario">
-              <i class="material-icons">person</i>
-              <span>USUARIO</span>
-            </a>
-          </li>
-
-          <li class="divider-menu-h" id="menuComprasDivider"></li>
-
-          <li id="menuCompras">
-            <a href="#" class="btn-subMenu" data-title="Compras">
-              <i class="material-icons">work</i>
-              <span>COMPRAS</span>
-              <span class="material-icons arrow">chevron_left</span>
-            </a>
+            <a href="#" class="btn-subMenu"><i class="material-icons">work</i><span>COMPRAS</span><span class="material-icons arrow">chevron_left</span></a>
             <ul class="sub-menu-options">
-              <li>
-                <a href="category.html" data-title="Categorías">
-                  <i class="material-icons">label</i>
-                  <span>CATEGORÍAS</span>
-                </a>
-              </li>
-              <li>
-                <a href="products.html" data-title="Productos">
-                  <i class="material-icons">local_offer</i>
-                  <span>PRODUCTOS</span>
-                </a>
-              </li>
-              <li>
-                <a href="providers.html" data-title="Proveedores">
-                  <i class="material-icons">local_shipping</i>
-                  <span>PROVEEDORES</span>
-                </a>
-              </li>
-              <li>
-                <a href="shopping.html" data-title="Compras">
-                  <i class="material-icons">shopping_cart</i>
-                  <span>COMPRAS</span>
-                </a>
-              </li>
+                <li><a href="category.html"><i class="material-icons">label</i><span>CATEGORÍAS</span></a></li>
+                <li><a href="products.html"><i class="material-icons">local_offer</i><span>PRODUCTOS</span></a></li>
+                <li><a href="providers.html"><i class="material-icons">local_shipping</i><span>PROVEEDORES</span></a></li>
+                <li><a href="purchases.html"><i class="material-icons">shopping_cart</i><span>COMPRAS</span></a></li>
             </ul>
           </li>
-
-          <li class="divider-menu-h" id="menuVentasDivider"></li>
-
-          <li id="menuVentas">
-            <a href="#" class="btn-subMenu" data-title="Ventas">
-              <i class="material-icons">attach_money</i>
-              <span>VENTAS</span>
-              <span class="material-icons arrow">chevron_left</span>
-            </a>
+          <li class="divider-menu-h"></li>
+          <li>
+            <a href="#" class="btn-subMenu"><i class="material-icons">attach_money</i><span>VENTAS</span><span class="material-icons arrow">chevron_left</span></a>
             <ul class="sub-menu-options">
-              <li>
-                <a href="sale.html" data-title="Comprobante de pago ">
-                  <i class="material-icons">receipt</i>
-                  <span>  COMPROBANTE DE PAGO</span>
-                </a>
-              </li>
-              <li>
-                <a href="customer.html" data-title="Clientes">
-                  <i class="material-icons">people</i>
-                  <span>CLIENTES</span>
-                </a>
-              </li>
-              <li>
-                <a href="branches.html" data-title="sucursales">
-                  <i class="material-icons">receipt</i>
-                  <span>  SUCURSALES</span>
-                </a>
-              </li>
+              <li><a href="sale.html"><i class="material-icons">receipt</i><span>COMPROBANTE DE PAGO</span></a></li>
+              <li><a href="customer.html"><i class="material-icons">people</i><span>CLIENTES</span></a></li>
+              <li><a href="branches.html"><i class="material-icons">receipt</i><span>SUCURSALES</span></a></li>
             </ul>
           </li>
+          <li class="divider-menu-h"></li>
+          <li><a href="config.html"><i class="material-icons">settings</i><span>CONFIGURACIÓN</span></a></li>
         </ul>
       </nav>
-
-      <!-- Botón cerrar sesión -->
       <div class="logout-button">
-        <a href="#" onclick="logout()" data-title="Cerrar sesión">
-          <i class="material-icons">logout</i>
-        </a>
+        <a href="#" onclick="logout()"><i class="material-icons">logout</i></a>
       </div>
     </div>
   </section>
 
-<!-- Encabezado -->
-<header class="dashboard-header">
-  <button class="open-menu-btn btn-menu">
-    <i class="material-icons">menu</i>
-  </button>
-
-  <div class="user-dropdown-container">
-    <div class="user-info" onclick="toggleUserDropdown()">
-      <i class="material-icons user-icon">account_circle</i>
-      <span class="user-name" id="loggedUserName">Usuario</span>
-      <i class="material-icons arrow-icon">expand_more</i>
+  <header class="dashboard-header">
+    <button class="open-menu-btn btn-menu"><i class="material-icons">menu</i></button>
+    <div class="user-dropdown-container">
+      <div class="user-info">
+        <i class="material-icons user-icon">account_circle</i>
+        <span class="user-name" id="loggedUserName">Usuario</span>
+      </div>
     </div>
+  </header>
 
-    <div class="user-dropdown-menu" id="userDropdownMenu" style="display: none;">
-      <a href="configuracion.html">
-        <i class="material-icons">settings</i> Configuración
-      </a>
+  <main class="main-content">
+    <div class="container">
+      <h2 class="title">Gestión de Sucursales</h2>
+  
+      <!-- Contenedor de Búsqueda -->
+      <div class="search-container">
+        <div class="search-box">
+          <input type="text" id="searchInput" placeholder="Buscar sucursal...">
+          <button onclick="searchBranch()"><i class="material-icons">search</i></button>
+        </div>
+      </div>
+  
+      <!-- Tabla de Sucursales -->
+      <section class="table-card">
+        <div class="card-header card-header-flex">
+          <h3>Listado de Sucursales</h3>
+          <button type="button" class="add-button" id="mobileAddButton">
+            <i class="material-icons">add</i> Añadir
+          </button>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="users-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nombre</th>
+                  <th>Dirección</th>
+                  <th>Teléfono</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="branchTableBody">
+                
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination">
+            <div class="page-info">Mostrando <span style="font-weight: 500;">10 filas</span></div>
+            <div class="page-info">1-4 de 4</div>
+            <div class="page-numbers">
+              <button disabled>Anterior</button>
+              <button class="active">1</button>
+              <button disabled>Siguiente</button>
+            </div>
+          </div>
+        </div>
+      </section>
+  
+      <!-- Modal de Registro de Sucursal -->
+      <div id="registerModal" class="modal">
+        <div class="modal-content">
+          <span class="close" onclick="closeModal('registerModal')">&times;</span>
+          <section class="form-card">
+            <div class="card-header">
+              <h3 id="formTitle">Registrar Sucursal</h3>
+            </div>
+            <div class="card-body">
+              <form id="branchForm">
+                <div class="form-field">
+                  <input type="text" class="field-element" id="name" placeholder="Nombre">
+                </div>
+                <div class="form-field">
+                  <input type="text" class="field-element" id="address" placeholder="Dirección">
+                </div>
+                <div class="form-field">
+                  <input type="text" class="field-element" id="phone" placeholder="Teléfono">
+                </div>
+                <div class="controls-container">
+                  <button type="button" class="action-button" id="registerButton">Registrar</button>
+                </div>
+              </form>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <!-- Modal de Edición de Sucursal -->
+      <div id="editModal" class="modal">
+        <div class="modal-content">
+          <span class="close" onclick="closeModal('editModal')">&times;</span>
+          <section class="form-card">
+            <div class="card-header">
+              <h3 id="editFormTitle">Editar Sucursal</h3>
+            </div>
+            <div class="card-body">
+              <form id="editForm">
+                <input type="hidden" id="editId">
+                <div class="form-field">
+                  <input type="text" class="field-element" id="editName" placeholder="Nombre">
+                </div>
+                <div class="form-field">
+                  <input type="text" class="field-element" id="editAddress" placeholder="Dirección">
+                </div>
+                <div class="form-field">
+                  <input type="text" class="field-element" id="editPhone" placeholder="Teléfono">
+                </div>
+                <div class="controls-container">
+                  <button type="button" class="action-button" id="updateButton" onclick="updateBranch()">Actualizar</button>
+                </div>
+              </form>
+            </div>
+          </section>
+        </div>
+      </div>
     </div>
-  </div>
-</header> 
+  </main>  
+ 
+  <script src="js/menu.js"></script>
+  <script src="js/branches.js"></script>
+</body>
+</html>

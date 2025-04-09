@@ -1,6 +1,6 @@
 // Endpoints de la API
-const API_PRODUCTS = "http://localhost:3001/api/products";
-const API_CATEGORIES = "http://localhost:3001/api/categories";
+const API_PRODUCTS = "https://backend-icesoft.onrender.com/api/products";
+const API_CATEGORIES = "https://backend-icesoft.onrender.com/api/categories";
 
 // Variables globales para productos y paginación
 let allProducts = [];
