@@ -1,691 +1,484 @@
-// Endpoints de la API
 const API_URL = "https://backend-icesoft.onrender.com/api/branches";
-
-// Variables globales para sucursales y paginación
-let allBranches = [];
-let originalBranches = [];
+  
+// Variables globales
+let branches = [];
 let currentPage = 1;
 const rowsPerPage = 10;
 
-// Función para abrir un modal
-function openModal(modalId) {
-  document.getElementById(modalId).style.display = "flex";
+// Función para abrir el modal de registro
+function openRegisterModal() {
+  const modal = document.getElementById('registerModal');
+  modal.style.display = 'flex'; // Usando flex para centrar el modal
+  document.getElementById('formTitle').textContent = 'Registrar Sucursal';
+  document.getElementById('branchForm').reset();
 }
 
-// Función para cerrar un modal
+// Función para cerrar cualquier modal
 function closeModal(modalId) {
-  document.getElementById(modalId).style.display = "none";
+  document.getElementById(modalId).style.display = 'none';
 }
 
-// Cerrar el modal si el usuario hace clic fuera del contenido
-window.onclick = function(event) {
-  const registerModal = document.getElementById("registerModal");
-  const editModal = document.getElementById("editModal");
+// Función para registrar una nueva sucursal
+function registerBranch() {
+  // Obtener valores del formulario
+  const name = document.getElementById('name').value;
+  const address = document.getElementById('address').value;
+  const phone = document.getElementById('phone').value;
+  const location = document.getElementById('location') ? document.getElementById('location').value : '';
   
-  if (event.target === registerModal) {
-    registerModal.style.display = "none";
-  }
-  if (event.target === editModal) {
-    editModal.style.display = "none";
-  }
-};
-
-// Renderizar tabla de sucursales
-const renderBranchesTable = (page = 1) => {
-  const tbody = document.getElementById("branchTableBody");
-  if (!tbody) {
-    console.error("Elemento #branchTableBody no encontrado");
+  // Validar campos
+  if (!name || !address || !phone) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'Todos los campos son obligatorios'
+    });
     return;
   }
   
-  tbody.innerHTML = "";
-
-  if (!allBranches || allBranches.length === 0) {
-    console.log("No hay sucursales para mostrar");
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="5" class="text-center">No hay sucursales registradas</td>
-      </tr>
-    `;
-    return;
-  }
-
-  const start = (page - 1) * rowsPerPage;
-  const end = start + rowsPerPage;
-  const branchesToShow = allBranches.slice(start, end);
-
-  branchesToShow.forEach(branch => {
-    // Usar console.log para depurar la estructura de cada sucursal
-    console.log("Datos de sucursal:", branch);
-    
-    // Añadir verificación para propiedades faltantes con la estructura correcta
-    const id = branch._id || "N/A";
-    const branchId = branch.idBranch || "N/A";
-    const name = branch.name || "Sin nombre";
-    const address = branch.address || "Sin dirección";
-    const phone = branch.phone || "Sin teléfono";
-    
-    tbody.innerHTML += `
-      <tr>
-        <td>${branchId}</td>
-        <td>${name}</td>
-        <td>${address}</td>
-        <td>${phone}</td>
-        <td class="actions-column">
-          <button onclick="fillEditForm('${id}')" class="icon-button edit-button" title="Editar">
-            <i class="material-icons">edit</i>
-          </button>
-          <button onclick="deleteBranch('${id}')" class="icon-button delete-button" title="Eliminar">
-            <i class="material-icons">delete</i>
-          </button>
-        </td>
-      </tr>
-    `;
-  });
-
-  renderPaginationControls();
-};
-
-// Renderizar controles de paginación
-const renderPaginationControls = () => {
-  const totalPages = Math.ceil(allBranches.length / rowsPerPage);
-  const container = document.querySelector(".page-numbers");
-  const info = document.querySelector(".pagination .page-info:nth-child(2)");
+  // Generar ID único (usamos max id + 1 para evitar duplicados)
+  const newId = branches.length > 0 ? Math.max(...branches.map(b => b.id)) + 1 : 1;
   
-  if (!container || !info) {
-    console.error("Elementos de paginación no encontrados");
-    return;
-  }
-
-  container.innerHTML = "";
-
-  // Botón anterior
-  const prevBtn = document.createElement("button");
-  prevBtn.classList.add("page-nav");
-  prevBtn.innerText = "←";
-  prevBtn.disabled = currentPage === 1;
-  prevBtn.onclick = () => changePage(currentPage - 1);
-  container.appendChild(prevBtn);
-
-  // Números de página
-  for (let i = 1; i <= totalPages; i++) {
-    const btn = document.createElement("div");
-    btn.classList.add("page-number");
-    if (i === currentPage) btn.classList.add("active");
-    btn.innerText = i;
-    btn.onclick = () => changePage(i);
-    container.appendChild(btn);
-  }
-
-  // Botón siguiente
-  const nextBtn = document.createElement("button");
-  nextBtn.classList.add("page-nav");
-  nextBtn.innerText = "→";
-  nextBtn.disabled = currentPage === totalPages || totalPages === 0;
-  nextBtn.onclick = () => changePage(currentPage + 1);
-  container.appendChild(nextBtn);
-
-  const startItem = allBranches.length === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1;
-  const endItem = Math.min(startItem + rowsPerPage - 1, allBranches.length);
-  info.innerHTML = `${startItem}-${endItem} de ${allBranches.length}`;
-};
-
-// Cambiar de página
-const changePage = (page) => {
-  currentPage = page;
-  renderBranchesTable(currentPage);
-};
-
-// Función para mostrar confirmación
-const showConfirm = ({ title, text, confirmText = "Aceptar", cancelText = "Cancelar" }) => {
-  return Swal.fire({
-    title,
-    text,
-    icon: "question",
-    showCancelButton: true,
-    confirmButtonText: confirmText,
-    cancelButtonText: cancelText
-  }).then((result) => result.isConfirmed);
-};
-
-// Función para mostrar mensajes de éxito
-const showSuccess = (message) => {
+  // Crear objeto de nueva sucursal
+  const newBranch = {
+    id: newId,
+    name: name,
+    address: address,
+    phone: phone,
+    location: location,
+    status: true
+  };
+  
+  // Añadir a la lista de sucursales
+  branches.push(newBranch);
+  
+  // Guardar en localStorage
+  localStorage.setItem('branches', JSON.stringify(branches));
+  
+  // Actualizar la tabla
+  loadBranches();
+  
+  // Cerrar el modal
+  closeModal('registerModal');
+  
+  // Mostrar mensaje de éxito
   Swal.fire({
     icon: 'success',
     title: 'Éxito',
-    text: message,
+    text: 'Sucursal registrada correctamente'
   });
-};
-
-// Función para mostrar errores
-const showError = (message) => {
-  Swal.fire({
-    icon: 'error',
-    title: 'Error',
-    text: message,
-  });
-};
-
-// Función para mostrar validaciones
-const showValidation = (message) => {
-  Swal.fire({
-    icon: 'warning',
-    title: 'Atención',
-    text: message,
-  });
-};
-
-// Validar datos de la sucursal (según el modelo proporcionado)
-function validateBranchData(data, isUpdate = false) {
-  const errors = {};
-
-  // Validar nombre
-  if (!isUpdate || data.name) {
-    if (!data.name || data.name.trim() === "") {
-      errors.name = "El nombre de la sucursal es obligatorio";
-    } else if (data.name.length < 2 || data.name.length > 100) {
-      errors.name = "El nombre debe tener entre 2 y 100 caracteres";
-    }
-  }
-
-  // Validar dirección
-  if (!isUpdate || data.address) {
-    if (!data.address || data.address.trim() === "") {
-      errors.address = "La dirección es obligatoria";
-    } else if (data.address.length < 5 || data.address.length > 200) {
-      errors.address = "La dirección debe tener entre 5 y 200 caracteres";
-    }
-  }
-
-  // Validar teléfono (validación básica)
-  if (!isUpdate || data.phone) {
-    const phoneRegex = /^[+]?[\d\s()-]{10,15}$/;
-    if (!data.phone || !phoneRegex.test(data.phone)) {
-      errors.phone = "El formato del teléfono no es válido";
-    }
-  }
-
-  return { 
-    isValid: Object.keys(errors).length === 0, 
-    errors 
-  };
 }
 
-// Listar sucursales desde el backend
-const listBranches = async () => {
-  try {
-    console.log("Iniciando listBranches()");
+// Función para cargar las sucursales en la tabla
+function loadBranches() {
+  const tableBody = document.getElementById('branchTableBody');
+  tableBody.innerHTML = '';
+  
+  // Si no hay sucursales, mostrar mensaje
+  if (branches.length === 0) {
+    const row = document.createElement('tr');
+    row.innerHTML = '<td colspan="6" class="text-center">No hay sucursales registradas</td>';
+    tableBody.appendChild(row);
+    return;
+  }
+  
+  // Calcular índices para paginación
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const endIndex = Math.min(startIndex + rowsPerPage, branches.length);
+  
+  // Mostrar sucursales para la página actual
+  for (let i = startIndex; i < endIndex; i++) {
+    const branch = branches[i];
+    const row = document.createElement('tr');
     
-    const token = localStorage.getItem("token");
-    if (!token) {
-      console.error("Token no encontrado");
-      
-      // Para fines de prueba/desarrollo: cargar datos de ejemplo si no hay token
-      loadSampleBranches();
-      return;
+    // Crear el switch para el estado
+    const statusChecked = branch.status ? 'checked' : '';
+    
+    row.innerHTML = `
+      <td>${branch.id}</td>
+      <td>${branch.name}</td>
+      <td>${branch.address}</td>
+      <td>${branch.phone}</td>
+      <td>
+         <label class="switch">
+            <input type="checkbox" ${statusChecked} onchange="toggleBranchStatus(${branch.id}, this.checked)">
+            <span class="slider round"></span>
+          </label>
+        </td>
+        <td>
+          <div class="action-buttons">
+            <button onclick="openEditModal(${branch.id})" class="icon-button edit-button" title="Editar">
+              <i class="material-icons">edit</i>
+            </button>
+            <button onclick="deleteBranch(${branch.id})" class="icon-button delete-button" title="Eliminar">
+              <i class="material-icons">delete</i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+    
+    tableBody.appendChild(row);
+  }
+  
+  // Actualizar información de paginación
+  updatePagination();
+}
+
+// Función para actualizar la información de paginación
+function updatePagination() {
+  const totalPages = Math.ceil(branches.length / rowsPerPage);
+  const pageInfo = document.querySelector('.pagination .page-info:nth-child(2)');
+  const pageNumbers = document.querySelector('.pagination .page-numbers');
+  
+  // Actualizar texto de información
+  const startIndex = branches.length > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0;
+  const endIndex = Math.min(currentPage * rowsPerPage, branches.length);
+  pageInfo.textContent = `${startIndex}-${endIndex} de ${branches.length}`;
+  
+  // Crear botones de paginación
+  pageNumbers.innerHTML = '';
+  
+  // Botón anterior
+  const prevButton = document.createElement('button');
+  prevButton.className = 'page-btn';
+  prevButton.innerHTML = '<i class="material-icons">chevron_left</i>';
+  prevButton.disabled = currentPage === 1;
+  prevButton.onclick = () => {
+    if (currentPage > 1) {
+      currentPage--;
+      loadBranches();
     }
-    
-    console.log("Enviando solicitud a API:", API_URL);
-    const res = await fetch(API_URL, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
-      }
-    });
-    
-    console.log("Respuesta recibida:", res.status);
-    
-    if (!res.ok) {
-      const errorData = await res.json();
-      console.error("Error en la respuesta:", errorData);
-      showError(errorData.message || "Error al listar sucursales.");
-      
-      // Para fines de prueba/desarrollo: cargar datos de ejemplo si hay error
-      loadSampleBranches();
-      return;
-    }
-    
-    const data = await res.json();
-    console.log("Datos recibidos:", data);
-    
-    // Manejar diferentes estructuras de respuesta
-    if (data && (data.branches || Array.isArray(data))) {
-      originalBranches = data.branches || data;
-      
-      // Verificar si los datos tienen la estructura esperada
-      console.log("Número de sucursales:", originalBranches.length);
-      
-      if (originalBranches.length > 0) {
-        console.log("Ejemplo de sucursal:", originalBranches[0]);
-      }
-      
-      allBranches = [...originalBranches];
+  };
+  pageNumbers.appendChild(prevButton);
+  
+  // Números de página - mostrar máximo 10 páginas
+  const maxPagesToShow = 10;
+  let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+  let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+  
+  // Ajustar el rango si estamos en los extremos
+  if (endPage - startPage + 1 < maxPagesToShow) {
+    startPage = Math.max(1, endPage - maxPagesToShow + 1);
+  }
+  
+  // Añadir primera página y puntos suspensivos si es necesario
+  if (startPage > 1) {
+    const firstPageBtn = document.createElement('button');
+    firstPageBtn.textContent = '1';
+    firstPageBtn.className = 'page-btn';
+    firstPageBtn.onclick = () => {
       currentPage = 1;
-      renderBranchesTable(currentPage);
-    } else {
-      console.error("Formato de datos inesperado:", data);
-      showError("Error: Formato de datos inesperado");
-      
-      // Para fines de prueba/desarrollo: cargar datos de ejemplo si el formato es inesperado
-      loadSampleBranches();
-    }
-  } catch (err) {
-    console.error("Error al listar sucursales:", err);
-    showError("Error al listar sucursales: " + (err.message || "Error desconocido"));
-    
-    // Para fines de prueba/desarrollo: cargar datos de ejemplo si hay excepción
-    loadSampleBranches();
-  }
-};
-
-// Función para cargar datos de ejemplo (para pruebas/desarrollo)
-const loadSampleBranches = () => {
-  console.log("Cargando datos de ejemplo");
-  originalBranches = [
-    {
-      _id: "sample1",
-      idBranch: "61a1234567890123456789ab",
-      name: "Sucursal Central",
-      address: "Ciudad de México, Av. Principal 123",
-      phone: "+52 55 1234 5678"
-    },
-    {
-      _id: "sample2",
-      idBranch: "61b1234567890123456789ab",
-      name: "Sucursal Norte",
-      address: "Monterrey, Blvd. Norte 456",
-      phone: "+52 81 8765 4321"
-    },
-    {
-      _id: "sample3",
-      idBranch: "61c1234567890123456789ab",
-      name: "Sucursal Sur",
-      address: "Cancún, Zona Hotelera 789",
-      phone: "+52 998 123 4567"
-    },
-    {
-      _id: "sample4",
-      idBranch: "61d1234567890123456789ab",
-      name: "Sucursal Este",
-      address: "Veracruz, Puerto 321",
-      phone: "+52 229 987 6543"
-    }
-  ];
-  allBranches = [...originalBranches];
-  currentPage = 1;
-  renderBranchesTable(currentPage);
-};
-
-// Registrar sucursal
-const registerBranch = async () => {
-  const token = localStorage.getItem("token");
-  if (!token) {
-    showError("Token no encontrado. Inicie sesión nuevamente.");
-    return;
-  }
-  
-  // Obtener valores del formulario según la estructura del modelo
-  const name = document.getElementById("name").value.trim();
-  const address = document.getElementById("location").value.trim(); // El campo en HTML es location pero lo enviamos como address
-  const additionalAddress = document.getElementById("address").value.trim();
-  const phone = document.getElementById("phone").value.trim();
-
-  // Combinar direcciones si es necesario
-  const fullAddress = additionalAddress 
-    ? `${address}, ${additionalAddress}`
-    : address;
-
-  const branchData = { 
-    name, 
-    address: fullAddress,
-    phone
-  };
-  
-  // Validar datos
-  const validation = validateBranchData(branchData);
-  if (!validation.isValid) {
-    const errorMessages = Object.values(validation.errors).join("\n");
-    showValidation(errorMessages);
-    return;
-  }
-
-  const confirmed = await showConfirm({
-    title: "¿Confirmas registrar esta sucursal?",
-    text: "Se creará una nueva sucursal con los datos proporcionados.",
-    confirmText: "Registrar",
-    cancelText: "Cancelar"
-  });
-
-  if (!confirmed) {
-    Swal.fire({
-      icon: 'info',
-      title: 'Operación cancelada',
-      text: 'No se ha registrado ninguna sucursal',
-    });
-    closeModal('registerModal');
-    return;
-  }
-
-  try {
-    console.log("Datos a enviar:", branchData);
-    
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify(branchData)
-    });
-    
-    const data = await res.json();
-    console.log("Respuesta al registrar:", data);
-    
-    if (res.status === 201 || res.ok) {
-      showSuccess("Sucursal registrada correctamente.");
-      closeModal('registerModal');
-      document.getElementById("branchForm").reset();
-      listBranches();
-    } else {
-      if (data.errors) {
-        // Mostrar errores específicos de validación del backend
-        const errorMessages = Object.values(data.errors).join("\n");
-        showError(errorMessages);
-      } else {
-        showError(data.message || "Error al registrar sucursal.");
-      }
-    }
-  } catch (err) {
-    console.error("Error al registrar sucursal:", err);
-    showError("Error al registrar sucursal");
-  }
-};
-
-// Llenar formulario de edición
-const fillEditForm = async (id) => {
-  const token = localStorage.getItem("token");
-  const confirmed = await showConfirm({
-    title: "¿Deseas editar esta sucursal?",
-    text: "Vas a modificar la información de esta sucursal.",
-    confirmText: "Editar",
-    cancelText: "Cancelar",
-  });
-
-  if (!confirmed) {
-    Swal.fire({
-      icon: "info",
-      title: "Operación cancelada",
-      text: "No se editará esta sucursal",
-    });
-    return;
-  }
-
-  try {
-    // Para datos de ejemplo
-    if (id.startsWith("sample")) {
-      const branch = originalBranches.find(b => b._id === id);
-      if (branch) {
-        document.getElementById("editId").value = branch._id;
-        document.getElementById("editName").value = branch.name || "";
-        
-        // Dividir la dirección para los campos location y address si es necesario
-        const addressParts = (branch.address || "").split(", ");
-        document.getElementById("editLocation").value = addressParts[0] || "";
-        document.getElementById("editAddress").value = addressParts.length > 1 ? addressParts.slice(1).join(", ") : "";
-        
-        document.getElementById("editPhone").value = branch.phone || "";
-        openModal("editModal");
-      }
-      return;
-    }
-    
-    const res = await fetch(`${API_URL}/${id}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!res.ok) {
-      const data = await res.json();
-      showError(data.message || "Error al cargar los datos de la sucursal.");
-      return;
-    }
-
-    const branch = await res.json();
-    document.getElementById("editId").value = branch._id;
-    document.getElementById("editName").value = branch.name || "";
-    
-    // Dividir la dirección para los campos location y address si es necesario
-    const addressParts = (branch.address || "").split(", ");
-    document.getElementById("editLocation").value = addressParts[0] || "";
-    document.getElementById("editAddress").value = addressParts.length > 1 ? addressParts.slice(1).join(", ") : "";
-    
-    document.getElementById("editPhone").value = branch.phone || "";
-
-    openModal("editModal");
-  } catch (err) {
-    console.error("Error al cargar la sucursal:", err);
-    showError(`Ocurrió un error: ${err.message || err}`);
-  }
-};
-
-// Actualizar sucursal
-const updateBranch = async () => {
-  const token = localStorage.getItem("token");
-  if (!token) {
-    showError("Token no encontrado. Inicie sesión nuevamente.");
-    return;
-  }
-
-  const id = document.getElementById("editId").value;
-  const name = document.getElementById("editName").value.trim();
-  const location = document.getElementById("editLocation").value.trim();
-  const additionalAddress = document.getElementById("editAddress").value.trim();
-  const phone = document.getElementById("editPhone").value.trim();
-
-  // Combinar address y location si es necesario
-  const fullAddress = additionalAddress 
-    ? `${location}, ${additionalAddress}`
-    : location;
-
-  const branchData = { 
-    name, 
-    address: fullAddress, 
-    phone
-  };
-  
-  // Validar datos
-  const validation = validateBranchData(branchData, true);
-  if (!validation.isValid) {
-    const errorMessages = Object.values(validation.errors).join("\n");
-    showValidation(errorMessages);
-    return;
-  }
-
-  const confirmed = await showConfirm({
-    title: "¿Confirmas actualizar esta sucursal?",
-    text: "Se guardarán los cambios realizados.",
-    confirmText: "Actualizar",
-    cancelText: "Cancelar",
-  });
-
-  if (!confirmed) return;
-
-  try {
-    // Para datos de ejemplo
-    if (id.startsWith("sample")) {
-      const index = originalBranches.findIndex(b => b._id === id);
-      if (index !== -1) {
-        originalBranches[index] = {
-          ...originalBranches[index],
-          name,
-          address: fullAddress,
-          phone
-        };
-        allBranches = [...originalBranches];
-        renderBranchesTable(currentPage);
-        showSuccess("Sucursal actualizada correctamente.");
-        closeModal("editModal");
-        document.getElementById("editForm").reset();
-      }
-      return;
-    }
-    
-    const res = await fetch(`${API_URL}/${id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(branchData)
-    });
-
-    const data = await res.json();
-    if (res.ok) {
-      showSuccess("Sucursal actualizada correctamente.");
-      closeModal("editModal");
-      document.getElementById("editForm").reset();
-      listBranches();
-    } else {
-      if (data.errors) {
-        // Mostrar errores específicos de validación del backend
-        const errorMessages = Object.values(data.errors).join("\n");
-        showError(errorMessages);
-      } else {
-        showError(data.message || "Error al actualizar la sucursal.");
-      }
-    }
-  } catch (err) {
-    console.error("Error al actualizar sucursal:", err);
-    showError(`Ocurrió un error: ${err.message || err}`);
-  }
-};
-
-// Eliminar sucursal
-const deleteBranch = async (id) => {
-  const token = localStorage.getItem("token");
-  const confirmed = await showConfirm({
-    title: "¿Estás seguro de eliminar esta sucursal?",
-    text: "Esta acción no se puede deshacer.",
-    confirmText: "Eliminar",
-    cancelText: "Cancelar"
-  });
-  
-  if (!confirmed) return;
-
-  try {
-    // Para datos de ejemplo
-    if (id.startsWith("sample")) {
-      originalBranches = originalBranches.filter(b => b._id !== id);
-      allBranches = [...originalBranches];
-      renderBranchesTable(currentPage);
-      showSuccess("Sucursal eliminada correctamente.");
-      return;
-    }
-    
-    const res = await fetch(`${API_URL}/${id}`, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
-      }
-    });
-    
-    // Intentamos obtener la respuesta JSON
-    let data;
-    try {
-      data = await res.json();
-    } catch (e) {
-      data = { message: res.ok ? "Sucursal eliminada" : "Error al eliminar" };
-    }
-    
-    if (res.ok) {
-      showSuccess("Sucursal eliminada correctamente.");
-      listBranches();
-    } else {
-      showError(data.message || "No se pudo eliminar la sucursal");
-    }
-  } catch (err) {
-    console.error("Error al eliminar sucursal:", err);
-    showError("Error al eliminar sucursal");
-  }
-};
-
-// Buscar sucursal
-const searchBranch = () => {
-  const term = document.getElementById("searchInput").value.toLowerCase().trim();
-  allBranches = term
-    ? originalBranches.filter(b => 
-        (b.name && b.name.toLowerCase().includes(term)) || 
-        (b.address && b.address.toLowerCase().includes(term)) ||
-        (b.phone && b.phone.toLowerCase().includes(term)) ||
-        (b.idBranch && b.idBranch.toString().includes(term))
-      )
-    : [...originalBranches];
-  currentPage = 1;
-  renderBranchesTable(currentPage);
-};
-
-// Eventos al cargar el DOM
-document.addEventListener("DOMContentLoaded", () => {
-  console.log("DOM cargado, inicializando...");
-  
-  // Cargar sucursales
-  listBranches();
-  
-  // Configurar botones y eventos
-  const mobileAddButton = document.getElementById("mobileAddButton");
-  if (mobileAddButton) {
-    mobileAddButton.onclick = () => openModal('registerModal');
-  } else {
-    console.error("Elemento #mobileAddButton no encontrado");
-  }
-  
-  const registerButton = document.getElementById("registerButton");
-  if (registerButton) {
-    registerButton.onclick = registerBranch;
-  } else {
-    console.error("Elemento #registerButton no encontrado");
-  }
-  
-  const searchInput = document.getElementById("searchInput");
-  if (searchInput) {
-    searchInput.addEventListener("keyup", searchBranch);
-  } else {
-    console.error("Elemento #searchInput no encontrado");
-  }
-
-  // Añadir evento de actualización para el botón en el modal de edición
-  const updateButton = document.getElementById("updateButton");
-  if (updateButton) {
-    updateButton.onclick = updateBranch;
-  } else {
-    console.error("Elemento #updateButton no encontrado");
-  }
-
-  // Añadir evento de submit para el formulario de edición
-  const editForm = document.getElementById("editForm");
-  if (editForm) {
-    editForm.onsubmit = async (event) => {
-      event.preventDefault();
-      await updateBranch();
+      loadBranches();
     };
-  } else {
-    console.error("Elemento #editForm no encontrado");
+    pageNumbers.appendChild(firstPageBtn);
+    
+    if (startPage > 2) {
+      const ellipsis = document.createElement('span');
+      ellipsis.textContent = '...';
+      ellipsis.className = 'ellipsis';
+      pageNumbers.appendChild(ellipsis);
+    }
   }
   
-  // Verificar si existe el contenedor de la tabla
-  const tableBody = document.getElementById("branchTableBody");
-  if (!tableBody) {
-    console.error("Elemento #branchTableBody no encontrado. Asegúrese de que el HTML contenga este elemento.");
+  // Números de página
+  for (let i = startPage; i <= endPage; i++) {
+    const pageButton = document.createElement('button');
+    pageButton.textContent = i;
+    pageButton.className = 'page-btn';
+    if (i === currentPage) {
+      pageButton.classList.add('active');
+    }
+    pageButton.onclick = () => {
+      currentPage = i;
+      loadBranches();
+    };
+    pageNumbers.appendChild(pageButton);
+  }
+  
+  // Añadir última página y puntos suspensivos si es necesario
+  if (endPage < totalPages) {
+    if (endPage < totalPages - 1) {
+      const ellipsis = document.createElement('span');
+      ellipsis.textContent = '...';
+      ellipsis.className = 'ellipsis';
+      pageNumbers.appendChild(ellipsis);
+    }
+    
+    const lastPageBtn = document.createElement('button');
+    lastPageBtn.textContent = totalPages;
+    lastPageBtn.className = 'page-btn';
+    lastPageBtn.onclick = () => {
+      currentPage = totalPages;
+      loadBranches();
+    };
+    pageNumbers.appendChild(lastPageBtn);
+  }
+  
+  // Botón siguiente
+  const nextButton = document.createElement('button');
+  nextButton.className = 'page-btn';
+  nextButton.innerHTML = '<i class="material-icons">chevron_right</i>';
+  nextButton.disabled = currentPage === totalPages || totalPages === 0;
+  nextButton.onclick = () => {
+    if (currentPage < totalPages) {
+      currentPage++;
+      loadBranches();
+    }
+  };
+  pageNumbers.appendChild(nextButton);
+}
+
+// Función para abrir el modal de edición
+function openEditModal(id) {
+  const branch = branches.find(b => b.id === id);
+  if (!branch) return;
+  
+  document.getElementById('editId').value = branch.id;
+  document.getElementById('editName').value = branch.name;
+  document.getElementById('editAddress').value = branch.address;
+  document.getElementById('editPhone').value = branch.phone;
+  document.getElementById('editStatus').checked = branch.status;
+  
+  const modal = document.getElementById('editModal');
+  modal.style.display = 'flex'; // Usando flex para centrar el modal
+}
+
+// Función para actualizar una sucursal
+function updateBranch() {
+  const id = parseInt(document.getElementById('editId').value);
+  const name = document.getElementById('editName').value;
+  const address = document.getElementById('editAddress').value;
+  const phone = document.getElementById('editPhone').value;
+  const status = document.getElementById('editStatus').checked;
+  
+  // Validar campos
+  if (!name || !address || !phone) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'Todos los campos son obligatorios'
+    });
+    return;
+  }
+  
+  // Buscar y actualizar la sucursal
+  const index = branches.findIndex(b => b.id === id);
+  if (index !== -1) {
+    branches[index] = {
+      ...branches[index],
+      name,
+      address,
+      phone,
+      status
+    };
+    
+    // Guardar en localStorage
+    localStorage.setItem('branches', JSON.stringify(branches));
+    
+    // Actualizar la tabla
+    loadBranches();
+    
+    // Cerrar el modal
+    closeModal('editModal');
+    
+    // Mostrar mensaje de éxito
+    Swal.fire({
+      icon: 'success',
+      title: 'Éxito',
+      text: 'Sucursal actualizada correctamente'
+    });
+  }
+}
+
+// Función para eliminar una sucursal
+function deleteBranch(id) {
+  Swal.fire({
+    title: '¿Está seguro?',
+    text: 'Esta acción no se puede deshacer',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#3085d6',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'Sí, eliminar',
+    cancelButtonText: 'Cancelar'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      // Eliminar la sucursal
+      branches = branches.filter(b => b.id !== id);
+      
+      // Guardar en localStorage
+      localStorage.setItem('branches', JSON.stringify(branches));
+      
+      // Si la página actual ya no tiene elementos, ir a la página anterior
+      const totalPages = Math.ceil(branches.length / rowsPerPage);
+      if (currentPage > totalPages && currentPage > 1) {
+        currentPage = totalPages || 1;
+      }
+      
+      // Actualizar la tabla
+      loadBranches();
+      
+      // Mostrar mensaje de éxito
+      Swal.fire(
+        'Eliminada',
+        'La sucursal ha sido eliminada',
+        'success'
+      );
+    }
+  });
+}
+
+// Función para buscar sucursales
+function searchBranch() {
+  const searchValue = document.getElementById('searchInput').value.toLowerCase();
+  
+  // Si el campo está vacío, mostrar todas las sucursales
+  if (!searchValue.trim()) {
+    loadBranches();
+    return;
+  }
+  
+  // Filtrar sucursales que coincidan con la búsqueda
+  const filteredBranches = branches.filter(branch => 
+    branch.name.toLowerCase().includes(searchValue) || 
+    branch.address.toLowerCase().includes(searchValue) || 
+    branch.phone.toLowerCase().includes(searchValue)
+  );
+  
+  // Mostrar resultados filtrados
+  const tableBody = document.getElementById('branchTableBody');
+  tableBody.innerHTML = '';
+  
+  if (filteredBranches.length === 0) {
+    const row = document.createElement('tr');
+    row.innerHTML = '<td colspan="6" class="text-center">No se encontraron resultados</td>';
+    tableBody.appendChild(row);
+    return;
+  }
+  
+  filteredBranches.forEach(branch => {
+    const row = document.createElement('tr');
+    // Asegurarse de incluir el estado en los resultados de búsqueda
+    const statusChecked = branch.status ? 'checked' : '';
+    
+    row.innerHTML = `
+      <td>${branch.id}</td>
+      <td>${branch.name}</td>
+      <td>${branch.address}</td>
+      <td>${branch.phone}</td>
+      <td>
+        <label class="switch">
+          <input type="checkbox" ${statusChecked} onchange="toggleBranchStatus(${branch.id}, this.checked)">
+          <span class="slider round"></span>
+        </label>
+      </td>
+      <td>
+        <div class="action-buttons">
+          <button onclick="openEditModal(${branch.id})" class="icon-button edit-button" title="Editar">
+            <i class="material-icons">edit</i>
+          </button>
+          <button onclick="deleteBranch(${branch.id})" class="icon-button delete-button" title="Eliminar">
+            <i class="material-icons">delete</i>
+          </button>
+        </div>
+      </td>
+    `;
+    tableBody.appendChild(row);
+  });
+}
+
+// Función para cambiar el estado de una sucursal
+function toggleBranchStatus(id, status) {
+  const index = branches.findIndex(b => b.id === id);
+  if (index !== -1) {
+    branches[index].status = status;
+    
+    // Guardar en localStorage
+    localStorage.setItem('branches', JSON.stringify(branches));
+    
+    // Opcional: Mostrar notificación
+    Swal.fire({
+      icon: 'success',
+      title: 'Estado actualizado',
+      text: `La sucursal ha sido ${status ? 'activada' : 'desactivada'}`,
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 3000
+    });
+  }
+}
+
+// Inicializar la página
+document.addEventListener('DOMContentLoaded', function() {
+  // Intentar cargar sucursales desde localStorage
+  const savedBranches = localStorage.getItem('branches');
+  
+  if (savedBranches) {
+    // Si hay datos guardados, usarlos
+    branches = JSON.parse(savedBranches);
+  } else {
+    // Si no hay datos guardados, inicializar como un arreglo vacío
+    branches = [];
+    
+    // Guardar en localStorage
+    localStorage.setItem('branches', JSON.stringify(branches));
+  }
+  
+  // Cargar la tabla inicial
+  loadBranches();
+  
+  // Añadir event listeners
+  if (document.getElementById('mobileAddButton')) {
+    document.getElementById('mobileAddButton').addEventListener('click', openRegisterModal);
+  }
+  
+  // Botón para agregar sucursal (versión desktop)
+  if (document.getElementById('addButton')) {
+    document.getElementById('addButton').addEventListener('click', openRegisterModal);
+  }
+  
+  // Botón para registrar una nueva sucursal
+  if (document.getElementById('registerButton')) {
+    document.getElementById('registerButton').addEventListener('click', registerBranch);
+  }
+  
+  // Botón para actualizar una sucursal existente
+  if (document.getElementById('updateButton')) {
+    document.getElementById('updateButton').addEventListener('click', updateBranch);
+  }
+  
+  // Event listener para buscar con Enter
+  if (document.getElementById('searchInput')) {
+    document.getElementById('searchInput').addEventListener('keyup', function(event) {
+      if (event.key === 'Enter') {
+        searchBranch();
+      }
+    });
+  }
+  
+  // Botón de búsqueda
+  if (document.getElementById('searchButton')) {
+    document.getElementById('searchButton').addEventListener('click', searchBranch);
   }
 });
 
-// Hacer funciones globales si es necesario
-window.fillEditForm = fillEditForm;
-window.deleteBranch = deleteBranch;
-window.openModal = openModal;
-window.closeModal = closeModal;
+// Función para cerrar sesión
+function logout() {
+  Swal.fire({
+    title: '¿Está seguro?',
+    text: '¿Desea cerrar sesión?',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#3085d6',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'Sí, cerrar sesión',
+    cancelButtonText: 'Cancelar'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      // Aquí iría tu código para cerrar sesión
+      window.location.href = 'index.html';
+    }
+  });
+}
