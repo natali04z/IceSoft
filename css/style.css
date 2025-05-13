@@ -876,7 +876,7 @@ body.menu-collapsed .main-content {
 }
 
 input:checked + .slider {
-    background-color: rgb(0, 231, 31);
+    background-color: rgb(62, 175, 77);
 }
 
 input:checked + .slider:before {
@@ -1012,8 +1012,7 @@ input:checked + .slider:before {
     margin-top: 4px;
 }
 
-<<<<<<< Updated upstream
-=======
+
 .button-group {
     display: flex;
     gap: 10px;
@@ -1970,4 +1969,3 @@ input[type="checkbox"] {
     grid-template-columns: 1fr 1fr;
   }
 }
->>>>>>> Stashed changes
