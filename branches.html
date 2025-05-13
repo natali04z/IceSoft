@@ -96,22 +96,21 @@
                   <th>Nombre</th>
                   <th>Dirección</th>
                   <th>Teléfono</th>
+                  <th>Estado</th>
                   <th>Acciones</th>
                 </tr>
               </thead>
               <tbody id="branchTableBody">
-                
+                <!-- Aquí se cargarán dinámicamente las sucursales -->
               </tbody>
             </table>
           </div>
           <div class="pagination">
             <div class="page-info">Mostrando <span style="font-weight: 500;">10 filas</span></div>
-            <div class="page-info">1-4 de 4</div>
-            <div class="page-numbers">
-              <button disabled>Anterior</button>
-              <button class="active">1</button>
-              <button disabled>Siguiente</button>
-            </div>
+            <div class="page-info">1-10 de 0</div>
+            <div class="page-numbers"></div>
+          </div>
+              <!-- Aquí se cargarán dinámicamente los botones de paginación -->
           </div>
         </div>
       </section>
@@ -126,6 +125,10 @@
             </div>
             <div class="card-body">
               <form id="branchForm">
+                
+                <div class="form-field">
+                  <input type="text" class="field-element" id="editLocation" placeholder="Ubicación">
+                </div>
                 <div class="form-field">
                   <input type="text" class="field-element" id="name" placeholder="Nombre">
                 </div>
@@ -144,37 +147,39 @@
         </div>
       </div>
 
-      <!-- Modal de Edición de Sucursal -->
-      <div id="editModal" class="modal">
-        <div class="modal-content">
-          <span class="close" onclick="closeModal('editModal')">&times;</span>
-          <section class="form-card">
-            <div class="card-header">
-              <h3 id="editFormTitle">Editar Sucursal</h3>
-            </div>
-            <div class="card-body">
-              <form id="editForm">
-                <input type="hidden" id="editId">
-                <div class="form-field">
-                  <input type="text" class="field-element" id="editName" placeholder="Nombre">
-                </div>
-                <div class="form-field">
-                  <input type="text" class="field-element" id="editAddress" placeholder="Dirección">
-                </div>
-                <div class="form-field">
-                  <input type="text" class="field-element" id="editPhone" placeholder="Teléfono">
-                </div>
-                <div class="controls-container">
-                  <button type="button" class="action-button" id="updateButton" onclick="updateBranch()">Actualizar</button>
-                </div>
-              </form>
-            </div>
-          </section>
-        </div>
+    
+      <!-- Corrección para el modal de edición de sucursal -->
+<!-- Reemplaza el actual modal de edición con este -->
+
+<div id="editModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal('editModal')">&times;</span>
+    <section class="form-card">
+      <div class="card-header">
+        <h3 id="editFormTitle">Editar Sucursal</h3>
       </div>
-    </div>
+      <div class="card-body">
+        <form id="editForm">
+          <input type="hidden" id="editId">
+          <div class="form-field">
+            <input type="text" class="field-element" id="editName" placeholder="Nombre">
+          </div>
+          <div class="form-field">
+            <input type="text" class="field-element" id="editAddress" placeholder="Dirección">
+          </div>
+          <div class="form-field">
+            <input type="text" class="field-element" id="editPhone" placeholder="Teléfono">
+          </div>
+          <div class="controls-container">
+            <button type="button" class="action-button" id="updateButton" onclick="updateBranch()">Actualizar</button>
+          </div>
+        </form>
+      </div>
+    </section>
+  </div>
+</div>
   </main>  
- 
+  
   <script src="js/menu.js"></script>
   <script src="js/branches.js"></script>
 </body>

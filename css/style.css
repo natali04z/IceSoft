@@ -552,6 +552,7 @@ body.menu-collapsed .main-content {
 }
 
 /* ====================== MODALES ====================== */
+/* Mejoras para centrar el modal */
 .modal {
     display: none;
     position: fixed;
@@ -561,41 +562,57 @@ body.menu-collapsed .main-content {
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
+    
+    /* Estas propiedades son clave para centrar el modal */
+    display: none; /* Se cambiará a flex cuando esté visible */
     justify-content: center;
     align-items: center;
-}
-
-/* Contenedor del modal */
-.modal-content {
+  }
+  
+  /* Mostrar el modal con flex para centrarlo */
+  .modal[style*="display: block"] {
+    display: flex !important;
+  }
+  
+  /* Ajustes al contenido del modal */
+  .modal-content {
     background-color: white;
     padding: 20px;
     border-radius: 10px;
     width: 400px;
-    text-align: center;
+    max-width: 90%;
     position: relative;
     box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.3);
-    animation: fadeIn 0.3s ease-in-out;
-}
-
-/* Botón de cerrar */
-.close {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    font-size: 25px;
-    cursor: pointer;
-    color: #555;
-}
-
-.close:hover {
-    color: #000;
-}
+    
+    /* Estas propiedades eliminan cualquier margen automático que pueda interferir */
+    margin: 0;
+    transform: none;
+    top: auto;
+    left: auto;
+  }
+  
+  /* Mejora el título del modal */
+  .form-card .card-header h3 {
+    text-align: center;
+    margin: 0;
+    padding: 10px 0;
+    font-weight: 500;
+  }
+  
+  /* Botón de registrar centrado */
+  .controls-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+  }
 
 /* Animación de aparición del modal */
 @keyframes fadeIn {
     from { opacity: 0; transform: scale(0.95); }
     to { opacity: 1; transform: scale(1); }
 }
+
+
 
 /* ====================== FORMULARIOS ====================== */
 .form-field {
@@ -715,7 +732,7 @@ body.menu-collapsed .main-content {
 
 .delete-button:hover {
     background-color: #fff5f5;
-    color: #dc3545;
+    color: #ff0000;
 }
 /* ====================== BUSCADOR Y FILTROS ====================== */
 .search-container {
@@ -875,6 +892,32 @@ body.menu-collapsed .main-content {
     cursor: default;
 }
 
+
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+  }
+  
+  .pagination a {
+    color: white;
+    background-color: #2563eb;
+    padding: 8px 14px;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: 500;
+    font-size: 16px;
+  }
+  
+  .pagination a:hover {
+    background-color: #1d4ed8;
+  }
+  
+  .pagination a.active {
+    background-color: #2563eb;
+  }
+
 /* ====================== RESPONSIVE ====================== */
 @media (max-width: 992px) {
     .content-grid {
@@ -935,7 +978,7 @@ body.menu-collapsed .main-content {
 }
 
 input:checked + .slider {
-    background-color: green;
+    background-color: rgb(0, 231, 31);
 }
 
 input:checked + .slider:before {
@@ -945,6 +988,7 @@ input:checked + .slider:before {
 /* ====================== GESTIÓN DE ROLES ====================== */
 
 /* Ya existen estilos para .modal, .modal-content, .close, etc. */
+
 
 /* Estilos específicos para permisos */
 .permissions-container {
@@ -1069,3 +1113,4 @@ input:checked + .slider:before {
     color: var(--text-gray);
     margin-top: 4px;
 }
+
