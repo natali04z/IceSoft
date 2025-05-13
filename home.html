@@ -117,25 +117,30 @@
         </ul>
       </nav>
 
-      <!-- Botón cerrar sesión -->
-      <div class="logout-button">
-        <a href="#" onclick="logout()" data-title="Cerrar sesión">
-          <i class="material-icons">logout</i>
-        </a>
-      </div>
-    </div>
   </section>
 
 <!-- Encabezado -->
-<header class="dashboard-header">
-  <button class="open-menu-btn btn-menu"><i class="material-icons">menu</i></button>
-  <div class="user-dropdown-container">
-    <div class="user-info">
-      <i class="material-icons user-icon">account_circle</i>
-      <span class="user-name" id="loggedUserName">Usuario</span>
+ <header class="dashboard-header">
+    <button class="open-menu-btn btn-menu"><i class="material-icons">menu</i></button>
+    <div class="user-dropdown-container">
+      <div class="user-info" id="userDropdownToggle">
+        <i class="material-icons user-icon">account_circle</i>
+        <span class="user-name" id="loggedUserName">Usuario</span>
+        <i class="material-icons arrow-icon">expand_more</i>
+      </div>
+      <div class="user-dropdown-menu" id="userDropdownMenu">
+        <a href="profile.html" class="dropdown-item">
+          <i class="material-icons">person</i>
+          <span>Mi Perfil</span>
+        </a>
+        <div class="dropdown-divider"></div>
+        <a href="#" class="dropdown-item" onclick="logout()">
+          <i class="material-icons">logout</i>
+          <span>Cerrar Sesión</span>
+        </a>
+      </div>
     </div>
-  </div>
-</header>
+  </header>
 
 
 
