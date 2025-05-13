@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Categorías | ICESOFT</title>
+  <title>Mi Perfil | ICESOFT</title>
   <link rel="icon" href="assets/icesoft.png" type="image/png">
   <link rel="stylesheet" href="css/style.css">
   <script src="js/alerts.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.materialdesignicons.com/6.5.95/css/materialdesignicons.min.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body class="dashboard-page">
   <section class="navLateral">
@@ -81,100 +81,109 @@
       </div>
     </div>
   </header>
-
+  
   <main class="main-content">
     <div class="container">
-      <h2 class="title">Gestión de Categorías</h2>
-
-      <!-- Search container -->
-      <div class="search-container">
-        <div class="search-box">
-          <input type="text" id="searchInput" placeholder="Buscar categoría..." oninput="searchCategory()">
-          <button onclick="searchCategory()"><i class="material-icons">search</i></button>
+      <!-- Cabecera de perfil con ícono y nombre -->
+      
+      <h2 class="title text-center">Perfil</h2>
+      
+      <div class="profile-header-card">
+        <div class="profile-icon">
+          <i class="material-icons">account_circle</i>
+        </div>
+        <div class="profile-header-info">
+          <span class="profile-greeting">Hola,</span>
+          <h3 class="profile-user-name" id="profileHeaderName">Usuario</h3>
         </div>
       </div>
-
-      <!-- Tabla de Usuarios -->
-      <section class="table-card">
-        <div class="card-header card-header-flex">
-          <h3>Listado de Categorías</h3>
-          <button type="button" class="add-button" id="mobileAddButton">
-            <i class="material-icons">add</i> Añadir
-          </button>
-        </div>
-        <div class="card-body">
-          <div class="table-responsive">
-            <table class="users-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Nombre</th>
-                  <th>Estado</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody id="categoryTableBody">
-                <!-- Aquí se insertarán las categorías -->
-            </tbody>
-            </table>
-          </div>
-          <div class="pagination">
-            <div class="page-info">Mostrando <span style="font-weight: 500;">10 filas</span></div>
-            <div class="page-info">1-10 de 0</div>
-            <div class="page-numbers"></div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Formulario de Registro -->
-      <!-- Modal de Registro -->
-      <div id="registerModal" class="modal">
-        <div class="modal-content">
-          <span class="close" onclick="closeModal('registerModal')">&times;</span>
-          <section class="form-card">
-            <div class="card-header">
-              <h3 id="formTitle">Registrar Categoría</h3>
+  
+      <!-- Perfil del Usuario - Diseño de a dos columnas -->
+      <div class="profile-container">
+        <div class="profile-card">
+          <div class="profile-grid">
+            <!-- Primera fila -->
+            <div class="profile-field">
+              <div class="field-label">Nombre</div>
+              <div class="field-value" id="profileName"></div>
             </div>
-            <div class="card-body">
-              <form id="userForm">
-                <div class="form-field">
-                  <input type="text" class="field-element" id="name" placeholder="Nombre">
-                </div>
-                <div class="controls-container">
-                  <button type="button" class="action-button" id="registerButton">Registrar</button>
-                </div>
-              </form>
+            <div class="profile-field">
+              <div class="field-label">Apellido</div>
+              <div class="field-value" id="profileLastname"></div>
             </div>
-          </section>
+            
+            <!-- Segunda fila -->
+            <div class="profile-field">
+              <div class="field-label">Email</div>
+              <div class="field-value" id="profileEmail"></div>
+            </div>
+            <div class="profile-field">
+              <div class="field-label">Teléfono</div>
+              <div class="field-value" id="profileContact"></div>
+            </div>
+            
+            <!-- Tercera fila -->
+            <div class="profile-field">
+              <div class="field-label">Rol</div>
+              <div class="field-value" id="profileRole"></div>
+            </div>
+            <div class="profile-field">
+              <div class="field-label">Estado</div>
+              <div class="field-value" id="profileStatus">
+                <!-- Aquí se insertará el switch desde JavaScript -->
+              </div>
+            </div>
+          </div>
+          
+          <div class="profile-actions">
+            <button type="button" class="add-button" id="editProfileBtn">
+              <i class="material-icons">edit</i> Editar
+            </button>
+          </div>
         </div>
       </div>
-
-      <!-- Modal de Edición -->
-      <div id="editModal" class="modal">
-        <div class="modal-content">
-          <span class="close" onclick="closeModal('editModal')">&times;</span>
-          <section class="form-card">
-            <div class="card-header">
-              <h3 id="editFormTitle">Editar Categoría</h3>
-            </div>
-            <div class="card-body">
-              <form id="editForm">
-                <input type="hidden" id="editId">
+  
+    <!-- Modal de Edición de Perfil -->
+    <div id="editProfileModal" class="modal">
+      <div class="modal-content">
+        <span class="close" onclick="closeModal('editProfileModal')">&times;</span>
+        <section class="form-card">
+          <div class="card-header">
+            <h3>Editar Mi Perfil</h3>
+          </div>
+          <div class="card-body">
+            <form id="profileForm" novalidate>
+              <div class="form-row">
                 <div class="form-field">
-                  <input type="text" class="field-element" id="editName" placeholder="Nombre">
+                  <input type="text" class="field-element" id="editProfileName" placeholder="Nombre">
+                  <div class="error-message" id="editProfileName-error">El campo es obligatorio.</div>
                 </div>
-                <div class="controls-container">
-                  <button type="button" class="action-button" id="editButton" onclick="updateCategory()">Actualizar</button>
+                <div class="form-field">
+                  <input type="text" class="field-element" id="editProfileLastname" placeholder="Apellido">
+                  <div class="error-message" id="editProfileLastname-error">El campo es obligatorio.</div>
                 </div>
-              </form>
-            </div>
-          </section>
-        </div>
+              </div>
+              <div class="form-row">
+                <div class="form-field">
+                  <input type="tel" class="field-element" id="editProfileContact" placeholder="Teléfono" inputmode="numeric">
+                  <div class="error-message" id="editProfileContact-error">El campo es obligatorio.</div>
+                </div>
+                <div class="form-field">
+                  <input type="email" class="field-element" id="editProfileEmail" placeholder="Correo electrónico">
+                  <div class="error-message" id="editProfileEmail-error">El campo es obligatorio.</div>
+                </div>
+              </div>
+              <div class="controls-container">
+                <button type="button" class="action-button" id="updateProfileBtn">Actualizar</button>
+              </div>
+            </form>
+          </div>
+        </section>
       </div>
     </div>
   </main>
 
   <script src="js/menu.js"></script>
-  <script src="js/category.js"></script>
+  <script src="js/profile.js"></script>
 </body>
 </html>

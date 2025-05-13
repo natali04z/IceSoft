@@ -22,108 +22,6 @@
     --card-shadow: 0 1px 3px rgba(0,0,0,0.1);
     --border-radius: 8px;
 }
-
-/* ====================== IMAGEN LOGIN ====================== */
-.login-image-container {
-    text-align: center;
-    margin-bottom: 30px;
-}
-
-.login-image {
-    width: 100%;
-    max-width: 150px;
-    height: auto;
-    object-fit: contain;
-    display: block;
-    margin: 0 auto;
-}
-
-/* ====================== FORMULARIOS ====================== */
-.form-main {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 50px 20px;
-}
-
-.form-content {
-    width: 100%;
-    max-width: 400px;
-    background: #2e3b52;
-    border: 3px solid var( --button-hover-color);
-    border-radius: 20px;
-    padding: 40px;
-    backdrop-filter: var(--blur);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-}
-
-.form-content h3 {
-    text-align: center;
-    font-size: 28px;
-    margin-bottom: 25px;
-    color: var(--text-white);
-}
-
-.input-box {
-    margin-bottom: 20px;
-}
-
-.input-control {
-    width: 100%;
-    height: 45px;
-    padding: 10px 15px;
-    background: transparent;
-    border: none;
-    border-bottom: 1px solid var(--border-color);
-    color: var(--text-white);
-    font-size: 16px;
-    transition: 0.3s ease;
-}
-
-.input-control::placeholder {
-    color: var(--text-light-gray);
-}
-
-.input-control:focus {
-    outline: none;
-    border-bottom: 1px solid var(--blue);
-}
-
-.input-link {
-    margin-top: 10px;
-    text-align: right;
-}
-
-.input-link a {
-    text-decoration: none;
-    font-size: 14px;
-    color: var(--text-white);
-    transition: 0.3s ease;
-}
-
-.input-link a:hover {
-    text-decoration: underline;
-}
-
-.btn {
-    width: 100%;
-    padding: 12px;
-    border: none;
-    background-color: var(--blue);
-    color: white;
-    font-weight: 500;
-    font-size: 16px;
-    border-radius: 30px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-    margin-top: 20px;
-}
-
-.btn:hover {
-    background-color: #3c4f62;
-}
-
 /* ====================== RESET Y BASE ====================== */
 * {
     margin: 0;
@@ -1114,3 +1012,962 @@ input:checked + .slider:before {
     margin-top: 4px;
 }
 
+<<<<<<< Updated upstream
+=======
+.button-group {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .stats-section {
+    margin: 20px 0;
+  }
+  
+  .stats-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+  }
+  
+  .stats-card {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    padding: 15px;
+  }
+  
+  .stats-card h3 {
+    margin-top: 0;
+    color: #333;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+  }
+  
+  .stats-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+  }
+  
+  .stats-item {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .stats-label {
+    font-size: 0.9rem;
+    color: #666;
+  }
+  
+  .stats-value {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #2c3e50;
+  }
+  
+  .stats-table table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .stats-table th, .stats-table td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .stats-table th {
+    font-weight: 600;
+    color: #555;
+  }
+  
+  .report-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 15px;
+  }
+  
+  .pdf-button {
+    background-color: #e74c3c;
+  }
+  
+  .excel-button {
+    background-color: #27ae60;
+  }
+  
+  .action-button i {
+    margin-right: 5px;
+    font-size: 16px;
+  }
+
+/* ====================== PERFIL ====================== */
+
+  .profile-container {
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+  }
+  
+  .profile-card {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 700px;
+    padding: 20px;
+  }
+  
+  .profile-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    margin-bottom: 15px;
+  }
+  
+  .profile-field {
+    margin-bottom: 8px;
+  }
+  
+  .field-label {
+    font-size: 14px;
+    color: #555;
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+  
+  .field-value {
+    font-size: 16px;
+    color: #333;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #eee;
+    min-height: 28px;
+  }
+  
+  .profile-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 15px;
+  }
+  
+  /* Responsive para móviles */
+  @media (max-width: 768px) {
+    .profile-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .modal-content {
+      width: 90% !important;
+    }
+    
+    .form-row {
+      flex-direction: column;
+    }
+    
+    .form-row .form-field {
+      margin-bottom: 10px;
+    }
+  }
+  
+  /* icono */
+  .profile-header-card {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+    padding: 15px;
+  }
+  
+  .profile-icon {
+    width: 60px;
+    height: 60px;
+    margin-right: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background-color: #e0e0e0;
+  }
+  
+  .profile-icon i {
+    font-size: 70px;
+    color: #655e5e;
+  }
+
+  /* ======================= VALIDACIONES =========================*/
+/* 
+ * Estilos combinados para ICESOFT
+ * Incluye estilos generales y específicos para el sistema de login y recuperación
+ */
+
+/* =================== ESTILOS GENERALES =================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+  }
+  
+  body {
+    background: #f6f9ff;
+    color: #434343;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .login-page {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .form-main {
+    width: 100%;
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  
+  .gradient-text {
+    background: linear-gradient(to right, #2e3b52, #4a5d80);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    transition: all 0.3s ease;
+  }
+  
+  .gradient-text:hover {
+    background: linear-gradient(to right, #1f2a3d, #3a4c6b);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  
+  .btn {
+    display: block;
+    width: 100%;
+    background: #2e3b52;
+    color: #fff;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .btn:hover {
+    background: #1f2a3d;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(46, 59, 82, 0.3);
+  }
+  
+  /* Formulario más grande */
+  .recovery-container {
+    width: 100%;
+    max-width: 450px;
+    margin: 0 auto;
+    background-color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+  }
+  
+  .recovery-content {
+    padding: 0;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  
+  /* Encabezado compacto con color personalizado */
+  .recovery-header {
+    background: #2e3b52;
+    padding: 15px;
+    text-align: center;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+  }
+  
+  .recovery-logo {
+    margin-bottom: 8px;
+  }
+  
+  .recovery-logo-img {
+    width: 70px;
+    height: auto;
+  }
+  
+  .recovery-header h2 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+  }
+  
+  /* Cuerpo del formulario espacioso */
+  .recovery-body {
+    padding: 25px;
+  }
+  
+  .recovery-step {
+    display: none;
+  }
+  
+  .recovery-step.active {
+    display: block;
+  }
+  
+  .step-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 18px;
+  }
+  
+  .step-icon {
+    background-color: #f5f6fa;
+    border-radius: 50%;
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+    color: #2e3b52;
+  }
+  
+  .step-header h3 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 600;
+    color: #333;
+  }
+  
+  /* Grupos de input */
+  .recovery-input-group {
+    margin-bottom: 16px;
+    position: relative;
+  }
+  
+  .recovery-input-group label {
+    display: block;
+    margin-bottom: 7px;
+    font-size: 14px;
+    color: #555;
+    font-weight: 500;
+  }
+  
+  .recovery-input-group input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: all 0.3s;
+  }
+  
+  .recovery-input-group input:focus {
+    border-color: #2e3b52;
+    box-shadow: 0 0 0 3px rgba(46, 59, 82, 0.1);
+    outline: none;
+  }
+  
+  /* Mensajes de error compactos */
+  .error-message {
+    font-size: 12px;
+    color: #dc3545;
+    margin-top: 4px;
+    min-height: 18px;
+  }
+  
+  .input-error {
+    border-color: #dc3545 !important;
+  }
+  
+  /* Botones con color personalizado */
+  .recovery-actions {
+    margin-top: 22px;
+  }
+  
+  .recovery-btn {
+    display: block;
+    width: 100%;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s;
+    margin-bottom: 10px;
+  }
+  
+  .primary-btn {
+    background: #2e3b52;
+    color: white;
+  }
+  
+  .primary-btn:hover {
+    background: #1f2a3d;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(46, 59, 82, 0.3);
+  }
+  
+  .secondary-btn {
+    background-color: #f5f6fa;
+    color: #555;
+  }
+  
+  .secondary-btn:hover {
+    background-color: #e9eaed;
+  }
+  
+  .success-btn {
+    background: #28a745;
+    color: white;
+  }
+  
+  .success-btn:hover {
+    background: #218838;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(32, 201, 151, 0.3);
+  }
+  
+  .error-btn {
+    background: #dc3545;
+    color: white;
+  }
+  
+  .error-btn:hover {
+    background: #c82333;
+  }
+  
+  /* Enlaces con color personalizado */
+  .recovery-link {
+    text-align: center;
+    margin-top: 15px;
+  }
+  
+  .recovery-link a {
+    color: #2e3b52;
+    text-decoration: none;
+    font-size: 14px;
+    transition: all 0.3s;
+  }
+  
+  .recovery-link a:hover {
+    text-decoration: underline;
+    color: #1f2a3d;
+  }
+  
+  .success-header {
+    color: #28a745;
+  }
+  
+  .success-icon {
+    color: #28a745;
+  }
+  
+  .success-icon svg {
+    stroke: #28a745;
+  }
+  
+  .error-header {
+    color: #dc3545;
+  }
+  
+  .error-icon {
+    color: #dc3545;
+  }
+  
+  .error-icon svg {
+    stroke: #dc3545;
+  }
+  
+  /* Mensajes de éxito/error */
+  .success-message {
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    padding: 12px;
+    margin: 15px 0;
+  }
+  
+  .success-message p {
+    margin: 0;
+    line-height: 1.5;
+    color: #555;
+  }
+  
+  .error-message p {
+    margin: 0;
+    line-height: 1.5;
+    color: #dc3545;
+  }
+  
+  .loader-container {
+    text-align: center;
+    margin: 25px 0;
+  }
+  
+  .progress {
+    height: 4px;
+    background-color: #f5f6fa;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+  
+  .progress-bar {
+    height: 100%;
+    background: #2e3b52;
+    width: 0;
+    animation: progress 1.5s ease-in-out infinite;
+  }
+  
+  @keyframes progress {
+    0% { width: 0; }
+    50% { width: 70%; }
+    100% { width: 100%; }
+  }
+  
+  .password-requirements {
+    background-color: #f8f9fa;
+    border-left: 3px solid #2e3b52;
+    padding: 10px 15px;
+    margin: 10px 0;
+  }
+  
+  .password-requirements p {
+    margin: 0;
+    font-size: 13px;
+    color: #666;
+  }
+  
+  /* Footer */
+  .recovery-footer {
+    padding: 8px;
+    text-align: center;
+    background-color: #f8f9fa;
+    border-top: 1px solid #eee;
+  }
+  
+  .recovery-footer p {
+    margin: 0;
+    font-size: 11px;
+    color: #777;
+  }
+  
+  @media screen and (max-width: 576px) {
+    .form-main {
+      padding: 10px;
+    }
+    
+    .recovery-container {
+      width: 100%;
+      max-width: none;
+      border-radius: 8px;
+    }
+    
+    .recovery-header {
+      padding: 12px;
+    }
+    
+    .recovery-logo-img {
+      width: 45px;
+    }
+    
+    .recovery-header h2 {
+      font-size: 16px;
+    }
+    
+    .recovery-body {
+      padding: 20px 15px;
+    }
+    
+    .step-icon {
+      width: 36px;
+      height: 36px;
+    }
+    
+    .step-header h3 {
+      font-size: 16px;
+    }
+  }
+  
+  /* Estilos para formularios */
+  .form-row {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 12px;
+  }
+  
+  .form-field {
+    flex: 1;
+    position: relative;
+  }
+  
+  /* Estilos para el contenedor de controles */
+  .controls-container {
+    margin-top: 15px;
+    text-align: center;
+  }
+  
+  /* Estilo para cliente predeterminado */
+  .default-container {
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    display: none;
+  }
+  
+  .default-badge {
+    display: flex;
+    align-items: center;
+    background-color: #e6f7ff;
+    color: #0077cc;
+    padding: 8px 15px;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+  
+  .default-badge .material-icons {
+    margin-left: 8px;
+  }
+  
+  /* Animación para mensajes de error */
+  @keyframes errorAppear {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  /* Estilos para la lista de productos en la tabla */
+  .product-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 120px;
+    overflow-y: auto;
+    padding: 2px;
+  }
+  
+  .product-item-inline {
+    display: flex;
+    flex-direction: column;
+    padding: 4px;
+    background-color: #f9f9f9;
+    border-radius: 4px;
+    border-left: 3px solid #2196F3;
+  }
+  
+  .product-item-inline .product-name {
+    font-weight: bold;
+    margin-bottom: 2px;
+  }
+  
+  .product-item-inline .product-details {
+    display: flex;
+    gap: 8px;
+    font-size: 0.85em;
+    color: #555;
+  }
+  
+  /* Estilos para la vista responsiva */
+  @media (max-width: 768px) {
+    .product-item-inline .product-details {
+      flex-direction: column;
+      gap: 2px;
+    }
+  }
+
+  /*================ PERMISOS ====================*/
+/* Estilos para los contenedores de permisos */
+.permissions-container {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #e0e4e9;
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.permission-section {
+  margin-bottom: 6px;
+  border: 1px solid #e8eaed;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.permission-category-header {
+  padding: 8px 12px;
+  background-color: #f7f9fc;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.permission-category-header h5 {
+  margin: 0;
+  font-size: 14px;
+  color: #333;
+}
+
+.permission-category-header h5 span {
+  color: #6c757d;
+  font-size: 12px;
+  font-weight: normal;
+}
+
+.permission-items {
+  padding: 8px 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 5px;
+  background: #fff;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.checkbox-container {
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.checkbox-container label {
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+  max-width: calc(100% - 25px);
+  vertical-align: middle;
+}
+
+.permissions-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.text-button {
+  background: none;
+  border: none;
+  color: #2962ff;
+  cursor: pointer;
+  font-size: 12px;
+  text-decoration: underline;
+  padding: 3px;
+}
+
+.text-button:hover {
+  color: #0039cb;
+}
+
+/* Estilos para el botón de ver detalles en la tabla */
+.view-details-btn {
+  background: none;
+  border: none;
+  color: #2962ff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  padding: 3px 5px;
+  border-radius: 4px;
+}
+
+.view-details-btn:hover {
+  background-color: rgba(41, 98, 255, 0.1);
+}
+
+.view-details-btn i {
+  font-size: 16px;
+}
+
+/* Mejorar la apariencia de los modales */
+.modal-content {
+  max-width: 700px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+/* Hacer los formularios más compactos */
+.form-field {
+  margin-bottom: 12px;
+}
+
+.form-row {
+  margin-bottom: 10px;
+}
+
+/* Hacer que los checkboxes ocupen menos espacio */
+input[type="checkbox"] {
+  margin-right: 5px;
+  vertical-align: middle;
+}
+
+/* Estilos para el modal de detalles de permisos */
+.permissions-modal-popup {
+  max-width: 90vw;
+  padding-top: 15px;
+}
+
+.permissions-modal-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 20px;
+  color: #666;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+
+.permissions-modal-close:hover {
+  opacity: 1;
+  color: #333;
+}
+
+.permissions-details-container {
+  text-align: left;
+  padding: 5px 0;
+}
+
+.permissions-count {
+  margin-bottom: 15px;
+  font-weight: bold;
+  color: #333;
+}
+
+.permissions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+.permission-category {
+  background: #f7f9fc;
+  border-radius: 6px;
+  padding: 8px 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.permission-category h4 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  color: #333;
+  border-bottom: 1px solid #e0e4e9;
+  padding-bottom: 5px;
+  font-size: 14px;
+}
+
+.permission-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 13px;
+}
+
+.permission-list li {
+  padding: 3px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.permission-list li:last-child {
+  border-bottom: none;
+}
+
+/* Estilos para el loading overlay */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.spinner {
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border-left-color: #2962ff;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Estilos para la alerta */
+.alert-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  max-width: 400px;
+  z-index: 9999;
+}
+
+.alert {
+  padding: 10px 15px;
+  margin-bottom: 10px;
+  border-radius: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.alert-success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.alert-error {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.alert-close {
+  cursor: pointer;
+  margin-left: 10px;
+  font-weight: bold;
+}
+
+/* Responsive para los permisos */
+@media (max-width: 768px) {
+  .permissions-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .permission-items {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+>>>>>>> Stashed changes

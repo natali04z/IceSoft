@@ -1,38 +1,135 @@
-const API_URL = "https://backend-icesoft.onrender.com/api/categories";
+const API_URL = "https://backend-yy4o.onrender.com/api/categories";
   
-// Variables globales para categorías y paginación
+// Variables globales
 let allCategories = [];
 let originalCategories = [];
 let currentPage = 1;
 const rowsPerPage = 10;
 
+// Obtener permisos de usuario
+function getUserPermissions() {
+  try {
+    const userInfo = localStorage.getItem('userInfo');
+    if (!userInfo) return ['edit_categories', 'delete_categories'];
+    
+    const user = JSON.parse(userInfo);
+    return user.permissions || ['edit_categories', 'delete_categories'];
+  } catch (error) {
+    console.error('Error al obtener permisos:', error);
+    return ['edit_categories', 'delete_categories'];
+  }
+}
+
+
+// Abrir modal
+function openModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) {
+    modal.style.display = "flex";
+  } else {
+    console.error(`Modal con ID "${modalId}" no encontrado`);
+  }
+}
+
+// Cerrar modal
+function closeModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) {
+    modal.style.display = "none";
+  } else {
+    console.error(`Modal con ID "${modalId}" no encontrado`);
+  }
+}
+
+// Mostrar formulario de registro
+const showRegisterForm = () => {
+  hideForms();
+  const registerFormSection = document.getElementById("registerFormSection");
+  const formTitle = document.getElementById("formTitle");
+  
+  if (registerFormSection) {
+    registerFormSection.style.display = "block";
+  } else {
+    console.error("Elemento registerFormSection no encontrado");
+  }
+  
+  if (formTitle) {
+    formTitle.textContent = "Registrar Categoría";
+  }
+  
+  window.scrollTo(0, document.body.scrollHeight);
+};
+
+// Ocultar formulario de registro
+const hideRegisterForm = () => {
+  const registerFormSection = document.getElementById("registerFormSection");
+  const categoryForm = document.getElementById("categoryForm");
+  
+  if (registerFormSection) {
+    registerFormSection.style.display = "none";
+  }
+  
+  if (categoryForm) {
+    categoryForm.reset();
+  }
+};
+
+// Ocultar formularios
+const hideForms = () => {
+  const registerFormSection = document.getElementById("registerFormSection");
+  const editFormSection = document.getElementById("editFormSection");
+  
+  if (registerFormSection) {
+    registerFormSection.style.display = "none";
+  }
+  
+  if (editFormSection) {
+    editFormSection.style.display = "none";
+  }
+};
+
 // Renderizar tabla de categorías
 const renderCategoriesTable = (page = 1) => {
   const tbody = document.getElementById("categoryTableBody");
+  
+  if (!tbody) {
+    console.error("Elemento categoryTableBody no encontrado en el DOM");
+    return;
+  }
+  
   tbody.innerHTML = "";
+
+  if (!allCategories || allCategories.length === 0) {
+    console.warn("No hay categorías para mostrar");
+    tbody.innerHTML = `<tr><td colspan="4" class="text-center">No hay categorías disponibles</td></tr>`;
+    return;
+  }
 
   const start = (page - 1) * rowsPerPage;
   const end = start + rowsPerPage;
   const categoriesToShow = allCategories.slice(start, end);
 
+  const userPermissions = getUserPermissions();
+  const canEditCategories = userPermissions.includes("edit_categories");
+
   categoriesToShow.forEach(category => {
     tbody.innerHTML += `
       <tr>
-        <td>${category.id}</td>
-        <td>${category.name}</td>
-        <td>${category.description}</td>
+        <td>${category.id || ''}</td>
+        <td>${category.name || ''}</td>
         <td>
           <label class="switch">
-            <input type="checkbox" ${category.status === "active" ? "checked" : ""} disabled>
+            <input type="checkbox" ${category.status === "active" ? "checked" : ""} 
+              ${canEditCategories ? `onchange="updateCategoryStatus('${category._id}', this.checked ? 'active' : 'inactive')"` : 'disabled'}>
             <span class="slider round"></span>
           </label>
         </td>
         <td>
           <div class="action-buttons">
-            <button onclick="fillEditForm('${category._id}')" class="icon-button edit-button" title="Editar">
+            <button onclick="fillEditForm('${category._id}')" class="icon-button edit-button" title="Editar" ${canEditCategories ? '' : 'disabled'}>
               <i class="material-icons">edit</i>
             </button>
-            <button onclick="deleteCategory('${category._id}')" class="icon-button delete-button" title="Eliminar">
+            <button onclick="deleteCategory('${category._id}')" class="icon-button delete-button" title="Eliminar" ${userPermissions.includes("delete_categories") ? '' : 'disabled'}>
               <i class="material-icons">delete</i>
             </button>
           </div>
@@ -46,9 +143,19 @@ const renderCategoriesTable = (page = 1) => {
 
 // Renderizar controles de paginación
 const renderPaginationControls = () => {
+  if (!allCategories || allCategories.length === 0) {
+    console.warn("No hay categorías para paginar");
+    return;
+  }
+  
   const totalPages = Math.ceil(allCategories.length / rowsPerPage);
   const container = document.querySelector(".page-numbers");
   const info = document.querySelector(".pagination .page-info:nth-child(2)");
+  
+  if (!container || !info) {
+    console.error("Elementos de paginación no encontrados en el DOM");
+    return;
+  }
 
   container.innerHTML = "";
 
@@ -89,57 +196,14 @@ const changePage = (page) => {
   renderCategoriesTable(currentPage);
 };
 
-// Función para abrir un modal
-function openModal(modalId) {
-  document.getElementById(modalId).style.display = "flex";
-}
-
-// Función para cerrar un modal
-function closeModal(modalId) {
-  document.getElementById(modalId).style.display = "none";
-}
-
-// Cerrar el modal si el usuario hace clic fuera del contenido
-window.onclick = function(event) {
-  const registerModal = document.getElementById("registerModal");
-  const editModal = document.getElementById("editModal");
-  
-  if (event.target === registerModal) {
-    registerModal.style.display = "none";
-  }
-  if (event.target === editModal) {
-    editModal.style.display = "none";
-  }
-};
-
-// Mostrar formulario de registro
-const showRegisterForm = () => {
-  hideForms();
-  document.getElementById("registerFormSection").style.display = "block";
-  document.getElementById("formTitle").textContent = "Registrar Categoría";
-  window.scrollTo(0, document.body.scrollHeight);
-};
-
-// Ocultar formulario de registro
-const hideRegisterForm = () => {
-  document.getElementById("registerFormSection").style.display = "none";
-  document.getElementById("categoryForm").reset();
-};
-
-// Ocultar formularios (registro y edición)
-const hideForms = () => {
-  document.getElementById("registerFormSection").style.display = "none";
-  document.getElementById("editFormSection").style.display = "none";
-};
-
-// Listar categorías desde el backend
-const listCategories = async () => {
+const loadCategoriesInternal = async () => {
   try {
     const token = localStorage.getItem("token");
     if (!token) {
       showError("Token no encontrado. Inicie sesión nuevamente.");
       return;
     }
+    
     const res = await fetch(API_URL, {
       method: "GET",
       headers: {
@@ -147,9 +211,15 @@ const listCategories = async () => {
         Authorization: `Bearer ${token}`
       }
     });
+    
     const data = await res.json();
+    
     if (res.ok) {
       originalCategories = data.categories || data;
+
+      if (originalCategories.length > 0) {
+      }
+      
       allCategories = [...originalCategories];
       currentPage = 1;
       renderCategoriesTable(currentPage);
@@ -158,7 +228,50 @@ const listCategories = async () => {
     }
   } catch (err) {
     console.error("Error al listar categorías:", err);
-    showError("Error al listar categorías");
+    showError("Error al listar categorías: " + (err.message || err));
+  }
+};
+
+// Listar categorías con indicador de carga (solo para carga inicial)
+const listCategories = async () => {
+  try {
+    
+    const token = localStorage.getItem("token");
+    if (!token) {
+      showError("Token no encontrado. Inicie sesión nuevamente.");
+      return;
+    }
+ 
+    showLoadingIndicator();
+    
+    const res = await fetch(API_URL, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      }
+    });
+    
+    const data = await res.json();
+
+    hideLoadingIndicator();
+    
+    if (res.ok) {
+      originalCategories = data.categories || data;
+
+      if (originalCategories.length > 0) {
+      }
+      
+      allCategories = [...originalCategories];
+      currentPage = 1;
+      renderCategoriesTable(currentPage);
+    } else {
+      showError(data.message || "Error al listar categorías.");
+    }
+  } catch (err) {
+    hideLoadingIndicator();
+    console.error("Error al listar categorías:", err);
+    showError("Error al listar categorías: " + (err.message || err));
   }
 };
 
@@ -169,73 +282,64 @@ const registerCategory = async () => {
     showError("Token no encontrado. Inicie sesión nuevamente.");
     return;
   }
-  const name = document.getElementById("name").value.trim();
-  const description = document.getElementById("description").value.trim();
-  const status = document.getElementById("status").checked ? "active" : "inactive";
+  
+  const nameElement = document.getElementById("name");
+  
+  if (!nameElement) {
+    showError("No se encontró el campo de nombre");
+    return;
+  }
+  
+  const name = nameElement.value.trim();
 
-  if (!name || !description) {
-    showValidation("Todos los campos son obligatorios.");
+  if (!name) {
+    showValidation("El nombre es obligatorio.");
     return;
   }
 
-  const confirmed = await showConfirm({
-    title: "¿Confirmas registrar esta categoría?",
-    text: "Se creará una nueva categoría con los datos proporcionados.",
-    confirmText: "Registrar",
-    cancelText: "Cancelar"
-  });
-
-  if (!confirmed) {
-    Swal.fire({
-      icon: 'info',
-      title: 'Operación cancelada',
-      text: 'No se ha registrado ninguna categoría',
-    });
-    closeModal('registerModal');
-    return;
-  }
-
-  try {
+  try { 
     const res = await fetch(API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`
       },
-      body: JSON.stringify({ name, description, status })
+      body: JSON.stringify({ name })
     });
+    
     const data = await res.json();
+    
     if (res.status === 201 || res.ok) {
-      showSuccess("Categoría registrada correctamente.");
+      Swal.fire({
+        icon: 'success',
+        title: 'Éxito',
+        text: `Categoría registrada correctamente.`,
+        showConfirmButton: true,
+      });
       closeModal('registerModal');
-      document.getElementById("userForm").reset();
-      listCategories();
+      
+      const categoryForm = document.getElementById("categoryForm");
+      if (categoryForm) {
+        categoryForm.reset();
+      } else {
+        console.warn("Formulario categoryForm no encontrado");
+      }
+      
+      loadCategoriesInternal(); // Cambiado a la versión sin indicador
     } else {
       showError(data.message || "Error al registrar categoría.");
     }
   } catch (err) {
     console.error("Error al registrar categoría:", err);
-    showError("Error al registrar categoría");
+    showError("Error al registrar categoría: " + (err.message || err));
   }
 };
 
+// Llenar formulario de edición
 const fillEditForm = async (id) => {
   const token = localStorage.getItem("token");
-
-  const confirmed = await showConfirm({
-    title: "¿Deseas editar esta categoría?",
-    text: "Vas a modificar la información de esta categoría.",
-    confirmText: "Editar",
-    cancelText: "Cancelar"
-  });
-
-  console.log("Confirmación del usuario:", confirmed);
-  if (!confirmed) {
-    Swal.fire({
-      icon: 'info',
-      title: 'Operación cancelada',
-      text: 'No se editará esta categoría',
-    });
+  if (!token) {
+    showError("Token no encontrado. Inicie sesión nuevamente.");
     return;
   }
 
@@ -255,12 +359,14 @@ const fillEditForm = async (id) => {
     }
 
     const category = await res.json();
-    console.log("Categoría cargada:", category);
 
-    document.getElementById("editId").value = category._id;
-    document.getElementById("editName").value = category.name || "";
-    document.getElementById("editDescription").value = category.description || "";
-    document.getElementById("editStatus").checked = category.status === "active";
+    const editIdElement = document.getElementById("editId");
+    const editNameElement = document.getElementById("editName");
+    const editStatusElement = document.getElementById("editStatus");
+    
+    if (editIdElement) editIdElement.value = category._id;
+    if (editNameElement) editNameElement.value = category.name || "";
+    if (editStatusElement) editStatusElement.checked = category.status === "active";
 
     openModal('editModal');
   } catch (err) {
@@ -277,48 +383,52 @@ const updateCategory = async () => {
     return;
   }
 
-  const id = document.getElementById("editId").value;
-  const name = document.getElementById("editName").value.trim();
-  const description = document.getElementById("editDescription").value.trim();
-  const status = document.getElementById("editStatus").checked ? "active" : "inactive";
-
-  console.log("Valores a enviar:", { id, name, description, status });
-
-  if (!name || !description) {
-    showValidation("Todos los campos son obligatorios.");
+  const editIdElement = document.getElementById("editId");
+  const editNameElement = document.getElementById("editName");
+  
+  if (!editIdElement || !editNameElement) {
+    showError("No se encontraron los campos del formulario de edición");
     return;
   }
 
-  const confirmed = await showConfirm({
-    title: "¿Confirmas actualizar esta categoría?",
-    text: "Se guardarán los cambios realizados.",
-    confirmText: "Actualizar",
-    cancelText: "Cancelar"
-  });
+  const id = editIdElement.value;
+  const name = editNameElement.value.trim();
 
-  console.log("Confirmación del usuario:", confirmed);
-  if (!confirmed) return;
+  if (!name) {
+    showValidation("El nombre es obligatorio.");
+    return;
+  }
 
   try {
-    console.log("URL de la API:", `${API_URL}/${id}`);
-    
+
     const res = await fetch(`${API_URL}/${id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`
       },
-      body: JSON.stringify({ name, description, status })
+      body: JSON.stringify({ name })
     });
 
     const data = await res.json();
-    console.log("Respuesta del servidor:", data);
-
+ 
     if (res.ok) {
-      showSuccess("Categoría actualizada correctamente.");
+      Swal.fire({
+        icon: 'success',
+        title: 'Éxito',
+        text: `Categoría actualizada correctamente.`,
+        showConfirmButton: true,
+      });
       closeModal('editModal');
-      document.getElementById("editForm").reset();
-      listCategories();
+      
+      const editForm = document.getElementById("editForm");
+      if (editForm) {
+        editForm.reset();
+      } else {
+        console.warn("Formulario editForm no encontrado");
+      }
+      
+      loadCategoriesInternal(); // Cambiado a la versión sin indicador
     } else {
       showError(data.message || "Error al actualizar la categoría.");
     }
@@ -328,17 +438,79 @@ const updateCategory = async () => {
   }
 };
 
+// Actualizar estado de categoría
+const updateCategoryStatus = async (id, status) => {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    showError("Token no encontrado. Inicie sesión nuevamente.");
+    return;
+  }
+  
+  try {
+     const res = await fetch(`${API_URL}/${id}/status`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ status })
+    });
+
+    let data;
+    try {
+      data = await res.json();
+    } catch (jsonError) {
+      console.error("Error al parsear JSON:", jsonError);
+      data = { message: "Error en formato de respuesta" };
+    }
+    
+    if (res.ok) {
+      Swal.fire({
+        icon: 'success',
+        title: 'Éxito',
+        text: `Categoría ${status === 'active' ? 'activada' : 'desactivada'} correctamente.`,
+        showConfirmButton: true,
+      });
+      
+      loadCategoriesInternal(); // Cambiado a la versión sin indicador
+    } else {
+      let errorMsg = data.message || `Error al ${status === 'active' ? 'activar' : 'desactivar'} la categoría (${res.status})`;
+      
+      if (res.status === 400 && data.message && data.message.includes('active products associated')) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'No se puede desactivar',
+          text: 'Esta categoría tiene productos activos asociados. Debe desactivar o reasignar estos productos primero.',
+          confirmButtonColor: '#3085d6'
+        });
+      } else {
+        if (data.error) {
+          errorMsg += `: ${data.error}`;
+        }
+        showError(errorMsg);
+      }
+
+      console.error("Error response:", {
+        status: res.status,
+        data: data
+      });
+      loadCategoriesInternal(); // Cambiado a la versión sin indicador
+    }
+  } catch (err) {
+    console.error("Error al actualizar estado:", err);
+    showError(`Ocurrió un error de red: ${err.message || err}`);
+    loadCategoriesInternal(); // Cambiado a la versión sin indicador
+  }
+};
+
 // Eliminar categoría
 const deleteCategory = async (id) => {
   const token = localStorage.getItem("token");
-  const confirmed = await showConfirm({
-    title: "¿Estás seguro de eliminar esta categoría?",
-    text: "Esta acción no se puede deshacer.",
-    confirmText: "Eliminar",
-    cancelText: "Cancelar"
-  });
-  if (!confirmed) return;
-
+  if (!token) {
+    showError("Token no encontrado. Inicie sesión nuevamente.");
+    return;
+  }
+  
   try {
     const res = await fetch(`${API_URL}/${id}`, {
       method: "DELETE",
@@ -346,51 +518,100 @@ const deleteCategory = async (id) => {
         Authorization: `Bearer ${token}`
       }
     });
+    
     const data = await res.json();
+    
     if (res.ok) {
-      showSuccess("Categoría eliminada");
-      listCategories();
+      Swal.fire({
+        icon: 'success',
+        title: 'Éxito',
+        text: `Categoría eliminada correctamente.`,
+        showConfirmButton: true,
+      });
+      loadCategoriesInternal(); // Cambiado a la versión sin indicador
     } else {
       showError(data.message || "No se pudo eliminar la categoría");
     }
   } catch (err) {
     console.error("Error al eliminar categoría:", err);
-    showError("Error al eliminar categoría");
+    showError("Error al eliminar categoría: " + (err.message || err));
   }
 };
 
 // Buscar categoría
 const searchCategory = () => {
-  const term = document.getElementById("searchInput").value.toLowerCase().trim();
+  const searchInput = document.getElementById("searchInput");
+  
+  if (!searchInput) {
+    console.error("Elemento searchInput no encontrado");
+    return;
+  }
+  
+  const term = searchInput.value.toLowerCase().trim();
+  
+  if (!originalCategories) {
+    console.error("Array originalCategories no inicializado");
+    return;
+  }
+  
   allCategories = term
     ? originalCategories.filter(c => 
-        c.name.toLowerCase().includes(term) || 
-        c.description.toLowerCase().includes(term)
+        (c.name && c.name.toLowerCase().includes(term))
       )
     : [...originalCategories];
+  
   currentPage = 1;
   renderCategoriesTable(currentPage);
 };
 
-// Eventos al cargar el DOM
+// Inicialización
 document.addEventListener("DOMContentLoaded", () => {
-  listCategories();
-  document.getElementById("mobileAddButton").onclick = () => openModal('registerModal');
-  document.getElementById("registerButton").onclick = registerCategory;
-  document.getElementById("searchInput").addEventListener("keyup", searchCategory);
+  const categoryTableBody = document.getElementById("categoryTableBody");
+  if (!categoryTableBody) {
+    console.error("ELEMENTO CRÍTICO NO ENCONTRADO: categoryTableBody");
+  }
+ 
+  try {
+    listCategories(); // Esta es la única que usa el indicador de carga
+  } catch (err) {
+    console.error("Error durante la inicialización:", err);
+  }
+  
+  const mobileAddButton = document.getElementById("mobileAddButton");
+  if (mobileAddButton) {
+    mobileAddButton.onclick = () => openModal('registerModal');
+  } else {
+    console.warn("Elemento mobileAddButton no encontrado");
+  }
+  
+  const registerButton = document.getElementById("registerButton");
+  if (registerButton) {
+    registerButton.onclick = registerCategory;
+  } else {
+    console.warn("Elemento registerButton no encontrado");
+  }
+  
+  const searchInput = document.getElementById("searchInput");
+  if (searchInput) {
+    searchInput.addEventListener("keyup", searchCategory);
+  } else {
+    console.warn("Elemento searchInput no encontrado");
+  }
 
-  // Añadir evento de submit para el formulario de edición
   const editForm = document.getElementById("editForm");
   if (editForm) {
     editForm.onsubmit = async (event) => {
       event.preventDefault();
       await updateCategory();
     };
+  } else {
+    console.warn("Elemento editForm no encontrado");
   }
 });
 
-// Hacer funciones globales si es necesario
+// Exportar funciones globales
 window.fillEditForm = fillEditForm;
+window.updateCategoryStatus = updateCategoryStatus;
 window.deleteCategory = deleteCategory;
 window.openModal = openModal;
 window.closeModal = closeModal;

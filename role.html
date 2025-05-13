@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Categorías | ICESOFT</title>
+  <title>Roles | ICESOFT</title>
   <link rel="icon" href="assets/icesoft.png" type="image/png">
   <link rel="stylesheet" href="css/style.css">
   <script src="js/alerts.js"></script>
@@ -84,40 +84,44 @@
 
   <main class="main-content">
     <div class="container">
-      <h2 class="title">Gestión de Categorías</h2>
-
-      <!-- Search container -->
-      <div class="search-container">
-        <div class="search-box">
-          <input type="text" id="searchInput" placeholder="Buscar categoría..." oninput="searchCategory()">
-          <button onclick="searchCategory()"><i class="material-icons">search</i></button>
-        </div>
+      <h2 class="title">Gestión de roles</h2>
+          
+       <!-- Contenedor de búsqueda -->
+    <div class="search-container">
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Buscar rol...">
+        <button onclick="searchRole()"><i class="material-icons">search</i></button>
       </div>
+    </div>
 
-      <!-- Tabla de Usuarios -->
-      <section class="table-card">
-        <div class="card-header card-header-flex">
-          <h3>Listado de Categorías</h3>
-          <button type="button" class="add-button" id="mobileAddButton">
-            <i class="material-icons">add</i> Añadir
-          </button>
-        </div>
+    <!-- Tabla de usuarios -->
+    <section class="table-card">
+      <div class="card-header card-header-flex">
+        <h3>Lista de Roles</h3>
+        <button type="button" class="add-button" id="mobileAddButton">
+          <i class="material-icons">add</i> Añadir
+        </button>
+      </div>
+        
         <div class="card-body">
-          <div class="table-responsive">
-            <table class="users-table">
+        <div class="table-responsive">
+          <table class="users-table">
               <thead>
                 <tr>
                   <th>ID</th>
                   <th>Nombre</th>
+                  <th>Descripción</th>
+                  <th>Permisos</th>
                   <th>Estado</th>
                   <th>Acciones</th>
                 </tr>
               </thead>
-              <tbody id="categoryTableBody">
-                <!-- Aquí se insertarán las categorías -->
-            </tbody>
+              <tbody id="roleTableBody">
+                <!-- Roles cargados dinámicamente -->
+              </tbody>
             </table>
           </div>
+          
           <div class="pagination">
             <div class="page-info">Mostrando <span style="font-weight: 500;">10 filas</span></div>
             <div class="page-info">1-10 de 0</div>
@@ -125,56 +129,94 @@
           </div>
         </div>
       </section>
-
-      <!-- Formulario de Registro -->
-      <!-- Modal de Registro -->
-      <div id="registerModal" class="modal">
+      
+      <!-- Formulario de Creación de Rol -->
+      <div id="roleModal" class="modal">
         <div class="modal-content">
-          <span class="close" onclick="closeModal('registerModal')">&times;</span>
+          <span class="close" onclick="closeModal('roleModal')">×</span>
           <section class="form-card">
             <div class="card-header">
-              <h3 id="formTitle">Registrar Categoría</h3>
+              <h3 id="formTitle">Registrar Rol</h3>
             </div>
+            
             <div class="card-body">
-              <form id="userForm">
-                <div class="form-field">
-                  <input type="text" class="field-element" id="name" placeholder="Nombre">
+              <form id="roleForm" novalidate>
+                <div class="form-row">
+                  <div class="form-field">
+                    <input type="text" class="field-element" id="name" placeholder="Nombre del rol">
+                    <div class="error-message" id="name-error">El campo es obligatorio.</div>
+                  </div>
+                  <div class="form-field">
+                    <input type="text" class="field-element" id="description" placeholder="Descripción">
+                    <div class="error-message" id="description-error">El campo es obligatorio.</div>
+                  </div>
                 </div>
+                
+                <div class="form-row">
+                  <div class="form-field full-width">
+                    <h4>Permisos</h4>
+                    <div class="permissions-container" id="permissionsContainer">
+                      <!-- Permisos cargados dinámicamente -->
+                    </div>
+                    <div class="error-message" id="permissions-error">Debe seleccionar al menos un permiso.</div>
+                  </div>
+                </div>
+                
                 <div class="controls-container">
-                  <button type="button" class="action-button" id="registerButton">Registrar</button>
+                  <button type="button" class="action-button" id="createRoleButton">Crear</button>
                 </div>
               </form>
             </div>
           </section>
         </div>
       </div>
-
-      <!-- Modal de Edición -->
-      <div id="editModal" class="modal">
+      
+      <!-- Modal de edición de rol -->
+      <div id="editRoleModal" class="modal">
         <div class="modal-content">
-          <span class="close" onclick="closeModal('editModal')">&times;</span>
+          <span class="close" onclick="closeModal('editRoleModal')">×</span>
           <section class="form-card">
             <div class="card-header">
-              <h3 id="editFormTitle">Editar Categoría</h3>
+              <h3 id="editFormTitle">Editar rol</h3>
             </div>
+            
             <div class="card-body">
-              <form id="editForm">
+              <form id="editRoleForm" novalidate>
                 <input type="hidden" id="editId">
-                <div class="form-field">
-                  <input type="text" class="field-element" id="editName" placeholder="Nombre">
+                
+                <div class="form-row">
+                  <div class="form-field">
+                    <input type="text" class="field-element" id="editName" placeholder="Nombre del rol">
+                    <div class="error-message" id="editName-error">El campo es obligatorio.</div>
+                  </div>
+                  <div class="form-field">
+                    <input type="text" class="field-element" id="editDescription" placeholder="Descripción">
+                    <div class="error-message" id="editDescription-error">El campo es obligatorio.</div>
+                  </div>
                 </div>
+                
+                <div class="form-row">
+                  <div class="form-field full-width">
+                    <h4>Permisos</h4>
+                    <div class="permissions-container" id="editPermissionsContainer">
+                      <!-- Permisos cargados dinámicamente -->
+                    </div>
+                    <div class="error-message" id="editPermissions-error">Debe seleccionar al menos un permiso.</div>
+                  </div>
+                </div>
+                
                 <div class="controls-container">
-                  <button type="button" class="action-button" id="editButton" onclick="updateCategory()">Actualizar</button>
+                  <button type="button" class="action-button" id="updateRoleButton">Actualizar</button>
                 </div>
               </form>
             </div>
           </section>
         </div>
       </div>
-    </div>
   </main>
 
   <script src="js/menu.js"></script>
-  <script src="js/category.js"></script>
+  <script src="js/roles.js"></script>
+  <script src="js/permission.js"></script>
 </body>
 </html>
