@@ -33,36 +33,51 @@
             <a href="#" class="btn-subMenu"><i class="material-icons">work</i><span>COMPRAS</span><span class="material-icons arrow">chevron_left</span></a>
             <ul class="sub-menu-options">
                 <li><a href="category.html"><i class="material-icons">label</i><span>CATEGORÍAS</span></a></li>
-                <li><a href="products.html"><i class="material-icons">local_offer</i><span>PRODUCTOS</span></a></li>
                 <li><a href="providers.html"><i class="material-icons">local_shipping</i><span>PROVEEDORES</span></a></li>
-                <li><a href="purchases.html"><i class="material-icons">shopping_cart</i><span>COMPRAS</span></a></li>
+                <li><a href="products.html"><i class="material-icons">local_offer</i><span>PRODUCTOS</span></a></li>
+                <li><a href="purchases.html"><i class="material-icons">shopping_cart</i><span>GESTIÓN DE COMPRAS</span></a></li>
             </ul>
           </li>
           <li class="divider-menu-h"></li>
           <li>
             <a href="#" class="btn-subMenu"><i class="material-icons">attach_money</i><span>VENTAS</span><span class="material-icons arrow">chevron_left</span></a>
             <ul class="sub-menu-options">
-              <li><a href="sale.html"><i class="material-icons">receipt</i><span>COMPROBANTE DE PAGO</span></a></li>
               <li><a href="customer.html"><i class="material-icons">people</i><span>CLIENTES</span></a></li>
-              <li><a href="branches.html"><i class="material-icons">receipt</i><span>SUCURSALES</span></a></li>
+              <li><a href="branches.html"><i class="material-icons">store</i><span>SUCURSALES</span></a></li>
+              <li><a href="sale.html"><i class="material-icons">receipt</i><span>GESTIÓN DE VENTAS</span></a></li>
             </ul>
           </li>
           <li class="divider-menu-h"></li>
-          <li><a href="config.html"><i class="material-icons">settings</i><span>CONFIGURACIÓN</span></a></li>
+          <li>
+            <a href="#" class="btn-subMenu"><i class="material-icons">settings</i><span>CONFIGURACIÓN</span><span class="material-icons arrow">chevron_left</span></a>
+            <ul class="sub-menu-options">
+              <li><a href="role.html"><i class="material-icons">assignment_ind</i><span>ROLES</span></a></li>
+              <li><a href="permission.html"><i class="material-icons">lock_person</i><span>PERMISOS</span></a></li>
+            </ul>
+          </li>
         </ul>
       </nav>
-      <div class="logout-button">
-        <a href="#" onclick="logout()"><i class="material-icons">logout</i></a>
-      </div>
     </div>
   </section>
 
   <header class="dashboard-header">
     <button class="open-menu-btn btn-menu"><i class="material-icons">menu</i></button>
     <div class="user-dropdown-container">
-      <div class="user-info">
+      <div class="user-info" id="userDropdownToggle">
         <i class="material-icons user-icon">account_circle</i>
         <span class="user-name" id="loggedUserName">Usuario</span>
+        <i class="material-icons arrow-icon">expand_more</i>
+      </div>
+      <div class="user-dropdown-menu" id="userDropdownMenu">
+        <a href="profile.html" class="dropdown-item">
+          <i class="material-icons">person</i>
+          <span>Mi Perfil</span>
+        </a>
+        <div class="dropdown-divider"></div>
+        <a href="#" class="dropdown-item" onclick="logout()">
+          <i class="material-icons">logout</i>
+          <span>Cerrar Sesión</span>
+        </a>
       </div>
     </div>
   </header>
@@ -97,7 +112,8 @@
                   <th>Categoría</th>
                   <th>Precio</th>
                   <th>Stock</th>
-                  <th>Stock Mínimo</th>
+                  <th>Fecha de Lote</th>
+                  <th>Fecha de Expiración</th>
                   <th>Estado</th>
                   <th>Acciones</th>
                 </tr>
@@ -115,7 +131,6 @@
         </div>
       </section>
   
-      <!-- Formulario de Registro de Producto -->
       <!-- Modal de Registro de Producto -->
       <div id="registerModal" class="modal">
         <div class="modal-content">
@@ -125,30 +140,39 @@
               <h3 id="formTitle">Registrar Producto</h3>
             </div>
             <div class="card-body">
-              <form id="productForm">
-                <div class="form-field">
-                  <input type="text" class="field-element" id="name" placeholder="Nombre">
+              <form id="productForm" novalidate>
+                <div class="form-row">
+                  <div class="form-field">
+                    <input type="text" class="field-element" id="name" placeholder="Nombre">
+                    <div class="error-message" id="name-error">El campo es obligatorio.</div>
+                  </div>
+                  <div class="form-field">
+                    <select class="field-element" id="category">
+                      <option value="" disabled selected hidden>Seleccionar categoría</option>
+                    </select>
+                    <div class="error-message" id="category-error">Debe seleccionar una categoría.</div>
+                  </div>
                 </div>
-                <div class="form-field">
-                  <select class="field-element" id="category">
-                    <option value="" disabled selected hidden>Seleccionar categoría</option>
-                  </select>
+                <div class="form-row">
+                  <div class="form-field">
+                    <input type="number" class="field-element" id="price" placeholder="Precio">
+                    <div class="error-message" id="price-error">El precio es obligatorio.</div>
+                  </div>
+                  <div class="form-field">
+                    <label>Fecha de Lote:</label>
+                    <input type="date" class="field-element" id="batchDate">
+                    <div class="error-message" id="batchDate-error">La fecha de lote es obligatoria.</div>
+                  </div>
                 </div>
-                <div class="form-field">
-                  <input type="number" class="field-element" id="price" placeholder="Precio">
-                </div>
-                <div class="form-field">
-                  <input type="number" class="field-element" id="stock" placeholder="Stock">
-                </div>
-                <div class="form-field">
-                  <input type="number" class="field-element" id="minimumStock" placeholder="Stock Mínimo">
-                </div>
-                <div class="form-field">
-                  <label>Estado:</label>
-                  <label class="switch">
-                    <input type="checkbox" id="status">
-                    <span class="slider"></span>
-                  </label>
+                <div class="form-row">
+                  <div class="form-field">
+                    <label>Fecha de Expiración:</label>
+                    <input type="date" class="field-element" id="expirationDate">
+                    <div class="error-message" id="expirationDate-error">La fecha de expiración es obligatoria.</div>
+                  </div>
+                  <div class="form-field">
+                    <!-- Campo vacío para mantener el balance del diseño -->
+                  </div>
                 </div>
                 <div class="controls-container">
                   <button type="button" class="action-button" id="registerButton">Registrar</button>
@@ -158,7 +182,7 @@
           </section>
         </div>
       </div>
-
+  
       <!-- Modal de Edición de Producto -->
       <div id="editModal" class="modal">
         <div class="modal-content">
@@ -168,34 +192,44 @@
               <h3 id="editFormTitle">Editar Producto</h3>
             </div>
             <div class="card-body">
-              <form id="editForm">
+              <form id="editForm" novalidate>
                 <input type="hidden" id="editId">
-                <div class="form-field">
-                  <input type="text" class="field-element" id="editName" placeholder="Nombre">
+                <div class="form-row">
+                  <div class="form-field">
+                    <input type="text" class="field-element" id="editName" placeholder="Nombre">
+                    <div class="error-message" id="editName-error">El campo es obligatorio.</div>
+                  </div>
+                  <div class="form-field">
+                    <select class="field-element" id="editCategory">
+                      <option value="" disabled selected hidden>Seleccionar categoría</option>
+                    </select>
+                    <div class="error-message" id="editCategory-error">Debe seleccionar una categoría.</div>
+                  </div>
                 </div>
-                <div class="form-field">
-                  <select class="field-element" id="editCategory">
-                    <option value="" disabled selected hidden>Seleccionar categoría</option>
-                  </select>
+                <div class="form-row">
+                  <div class="form-field">
+                    <input type="number" class="field-element" id="editPrice" placeholder="Precio">
+                    <div class="error-message" id="editPrice-error">El precio es obligatorio.</div>
+                  </div>
+                  <div class="form-field">
+                    <input type="number" class="field-element" id="editStock" placeholder="Stock">
+                    <div class="error-message" id="editStock-error">El stock es obligatorio.</div>
+                  </div>
                 </div>
-                <div class="form-field">
-                  <input type="number" class="field-element" id="editPrice" placeholder="Precio">
-                </div>
-                <div class="form-field">
-                  <input type="number" class="field-element" id="editStock" placeholder="Stock">
-                </div>
-                <div class="form-field">
-                  <input type="number" class="field-element" id="editMinimumStock" placeholder="Stock Mínimo">
-                </div>
-                <div class="form-field">
-                  <label>Estado:</label>
-                  <label class="switch">
-                    <input type="checkbox" id="editStatus">
-                    <span class="slider"></span>
-                  </label>
+                <div class="form-row">
+                  <div class="form-field">
+                    <label>Fecha de Lote:</label>
+                    <input type="date" class="field-element" id="editBatchDate">
+                    <div class="error-message" id="editBatchDate-error">La fecha de lote es obligatoria.</div>
+                  </div>
+                  <div class="form-field">
+                    <label>Fecha de Expiración:</label>
+                    <input type="date" class="field-element" id="editExpirationDate">
+                    <div class="error-message" id="editExpirationDate-error">La fecha de expiración es obligatoria.</div>
+                  </div>
                 </div>
                 <div class="controls-container">
-                  <button type="button" class="action-button" id="registerButton" onclick="updateProduct()">Actualizar</button>
+                  <button type="button" class="action-button" id="updateButton" onclick="updateProduct()">Actualizar</button>
                 </div>
               </form>
             </div>
@@ -203,8 +237,8 @@
         </div>
       </div>
     </div>
-  </main>  
- 
+  </main>
+
   <script src="js/menu.js"></script>
   <script src="js/products.js"></script>
   <script src="js/category.js"></script>

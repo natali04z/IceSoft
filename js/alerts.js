@@ -41,3 +41,27 @@ function showSuccess(message = "Operación exitosa") {
       cancelButtonText: cancelText
     }).then((result) => result.isConfirmed);
   }
+
+  function showLoadingIndicator() {
+    Swal.fire({
+      title: '',
+      html: '<div class="swal2-loader-custom"></div><div class="swal2-title-custom">Cargando</div>',
+      showConfirmButton: false,
+      allowOutsideClick: false,
+      width: '250px',
+      customClass: {
+        popup: 'swal-custom-loading'
+      },
+      showClass: {
+        popup: 'swal2-show',
+        backdrop: 'swal2-backdrop-show'
+      },
+      didOpen: () => {
+      }
+    });
+  }
+  
+  // Función para cerrar el indicador de carga
+  function hideLoadingIndicator() {
+    Swal.close();
+  }

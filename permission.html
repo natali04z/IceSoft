@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Proveedores | ICESOFT</title>
+  <title>Permisos | ICESOFT</title>
   <link rel="icon" href="assets/icesoft.png" type="image/png">
   <link rel="stylesheet" href="css/style.css">
   <script src="js/alerts.js"></script>
@@ -32,10 +32,10 @@
           <li>
             <a href="#" class="btn-subMenu"><i class="material-icons">work</i><span>COMPRAS</span><span class="material-icons arrow">chevron_left</span></a>
             <ul class="sub-menu-options">
-                <li><a href="category.html"><i class="material-icons">label</i><span>CATEGORÍAS</span></a></li>
-                <li><a href="providers.html"><i class="material-icons">local_shipping</i><span>PROVEEDORES</span></a></li>
-                <li><a href="products.html"><i class="material-icons">local_offer</i><span>PRODUCTOS</span></a></li>
-                <li><a href="purchases.html"><i class="material-icons">shopping_cart</i><span>GESTIÓN DE COMPRAS</span></a></li>
+              <li><a href="category.html"><i class="material-icons">label</i><span>CATEGORÍAS</span></a></li>
+              <li><a href="providers.html"><i class="material-icons">local_shipping</i><span>PROVEEDORES</span></a></li>
+              <li><a href="products.html"><i class="material-icons">local_offer</i><span>PRODUCTOS</span></a></li>
+              <li><a href="purchases.html"><i class="material-icons">shopping_cart</i><span>GESTIÓN DE COMPRAS</span></a></li>
             </ul>
           </li>
           <li class="divider-menu-h"></li>
@@ -84,20 +84,20 @@
 
   <main class="main-content">
     <div class="container">
-      <h2 class="title">Gestión de Proveedores</h2>
+      <h2 class="title">Gestión de Permisos</h2>
   
-      <!-- Contenedor de Búsqueda -->
+      <!-- Search container -->
       <div class="search-container">
         <div class="search-box">
-          <input type="text" id="searchInput" placeholder="Buscar proveedor...">
-          <button onclick="searchProvider()"><i class="material-icons">search</i></button>
+          <input type="text" id="searchInput" placeholder="Buscar permiso...">
+          <button onclick="searchPermission()"><i class="material-icons">search</i></button>
         </div>
       </div>
   
-      <!-- Tabla de Proveedor -->
+      <!-- Tabla de Permisos -->
       <section class="table-card">
         <div class="card-header card-header-flex">
-          <h3>Listado de Proveedores</h3>
+          <h3>Listado de Permisos</h3>
           <button type="button" class="add-button" id="mobileAddButton">
             <i class="material-icons">add</i> Añadir
           </button>
@@ -108,17 +108,15 @@
               <thead>
                 <tr>
                   <th>ID</th>
-                  <th>NIT</th>
-                  <th>Empresa</th>
-                  <th>Nombre Contacto</th>
-                  <th>Teléfono</th>
-                  <th>Correo</th>
+                  <th>Nombre</th>
+                  <th>Código</th>
+                  <th>Descripción</th>
                   <th>Estado</th>
                   <th>Acciones</th>
                 </tr>
               </thead>
-              <tbody id="providerTableBody">
-                <!-- Proveedores cargados dinámicamente -->
+              <tbody id="permissionTableBody">
+                <!-- Permisos cargados dinámicamente -->
               </tbody>
             </table>
           </div>
@@ -130,43 +128,30 @@
         </div>
       </section>
   
-    <!-- Modal de Registro de Proveedor -->
+    <!-- Formulario de Registro de Permiso -->
     <div id="registerModal" class="modal">
       <div class="modal-content">
         <span class="close" onclick="closeModal('registerModal')">&times;</span>
         <section class="form-card">
           <div class="card-header">
-            <h3 id="formTitle">Registrar Proveedor</h3>
+            <h3 id="formTitle">Registrar Permiso</h3>
           </div>
           <div class="card-body">
-            <form id="providerForm" novalidate>
+            <form id="permissionForm" novalidate>
               <div class="form-row">
                 <div class="form-field">
-                  <input type="tel" class="field-element" id="nit" placeholder="NIT" inputmode="numeric">
-                  <div class="error-message" id="nit-error">El campo es obligatorio.</div>
-                </div>
-                <div class="form-field">
-                  <input type="text" class="field-element" id="company" placeholder="Empresa">
-                  <div class="error-message" id="company-error">El campo es obligatorio.</div>
-                </div>
-              </div>
-              <div class="form-row">
-                <div class="form-field">
-                  <input type="text" class="field-element" id="name" placeholder="Nombre Contacto">
+                  <input type="text" class="field-element" id="name" placeholder="Nombre">
                   <div class="error-message" id="name-error">El campo es obligatorio.</div>
                 </div>
                 <div class="form-field">
-                  <input type="tel" class="field-element" id="contact_phone" placeholder="Teléfono de contacto" inputmode="numeric">
-                  <div class="error-message" id="contact_phone-error">El campo es obligatorio.</div>
+                  <input type="text" class="field-element" id="code" placeholder="Código">
+                  <div class="error-message" id="code-error">El campo es obligatorio.</div>
                 </div>
               </div>
               <div class="form-row">
                 <div class="form-field">
-                  <input type="email" class="field-element" id="email" placeholder="Correo">
-                  <div class="error-message" id="email-error">El campo es obligatorio.</div>
-                </div>
-                <div class="form-field">
-                  <!-- Campo vacío para mantener el balance del diseño -->
+                  <textarea class="field-element" id="description" placeholder="Descripción"></textarea>
+                  <div class="error-message" id="description-error">El campo es obligatorio.</div>
                 </div>
               </div>
               <div class="controls-container">
@@ -178,44 +163,31 @@
       </div>
     </div>
 
-    <!-- Modal de Edición de Proveedor -->
+    <!-- Modal de Edición de Permiso -->
     <div id="editModal" class="modal">
       <div class="modal-content">
         <span class="close" onclick="closeModal('editModal')">&times;</span>
         <section class="form-card">
           <div class="card-header">
-            <h3 id="editFormTitle">Editar Proveedor</h3>
+            <h3 id="editFormTitle">Editar Permiso</h3>
           </div>
           <div class="card-body">
             <form id="editForm" novalidate>
               <input type="hidden" id="editId">
               <div class="form-row">
                 <div class="form-field">
-                  <input type="tel" class="field-element" id="editNit" placeholder="NIT" inputmode="numeric">
-                  <div class="error-message" id="editNit-error">El campo es obligatorio.</div>
-                </div>
-                <div class="form-field">
-                  <input type="text" class="field-element" id="editCompany" placeholder="Empresa">
-                  <div class="error-message" id="editCompany-error">El campo es obligatorio.</div>
-                </div>
-              </div>
-              <div class="form-row">
-                <div class="form-field">
-                  <input type="text" class="field-element" id="editName" placeholder="Nombre Contacto">
+                  <input type="text" class="field-element" id="editName" placeholder="Nombre">
                   <div class="error-message" id="editName-error">El campo es obligatorio.</div>
                 </div>
                 <div class="form-field">
-                  <input type="tel" class="field-element" id="editContactPhone" placeholder="Teléfono de contacto" inputmode="numeric">
-                  <div class="error-message" id="editContactPhone-error">El campo es obligatorio.</div>
+                  <input type="text" class="field-element" id="editCode" placeholder="Código">
+                  <div class="error-message" id="editCode-error">El campo es obligatorio.</div>
                 </div>
               </div>
               <div class="form-row">
                 <div class="form-field">
-                  <input type="email" class="field-element" id="editEmail" placeholder="Correo">
-                  <div class="error-message" id="editEmail-error">El campo es obligatorio.</div>
-                </div>
-                <div class="form-field">
-                  <!-- Campo vacío para mantener el balance del diseño -->
+                  <textarea class="field-element" id="editDescription" placeholder="Descripción"></textarea>
+                  <div class="error-message" id="editDescription-error">El campo es obligatorio.</div>
                 </div>
               </div>
               <div class="controls-container">
@@ -227,8 +199,10 @@
       </div>
     </div>
   </main>
- 
+  
   <script src="js/menu.js"></script>
-  <script src="js/providers.js"></script>
+  <script src="js/permission.js"></script>
 </body>
 </html>
+
+ 
