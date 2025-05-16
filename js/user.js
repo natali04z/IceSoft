@@ -302,6 +302,7 @@ const getCurrentUserId = () => {
 };
 
 // Cargar roles desde el backend
+// Cargar roles desde el backend
 const loadRoles = async () => {
   try {
     const token = localStorage.getItem("token");
@@ -321,7 +322,18 @@ const loadRoles = async () => {
     const data = await res.json();
 
     if (res.ok) {
-      const roles = data.roles || data;
+      // Manejar diferentes formatos de respuesta posibles
+      let roles = [];
+      if (data.roles && Array.isArray(data.roles)) {
+        roles = data.roles;
+      } else if (Array.isArray(data)) {
+        roles = data;
+      } else {
+        console.warn("Formato de respuesta de roles inesperado:", data);
+        roles = [];
+      }
+      
+      console.log("Roles cargados correctamente:", roles);
       
       // Poblar los selectores de roles
       const roleSelectors = document.querySelectorAll('#role, #editRole');
@@ -334,7 +346,8 @@ const loadRoles = async () => {
         }
         
         // Añadir los roles desde la base de datos
-        roles.forEach(role => {
+        // Solo incluir roles activos
+        roles.filter(role => role.status === "active").forEach(role => {
           const option = document.createElement('option');
           option.value = role._id;
           option.textContent = role.name;
@@ -349,7 +362,7 @@ const loadRoles = async () => {
     }
   } catch (err) {
     console.error("Error al cargar roles:", err);
-    showError("Error al cargar roles");
+    showError("Error al cargar roles: " + (err.message || "desconocido"));
     return [];
   }
 };
