@@ -43,10 +43,13 @@ body {
 }
 
 .dashboard-content {
-    margin-left: var(--menu-width); /* Espacio por el menú lateral */
-    margin-top: 700px; /* Altura del header */
+    margin-left: var(--menu-width);
+    margin-top: 70px;
     padding: 20px;
     transition: margin-left 0.3s ease;
+    min-height: calc(100vh - 70px);
+    display: flex;
+    flex-direction: column;
 }
 
 body.menu-collapsed .dashboard-content {
@@ -58,6 +61,7 @@ body.menu-collapsed .dashboard-content {
     margin: 0 auto;
     padding: 20px;
     width: 100%;
+    box-sizing: border-box;
 }
 
 /* ====================== HEADER Y TÍTULO ====================== */
@@ -395,10 +399,14 @@ body.menu-collapsed .sub-menu-options {
     padding-top: 70px;
     flex: 1;
     transition: margin-left 0.3s ease;
+    min-height: calc(100vh - 70px);
+    width: calc(100% - var(--menu-width));
+    overflow-x: hidden;
 }
 
 body.menu-collapsed .main-content {
     margin-left: var(--menu-collapsed-width);
+    width: calc(100% - var(--menu-collapsed-width));
 }
 
 /* ====================== GRID DE CONTENIDO ====================== */
@@ -460,16 +468,13 @@ body.menu-collapsed .main-content {
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
-    
-    /* Estas propiedades son clave para centrar el modal */
-    display: none; /* Se cambiará a flex cuando esté visible */
     justify-content: center;
     align-items: center;
-  }
+}
   
   /* Mostrar el modal con flex para centrarlo */
   .modal[style*="display: block"] {
-    display: flex !important;
+      display: flex !important;
   }
   
   /* Ajustes al contenido del modal */
@@ -570,13 +575,17 @@ body.menu-collapsed .main-content {
 
 /* ====================== TABLA DE USUARIOS ====================== */
 .table-responsive {
+    width: 100%;
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
     margin-bottom: 20px;
 }
 
 .users-table {
     width: 100%;
+    min-width: 500px;
     border-collapse: collapse;
+    table-layout: auto;
 }
 
 .users-table thead {
@@ -602,6 +611,18 @@ body.menu-collapsed .main-content {
 .users-table td {
     padding: 12px 15px;
     border-top: 1px solid #eee;
+}
+
+.users-table th,
+.users-table td {
+    padding: 15px 20px;
+    vertical-align: middle;
+    line-height: 1.4;
+}
+
+/* Crear una separación más visible entre filas */
+.users-table tr {
+    border-bottom: 1px solid #e0e0e0; 
 }
 
 /* Botones de edición y eliminación */
@@ -818,21 +839,72 @@ body.menu-collapsed .main-content {
 
 /* ====================== RESPONSIVE ====================== */
 @media (max-width: 992px) {
-    .content-grid {
-        flex-direction: column;
+    .dashboard-content,
+    .main-content {
+        padding: 15px;
     }
-
+    
     .search-box {
         width: 100%;
         max-width: 300px;
     }
-
-    .form-card {
-        max-width: 100%;
-    }
-
+    
+    .form-card,
     .table-card {
         max-width: 100%;
+    }
+    
+    .content-grid {
+        gap: 15px
+    }
+}
+
+@media (max-width: 576px) {
+    .dashboard-content,
+    .main-content {
+        margin-left: 0; /* En móvil, el menú lateral debería estar oculto o ser un overlay */
+        width: 100%;
+        padding: 10px;
+    }
+    
+    body.menu-collapsed .dashboard-content,
+    body.menu-collapsed .main-content {
+        margin-left: 0;
+        width: 100%;
+    }
+    
+    .dashboard-header {
+        left: 0; /* Header a ancho completo en móvil */
+        width: 100%;
+    }
+    
+    body.menu-collapsed .dashboard-header {
+        left: 0;
+    }
+    
+    /* Asegurar que el menú lateral sea un overlay en lugar de empujar contenido */
+    .navLateral {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        z-index: 1050;
+    }
+    
+    .navLateral.navLateral-show {
+        transform: translateX(0);
+    }
+    
+    /* Ajustar el tamaño de las tablas y las cards para móvil */
+    .table-responsive {
+        max-width: 100%;
+        overflow-x: auto;
+    }
+    
+    .card-header {
+        padding: 10px 15px;
+    }
+    
+    .card-body {
+        padding: 15px;
     }
 }
 
@@ -1150,23 +1222,42 @@ input:checked + .slider:before {
   }
   
   /* Responsive para móviles */
-  @media (max-width: 768px) {
-    .profile-grid {
-      grid-template-columns: 1fr;
+@media (max-width: 768px) {
+    .dashboard-content {
+        padding: 10px;
     }
     
-    .modal-content {
-      width: 90% !important;
+    .users-table {
+        font-size: 13px;
     }
     
-    .form-row {
-      flex-direction: column;
+    .users-table th, 
+    .users-table td {
+        padding: 8px 5px;
+    }
+
+    .search-box {
+        width: 100%;
+        max-width: none;
+        margin-bottom: 10px;
     }
     
-    .form-row .form-field {
-      margin-bottom: 10px;
+    .search-container {
+        flex-direction: column;
+        align-items: stretch;
     }
-  }
+    
+    .actions {
+        justify-content: space-between;
+        width: 100%;
+    }
+    
+    /* Ajustar el botón de añadir para que tome menos espacio */
+    .add-button {
+        font-size: 13px;
+        padding: 6px 12px;
+    }
+}
   
   /* icono */
   .profile-header-card {
