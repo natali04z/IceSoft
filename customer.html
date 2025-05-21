@@ -132,91 +132,87 @@
     <!-- Modal de Registro de Cliente -->
     <div id="registerModal" class="modal">
       <div class="modal-content">
-        <span class="close" onclick="closeModal('registerModal')">&times;</span>
-        <section class="form-card">
-          <div class="card-header">
-            <h3 id="formTitle">Registrar Cliente</h3>
-          </div>
-          <div class="card-body">
-            <form id="customerForm" novalidate>
-              <div class="form-row">
-                <div class="form-field">
-                  <input type="text" class="field-element" id="name" placeholder="Nombre">
-                  <div class="error-message" id="name-error">El campo es obligatorio.</div>
-                </div>
-                <div class="form-field">
-                  <input type="text" class="field-element" id="lastname" placeholder="Apellido">
-                  <div class="error-message" id="lastname-error">El campo es obligatorio.</div>
-                </div>
+        <div class="modal-header">
+          <h3 id="formTitle">Registrar Cliente</h3>
+          <button class="modal-close" onclick="closeModal('registerModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="customerForm" novalidate>
+            <div class="form-row">
+              <div class="form-field">
+                <input type="text" class="field-element" id="name" placeholder="Nombre">
+                <div class="error-message" id="name-error">El campo es obligatorio.</div>
               </div>
-              
-              <div class="form-row">
-                <div class="form-field">
-                  <input type="email" class="field-element" id="email" placeholder="Correo electrónico">
-                  <div class="error-message" id="email-error">El campo es obligatorio.</div>
-                </div>
-                <div class="form-field">
-                  <input type="tel" class="field-element" id="phone" placeholder="Teléfono" inputmode="numeric" onkeypress="return /[0-9]/i.test(event.key)">
-                  <div class="error-message" id="phone-error">El campo es obligatorio.</div>
-                </div>
+              <div class="form-field">
+                <input type="text" class="field-element" id="lastname" placeholder="Apellido">
+                <div class="error-message" id="lastname-error">El campo es obligatorio.</div>
               </div>
-              
-              <div class="controls-container">
-                <button type="button" class="action-button" id="registerButton">Registrar</button>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-field">
+                <input type="email" class="field-element" id="email" placeholder="Correo electrónico">
+                <div class="error-message" id="email-error">El campo es obligatorio.</div>
               </div>
-            </form>
-          </div>
-        </section>
+              <div class="form-field">
+                <input type="tel" class="field-element" id="phone" placeholder="Teléfono" inputmode="numeric" onkeypress="return /[0-9]/i.test(event.key)">
+                <div class="error-message" id="phone-error">El campo es obligatorio.</div>
+              </div>
+            </div>
+            
+            <div class="controls-container">
+              <button type="button" class="action-button" id="registerButton">Registrar</button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
 
     <!-- Modal de Edición de Cliente -->
     <div id="editModal" class="modal">
       <div class="modal-content">
-        <span class="close" onclick="closeModal('editModal')">&times;</span>
-        <section class="form-card">
-          <div class="card-header">
-            <h3 id="editFormTitle">Editar Cliente</h3>
-          </div>
-          <div class="card-body">
-            <form id="editForm" novalidate>
-              <input type="hidden" id="editId">
-              
-              <div class="form-row">
-                <div class="form-field">
-                  <input type="text" class="field-element" id="editName" placeholder="Nombre">
-                  <div class="error-message" id="editName-error">El campo es obligatorio.</div>
-                </div>
-                <div class="form-field">
-                  <input type="text" class="field-element" id="editLastname" placeholder="Apellido">
-                  <div class="error-message" id="editLastname-error">El campo es obligatorio.</div>
-                </div>
+        <div class="modal-header">
+          <h3 id="editFormTitle">Editar Cliente</h3>
+          <button class="modal-close" onclick="closeModal('editModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="editForm" novalidate>
+            <input type="hidden" id="editId">
+            
+            <div class="form-row">
+              <div class="form-field">
+                <input type="text" class="field-element" id="editName" placeholder="Nombre">
+                <div class="error-message" id="editName-error">El campo es obligatorio.</div>
               </div>
-              
-              <div class="form-row">
-                <div class="form-field">
-                  <input type="email" class="field-element" id="editEmail" placeholder="Correo electrónico">
-                  <div class="error-message" id="editEmail-error">El campo es obligatorio.</div>
-                </div>
-                <div class="form-field">
-                  <input type="tel" class="field-element" id="editPhone" placeholder="Teléfono" inputmode="numeric" onkeypress="return /[0-9]/i.test(event.key)">
-                  <div class="error-message" id="editPhone-error">El campo es obligatorio.</div>
-                </div>
+              <div class="form-field">
+                <input type="text" class="field-element" id="editLastname" placeholder="Apellido">
+                <div class="error-message" id="editLastname-error">El campo es obligatorio.</div>
               </div>
-              
-              <div id="isDefaultContainer" class="form-row default-container">
-                <div class="default-badge">
-                  Cliente predeterminado
-                  <i class="material-icons">verified</i>
-                </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-field">
+                <input type="email" class="field-element" id="editEmail" placeholder="Correo electrónico">
+                <div class="error-message" id="editEmail-error">El campo es obligatorio.</div>
               </div>
-              
-              <div class="controls-container">
-                <button type="button" class="action-button" id="updateButton">Actualizar</button>
+              <div class="form-field">
+                <input type="tel" class="field-element" id="editPhone" placeholder="Teléfono" inputmode="numeric" onkeypress="return /[0-9]/i.test(event.key)">
+                <div class="error-message" id="editPhone-error">El campo es obligatorio.</div>
               </div>
-            </form>
-          </div>
-        </section>
+            </div>
+            
+            <div id="isDefaultContainer" class="form-row default-container">
+              <div class="default-badge">
+                Cliente predeterminado
+                <i class="material-icons">verified</i>
+              </div>
+            </div>
+            
+            <div class="controls-container">
+              <button type="button" class="action-button" id="updateButton">Actualizar</button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   </main>

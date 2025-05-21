@@ -43,10 +43,13 @@ body {
 }
 
 .dashboard-content {
-    margin-left: var(--menu-width); /* Espacio por el menú lateral */
-    margin-top: 700px; /* Altura del header */
+    margin-left: var(--menu-width);
+    margin-top: 70px;
     padding: 20px;
     transition: margin-left 0.3s ease;
+    min-height: calc(100vh - 70px);
+    display: flex;
+    flex-direction: column;
 }
 
 body.menu-collapsed .dashboard-content {
@@ -58,6 +61,7 @@ body.menu-collapsed .dashboard-content {
     margin: 0 auto;
     padding: 20px;
     width: 100%;
+    box-sizing: border-box;
 }
 
 /* ====================== HEADER Y TÍTULO ====================== */
@@ -395,10 +399,14 @@ body.menu-collapsed .sub-menu-options {
     padding-top: 70px;
     flex: 1;
     transition: margin-left 0.3s ease;
+    min-height: calc(100vh - 70px);
+    width: calc(100% - var(--menu-width));
+    overflow-x: hidden;
 }
 
 body.menu-collapsed .main-content {
     margin-left: var(--menu-collapsed-width);
+    width: calc(100% - var(--menu-collapsed-width));
 }
 
 /* ====================== GRID DE CONTENIDO ====================== */
@@ -450,7 +458,7 @@ body.menu-collapsed .main-content {
 }
 
 /* ====================== MODALES ====================== */
-/* Mejoras para centrar el modal */
+/* Estructura principal del modal */
 .modal {
     display: none;
     position: fixed;
@@ -460,54 +468,152 @@ body.menu-collapsed .main-content {
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
-    
-    /* Estas propiedades son clave para centrar el modal */
-    display: none; /* Se cambiará a flex cuando esté visible */
     justify-content: center;
     align-items: center;
-  }
+}
   
-  /* Mostrar el modal con flex para centrarlo */
-  .modal[style*="display: block"] {
+/* Mostrar el modal con flex para centrarlo */
+.modal[style*="display: block"] {
     display: flex !important;
-  }
+}
   
-  /* Ajustes al contenido del modal */
-  .modal-content {
+/* Contenido del modal más grande y sin padding general */
+.modal-content {
     background-color: white;
-    padding: 20px;
+    padding: 0;
     border-radius: 10px;
-    width: 400px;
+    width: 600px;
     max-width: 90%;
     position: relative;
     box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.3);
-    
-    /* Estas propiedades eliminan cualquier margen automático que pueda interferir */
     margin: 0;
     transform: none;
     top: auto;
     left: auto;
-  }
-  
-  /* Mejora el título del modal */
-  .form-card .card-header h3 {
-    text-align: center;
-    margin: 0;
-    padding: 10px 0;
-    font-weight: 500;
-  }
-  
-  /* Botón de registrar centrado */
-  .controls-container {
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+/* Encabezado del modal */
+.modal-header {
     display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background-color: #1b2b40;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.modal-header h3 {
+    font-size: 18px;
+    font-weight: 500;
+    color: white;
+    margin: 0;
+}
+
+/* Botón de cierre del modal */
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 22px;
+    color: white;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
     justify-content: center;
-    margin-top: 20px;
-  }
+    border-radius: 50%;
+    transition: background-color 0.3s;
+}
+
+.modal-close:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Cuerpo del modal */
+.modal-body {
+    padding: 20px;
+}
 
 /* Animación de aparición del modal */
 @keyframes fadeIn {
     from { opacity: 0; transform: scale(0.95); }
     to { opacity: 1; transform: scale(1); }
+}
+
+.modal-content {
+    animation: fadeIn 0.3s ease;
+}
+
+/* Ajustes responsive para el modal */
+@media (max-width: 768px) {
+    .modal-content {
+        width: 95%;
+        max-height: 80vh;
+    }
+    
+    .modal-header {
+        padding: 12px 15px;
+    }
+    
+    .modal-body {
+        padding: 15px;
+    }
+}
+
+/* Para pantallas muy pequeñas */
+@media (max-width: 480px) {
+    .modal-content {
+        width: 100%;
+        max-width: 100%;
+        border-radius: 0;
+        height: 100%;
+        max-height: 100%;
+    }
+    
+    .modal-header {
+        border-radius: 0;
+    }
+}
+
+/* Modal para diferentes tamaños */
+.modal-sm .modal-content {
+    width: 400px;
+}
+
+.modal-lg .modal-content {
+    width: 800px;
+}
+
+.modal-xl .modal-content {
+    width: 1000px;
+}
+
+/* Estilos para mensajes dentro del modal */
+.modal-message {
+    text-align: center;
+    padding: 20px;
+}
+
+.modal-message-icon {
+    font-size: 50px;
+    margin-bottom: 15px;
+    color: var(--blue);
+}
+
+.modal-message-title {
+    font-size: 20px;
+    margin-bottom: 10px;
+    color: var(--text-dark);
+}
+
+.modal-message-text {
+    color: var(--text-gray);
+    margin-bottom: 20px;
 }
 
 
@@ -570,13 +676,17 @@ body.menu-collapsed .main-content {
 
 /* ====================== TABLA DE USUARIOS ====================== */
 .table-responsive {
+    width: 100%;
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
     margin-bottom: 20px;
 }
 
 .users-table {
     width: 100%;
+    min-width: 500px;
     border-collapse: collapse;
+    table-layout: auto;
 }
 
 .users-table thead {
@@ -602,6 +712,18 @@ body.menu-collapsed .main-content {
 .users-table td {
     padding: 12px 15px;
     border-top: 1px solid #eee;
+}
+
+.users-table th,
+.users-table td {
+    padding: 15px 20px;
+    vertical-align: middle;
+    line-height: 1.4;
+}
+
+/* Crear una separación más visible entre filas */
+.users-table tr {
+    border-bottom: 1px solid #e0e0e0; 
 }
 
 /* Botones de edición y eliminación */
@@ -818,21 +940,72 @@ body.menu-collapsed .main-content {
 
 /* ====================== RESPONSIVE ====================== */
 @media (max-width: 992px) {
-    .content-grid {
-        flex-direction: column;
+    .dashboard-content,
+    .main-content {
+        padding: 15px;
     }
-
+    
     .search-box {
         width: 100%;
         max-width: 300px;
     }
-
-    .form-card {
-        max-width: 100%;
-    }
-
+    
+    .form-card,
     .table-card {
         max-width: 100%;
+    }
+    
+    .content-grid {
+        gap: 15px
+    }
+}
+
+@media (max-width: 576px) {
+    .dashboard-content,
+    .main-content {
+        margin-left: 0; /* En móvil, el menú lateral debería estar oculto o ser un overlay */
+        width: 100%;
+        padding: 10px;
+    }
+    
+    body.menu-collapsed .dashboard-content,
+    body.menu-collapsed .main-content {
+        margin-left: 0;
+        width: 100%;
+    }
+    
+    .dashboard-header {
+        left: 0; /* Header a ancho completo en móvil */
+        width: 100%;
+    }
+    
+    body.menu-collapsed .dashboard-header {
+        left: 0;
+    }
+    
+    /* Asegurar que el menú lateral sea un overlay en lugar de empujar contenido */
+    .navLateral {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        z-index: 1050;
+    }
+    
+    .navLateral.navLateral-show {
+        transform: translateX(0);
+    }
+    
+    /* Ajustar el tamaño de las tablas y las cards para móvil */
+    .table-responsive {
+        max-width: 100%;
+        overflow-x: auto;
+    }
+    
+    .card-header {
+        padding: 10px 15px;
+    }
+    
+    .card-body {
+        padding: 15px;
     }
 }
 
@@ -876,7 +1049,7 @@ body.menu-collapsed .main-content {
 }
 
 input:checked + .slider {
-    background-color: rgb(0, 231, 31);
+    background-color: rgb(62, 175, 77);
 }
 
 input:checked + .slider:before {
@@ -1012,8 +1185,7 @@ input:checked + .slider:before {
     margin-top: 4px;
 }
 
-<<<<<<< Updated upstream
-=======
+
 .button-group {
     display: flex;
     gap: 10px;
@@ -1151,23 +1323,42 @@ input:checked + .slider:before {
   }
   
   /* Responsive para móviles */
-  @media (max-width: 768px) {
-    .profile-grid {
-      grid-template-columns: 1fr;
+@media (max-width: 768px) {
+    .dashboard-content {
+        padding: 10px;
     }
     
-    .modal-content {
-      width: 90% !important;
+    .users-table {
+        font-size: 13px;
     }
     
-    .form-row {
-      flex-direction: column;
+    .users-table th, 
+    .users-table td {
+        padding: 8px 5px;
+    }
+
+    .search-box {
+        width: 100%;
+        max-width: none;
+        margin-bottom: 10px;
     }
     
-    .form-row .form-field {
-      margin-bottom: 10px;
+    .search-container {
+        flex-direction: column;
+        align-items: stretch;
     }
-  }
+    
+    .actions {
+        justify-content: space-between;
+        width: 100%;
+    }
+    
+    /* Ajustar el botón de añadir para que tome menos espacio */
+    .add-button {
+        font-size: 13px;
+        padding: 6px 12px;
+    }
+}
   
   /* icono */
   .profile-header-card {
@@ -1628,64 +1819,7 @@ input:checked + .slider:before {
     display: none;
   }
   
-  .default-badge {
-    display: flex;
-    align-items: center;
-    background-color: #e6f7ff;
-    color: #0077cc;
-    padding: 8px 15px;
-    border-radius: 4px;
-    font-weight: 500;
-  }
-  
-  .default-badge .material-icons {
-    margin-left: 8px;
-  }
-  
-  /* Animación para mensajes de error */
-  @keyframes errorAppear {
-    from { opacity: 0; transform: translateY(-5px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  
-  /* Estilos para la lista de productos en la tabla */
-  .product-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    max-height: 120px;
-    overflow-y: auto;
-    padding: 2px;
-  }
-  
-  .product-item-inline {
-    display: flex;
-    flex-direction: column;
-    padding: 4px;
-    background-color: #f9f9f9;
-    border-radius: 4px;
-    border-left: 3px solid #2196F3;
-  }
-  
-  .product-item-inline .product-name {
-    font-weight: bold;
-    margin-bottom: 2px;
-  }
-  
-  .product-item-inline .product-details {
-    display: flex;
-    gap: 8px;
-    font-size: 0.85em;
-    color: #555;
-  }
-  
-  /* Estilos para la vista responsiva */
-  @media (max-width: 768px) {
-    .product-item-inline .product-details {
-      flex-direction: column;
-      gap: 2px;
-    }
-  }
+
 
   /*================ PERMISOS ====================*/
 /* Estilos para los contenedores de permisos */
@@ -1970,4 +2104,439 @@ input[type="checkbox"] {
     grid-template-columns: 1fr 1fr;
   }
 }
->>>>>>> Stashed changes
+
+/* ================ DETALLE COMPRA Y VENTA ============ */
+/* Estilos para el modal personalizado de detalles */
+
+/* Variables de color para fácil personalización */
+:root {
+  --primary-color: #3085d6;
+  --primary-light: #f0f7ff;
+  --border-color: #e0e0e0;
+  --header-bg: #f9f9f9;
+  --sidebar-bg: #f5f5f5;
+  --text-primary: #333;
+  --text-secondary: #555;
+  --shadow-color: rgba(0, 0, 0, 0.2);
+}
+
+/* Modal básico */
+.custom-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+  overflow: auto;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.custom-modal-content {
+  background-color: white;
+  width: 100%;
+  max-width: 900px;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px var(--shadow-color);
+  position: relative;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Encabezado del modal */
+.custom-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background-color:  #2e3b52;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.custom-modal-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: white;
+}
+
+.close-button {
+  font-size: 28px;
+  font-weight: bold;
+  color: white;
+  cursor: pointer;
+  transition: color 0.2s;
+  line-height: 1;
+  padding: 0 8px;
+}
+
+.close-button:hover {
+  color: var(--text-primary);
+}
+
+/* Cuerpo del modal */
+.custom-modal-body {
+  padding: 0;
+  overflow-y: auto;
+  flex-grow: 1;
+}
+
+/* Contenido de detalles de compra */
+.purchase-detail-content {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+}
+
+/* Columna de información general */
+.purchase-info-column {
+  flex: 0 0 220px; /* Ancho fijo más pequeño */
+  padding: 20px;
+  background-color: var(--sidebar-bg);
+  border-right: 1px solid var(--border-color);
+}
+
+.info-group {
+  margin-bottom: 20px;
+}
+
+.info-group h4 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 1rem;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 8px;
+}
+
+.info-row {
+  margin-bottom: 16px;
+  line-height: 1.6;
+}
+
+.info-label {
+  font-weight: 600;
+  color: var(--text-secondary);
+  display: block;
+  margin-bottom: 5px;
+}
+
+.info-value {
+  display: block;
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+.total-value {
+  font-weight: 700;
+  font-size: 1.1em;
+  color: var(--primary-color);
+}
+
+/* Columna de productos */
+.purchase-products-column {
+  flex: 1; /* Toma el espacio restante */
+  padding: 20px;
+  background-color: #fff;
+  overflow-y: auto;
+}
+
+.purchase-products-column h4 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 1rem;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 8px;
+}
+
+/* Estilos de la tabla de detalles */
+.details-table-wrapper {
+  overflow-x: auto;
+  margin-top: 10px;
+}
+
+.details-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.details-table th,
+.details-table td {
+  padding: 12px;
+  border: 1px solid var(--border-color);
+}
+
+.details-table th {
+  background-color: var(--header-bg);
+  font-weight: 600;
+  text-align: left;
+  color: var(--text-secondary);
+}
+
+.details-table tbody tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.details-table tbody tr:hover {
+  background-color: var(--primary-light);
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.details-table tfoot {
+  background-color: var(--sidebar-bg);
+}
+
+.details-table tfoot tr td {
+  border-top: 2px solid var(--border-color);
+  font-weight: 600;
+}
+
+/* Mensaje de no hay datos */
+.no-data {
+  color: #999;
+  font-style: italic;
+  text-align: center;
+  padding: 20px 0;
+}
+
+/* Estilos para el indicador de carga */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Animación de entrada del modal */
+.custom-modal {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .purchase-detail-content {
+    flex-direction: column;
+  }
+  
+  .purchase-info-column {
+    flex: auto;
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+  }
+  
+  .details-table th,
+  .details-table td {
+    padding: 8px 6px;
+    font-size: 0.85rem;
+  }
+  
+  .custom-modal-content {
+    width: 95%;
+    max-height: 85vh;
+  }
+}
+
+/* Estilos para el formulario de compras con prefijo 'purchase-' para evitar conflictos */
+.purchase-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    z-index: 1000;
+    overflow: auto;
+    justify-content: center;
+    align-items: center;
+}
+
+.purchase-modal-content {
+    display: flex;
+    width: 90%;
+    max-width: 1000px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    max-height: 80vh;
+}
+
+/* Panel izquierdo */
+.purchase-modal-left {
+    flex: 1;
+    padding: 20px;
+    border-right: 1px solid #ddd;
+    overflow-y: auto;
+}
+
+/* Panel derecho */
+.purchase-modal-right {
+    flex: 1;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.purchase-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+.purchase-modal-header h3 {
+    margin: 0;
+    color: #333;
+}
+
+.purchase-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #777;
+}
+
+.purchase-form-group {
+    margin-bottom: 15px;
+}
+
+.purchase-form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+
+.purchase-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+.purchase-table th, .purchase-table td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.purchase-table th {
+    font-weight: 600;
+    background-color: #f6f6f6;
+}
+
+/* Estilos para botones */
+.purchase-action-button {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.purchase-action-button:hover {
+    background-color: #45a049;
+}
+
+.purchase-delete-btn {
+    background-color: #f44336;
+    color: white;
+    border: none;
+    padding: 5px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.purchase-delete-btn:hover {
+    background-color: #e53935;
+}
+
+.purchase-modal-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #ddd;
+}
+
+.purchase-total {
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.purchase-total-product {
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.purchase-text-muted {
+    color: #777;
+    font-style: italic;
+    text-align: center;
+    padding: 20px 0;
+}
+
+/* Responsive */
+@media screen and (max-width: 768px) {
+    .purchase-modal-content {
+        flex-direction: column;
+        width: 95%;
+    }
+    
+    .purchase-modal-left, .purchase-modal-right {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid #ddd;
+    }
+}

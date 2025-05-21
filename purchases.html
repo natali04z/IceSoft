@@ -123,7 +123,6 @@
                 <tr>
                   <th>ID</th>
                   <th>Proveedor</th>
-                  <th>Productos</th>
                   <th>Fecha</th>
                   <th>Total</th>
                   <th>Estado</th>
@@ -140,161 +139,166 @@
           </div>
         </div>
       </section>
-      
-<!-- Modal de registro de compra -->
-<div id="registerModal" class="modal">
-  <div class="modal-content">
-    <span class="close" onclick="closeModal('registerModal')">&times;</span>
-    <section class="form-card">
-      <div class="card-header">
-        <h3 id="formTitle">Registrar Compra</h3>
-      </div>
-      <div class="card-body">
-        <form id="purchaseForm" novalidate>
-          <!-- Selección de proveedor -->
-          <div class="form-row">
-            <div class="form-field">
-              <select class="field-element" id="provider">
-                <option value="" disabled selected hidden>Seleccionar proveedor</option>
-                <!-- Los proveedores se cargarán dinámicamente -->
-              </select>
-              <div class="error-message" id="provider-error">El campo es obligatorio.</div>
+
+    <!-- Modal de registro de compra -->
+    <div id="registerModal" class="purchase-modal">
+        <div class="purchase-modal-content">
+            <!-- Panel izquierdo - Formulario -->
+            <div class="purchase-modal-left">
+                <div class="purchase-modal-header">
+                    <h3 id="formTitle">Registro de Compras</h3>
+                </div>
+                
+                <form id="purchaseForm" novalidate>
+                    <div class="purchase-form-group">
+                        <label for="provider">Proveedor:</label>
+                        <select class="field-element" id="provider">
+                            <option value="" disabled selected hidden>Seleccionar proveedor</option>
+                            <!-- Los proveedores se cargarán dinámicamente -->
+                        </select>
+                        <div class="error-message" id="provider-error">El campo es obligatorio.</div>
+                    </div>
+                    
+                    <div class="purchase-form-group">
+                        <label for="product">Producto:</label>
+                        <select class="field-element" id="product">
+                            <option value="" disabled selected hidden>Seleccionar producto</option>
+                            <!-- Los productos se cargarán dinámicamente -->
+                        </select>
+                        <div class="error-message" id="product-error">El campo es obligatorio.</div>
+                    </div>
+                    
+                    <div class="purchase-form-group">
+                        <label for="quantity">Cantidad:</label>
+                        <input type="number" class="field-element" id="quantity" min="1" value="1" onkeypress="return isNumber(event)">
+                        <div class="error-message" id="quantity-error">El campo es obligatorio.</div>
+                    </div>
+                    
+                    <div class="purchase-form-group">
+                        <label for="purchasePrice">Precio:</label>
+                        <input type="number" class="field-element" id="purchasePrice" min="0" step="0.01" placeholder="0.00" onkeypress="return isNumber(event, true)">
+                        <div class="error-message" id="purchasePrice-error">El campo es obligatorio.</div>
+                    </div>
+                    
+                    <div class="purchase-form-group">
+                        <label for="purchaseDate">Fecha de compra:</label>
+                        <input type="date" class="field-element" id="purchaseDate">
+                        <div class="error-message" id="purchaseDate-error">El campo es obligatorio.</div>
+                    </div>
+                    
+                    <div class="purchase-buttons-group">
+                        <div class="purchase-total-product">
+                            <label>Total del producto:</label>
+                            $<span id="product-total">0.00</span>
+                        </div>
+                    </div>
+                    
+                    <div class="purchase-modal-footer">
+                        <button type="button" id="addToListBtn" class="purchase-action-button">Añadir</button>
+                    </div>
+                </form>
             </div>
-          </div>
-          
-          <!-- Sección para añadir productos -->
-          <div class="product-selection-container">
-            <div class="product-inputs">
-              <div class="form-row">
-                <div class="form-field">
-                  <select class="field-element" id="product">
-                    <option value="" disabled selected hidden>Seleccionar producto</option>
-                    <!-- Las opciones se cargarán dinámicamente -->
-                  </select>
-                  <div class="error-message" id="product-error">El campo es obligatorio.</div>
+            
+            <!-- Panel derecho - Tabla de productos -->
+            <div class="purchase-modal-right">
+                <div class="purchase-modal-header">
+                    <h3>Lista de productos</h3>
+                    <button class="purchase-modal-close" onclick="closeModal('registerModal')">&times;</button>
                 </div>
-                <div class="form-field amount-field">
-                  <input type="number" class="field-element" id="quantity" min="1" value="1" placeholder="Cantidad" onkeypress="return isNumber(event)">
-                  <div class="error-message" id="quantity-error">El campo es obligatorio.</div>
+                
+                <table class="purchase-table">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Cant.</th>
+                            <th>PU</th>
+                            <th>Total</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modal-product-list">
+                        <!-- Los productos se añadirán aquí -->
+                    </tbody>
+                </table>
+                
+                <div class="purchase-modal-footer">
+                    <button id="registerButton" class="purchase-action-button">Guardar</button>
+                    <div class="purchase-total">
+                        Total: $<span id="totalAmount">0.00</span>
+                    </div>
                 </div>
-                <div class="form-field">
-                  <input type="number" class="field-element" id="purchasePrice" min="0" placeholder="Precio de compra" onkeypress="return isNumber(event, true)">
-                  <div class="error-message" id="purchasePrice-error">El campo es obligatorio.</div>
-                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de edición de compra -->
+    <div id="editModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="editFormTitle">Editar Compra</h3>
+          <button class="modal-close" onclick="closeModal('editModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="editForm" novalidate>
+            <input type="hidden" id="editId">
+            
+            <div class="form-row">
+              <div class="form-field">
+                <select class="field-element" id="editProvider">
+                  <option value="" disabled selected hidden>Seleccionar proveedor</option>
+                  <!-- Los proveedores se cargarán dinámicamente -->
+                </select>
+                <div class="error-message" id="editProvider-error">El campo es obligatorio.</div>
               </div>
-              <button type="button" class="action-button" id="addProductButton">
-                <i class="material-icons">add</i> Añadir
-              </button>
             </div>
             
-            <!-- Contenedor para mostrar los productos añadidos -->
-            <div id="productItemsList" class="product-items-container">
-              <!-- Aquí se mostrarán los productos añadidos -->
-              <p class="text-muted">No hay productos agregados</p>
+            <div class="form-row">
+              <div class="form-field">
+                <input type="text" class="field-element date-input" id="editPurchaseDate" placeholder="Fecha de compra" onfocus="this.type='date'; this.placeholder=''" onblur="if(!this.value) {this.type='text'; this.placeholder='Fecha de compra'}">
+                <div class="error-message" id="editPurchaseDate-error">El campo es obligatorio.</div>
+              </div>
             </div>
-            <div class="error-message" id="productItems-error">Debe agregar al menos un producto.</div>
+            <p class="info-text">Nota: Por motivos de integridad del inventario, solo se puede editar el proveedor, la fecha y el estado de la compra. Para modificar productos, deberás eliminar esta compra y crear una nueva.</p>
             
-            <!-- Total de la compra -->
-            <div class="purchase-total">
-              <h4>Total: <span id="totalAmount">$0</span></h4>
-              <input type="hidden" id="total" name="total" value="0">
+            <div class="controls-container">
+              <button type="button" class="action-button" id="updateButton">Actualizar</button>
             </div>
-          </div>
-          
-          <div class="form-row">
-            <div class="form-field">
-              <input type="date" class="field-element" id="purchaseDate">
-              <div class="error-message" id="purchaseDate-error">El campo es obligatorio.</div>
-            </div>
-          </div>          
-          <div class="controls-container">
-            <button type="button" class="action-button" id="registerButton">Registrar</button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
-    </section>
-  </div>
-</div>
+    </div>
 
-<!-- Modal de edición de compra -->
-<div id="editModal" class="modal">
-  <div class="modal-content">
-    <span class="close" onclick="closeModal('editModal')">&times;</span>
-    <section class="form-card">
-      <div class="card-header">
-        <h3 id="editFormTitle">Editar Compra</h3>
-      </div>
-      <div class="card-body">
-        <form id="editForm" novalidate>
-          <input type="hidden" id="editId">
-          
-          <div class="form-row">
-            <div class="form-field">
-              <select class="field-element" id="editProvider">
-                <option value="" disabled selected hidden>Seleccionar proveedor</option>
-                <!-- Los proveedores se cargarán dinámicamente -->
-              </select>
-              <div class="error-message" id="editProvider-error">El campo es obligatorio.</div>
-            </div>
-          </div>
-          
-          <div class="form-row">
-            <div class="form-field">
-              <input type="date" class="field-element" id="editPurchaseDate">
-              <div class="error-message" id="editPurchaseDate-error">El campo es obligatorio.</div>
-            </div>
-          </div>
-          <p class="info-text">Nota: Por motivos de integridad del inventario, solo se puede editar el proveedor, la fecha y el estado de la compra. Para modificar productos, deberás eliminar esta compra y crear una nueva.</p>
-          
-          <div class="controls-container">
-            <button type="button" class="action-button" id="updateButton">Actualizar</button>
-          </div>
-        </form>
-      </div>
-    </section>
-  </div>
-</div>
-
-<!-- Modal de generación de informes -->
-<div id="reportModal" class="modal">
-  <div class="modal-content">
-    <span class="close" onclick="closeModal('reportModal')">&times;</span>
-    <section class="form-card">
-      <div class="card-header">
+  <!-- Modal de generación de informes -->
+  <div id="reportModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
         <h3>Generar informe de compras</h3>
+        <button class="modal-close" onclick="closeModal('reportModal')">&times;</button>
       </div>
-      <div class="card-body">
+      <div class="modal-body">
         <form id="reportForm" novalidate>
           <div class="form-row">
             <div class="form-field">
-              <label for="reportStartDate">Fecha de inicio:</label>
-              <input type="date" class="field-element" id="reportStartDate">
+              <input type="text" class="field-element date-input" id="reportStartDate" placeholder="Fecha de inicio" onfocus="this.type='date'; this.placeholder=''" onblur="if(!this.value) {this.type='text'; this.placeholder='Fecha de inicio'}">
               <div class="error-message" id="reportStartDate-error">El campo es obligatorio.</div>
             </div>
-          </div>
-          
-          <div class="form-row">
             <div class="form-field">
-              <label for="reportEndDate">Fecha de finalización:</label>
-              <input type="date" class="field-element" id="reportEndDate">
+              <input type="text" class="field-element date-input" id="reportEndDate" placeholder="Fecha de finalización" onfocus="this.type='date'; this.placeholder=''" onblur="if(!this.value) {this.type='text'; this.placeholder='Fecha de finalización'}">
               <div class="error-message" id="reportEndDate-error">El campo es obligatorio.</div>
             </div>
           </div>
           
           <div class="form-row">
             <div class="form-field">
-              <label for="reportProvider">Proveedor:</label>
               <select class="field-element" id="reportProvider">
+                <option value="" disabled selected hidden>Proveedor</option>
                 <option value="">Todos los proveedores</option>
                 <!-- Los proveedores se cargarán dinámicamente -->
               </select>
             </div>
-          </div>
-          
-          <div class="form-row">
             <div class="form-field">
-              <label for="reportProduct">Producto:</label>
               <select class="field-element" id="reportProduct">
+                <option value="" disabled selected hidden>Producto</option>
                 <option value="">Todos los productos</option>
                 <!-- Los productos se cargarán dinámicamente -->
               </select>
@@ -303,12 +307,15 @@
 
           <div class="form-row">
             <div class="form-field">
-              <label for="reportStatus">Estado:</label>
               <select class="field-element" id="reportStatus">
+                <option value="" disabled selected hidden>Estado</option>
                 <option value="">Todos los estados</option>
                 <option value="active">Activo</option>
                 <option value="inactive">Inactivo</option>
               </select>
+            </div>
+            <div class="form-field">
+              <!-- Campo vacío para mantener el balance del diseño -->
             </div>
           </div>
           
@@ -322,9 +329,8 @@
           </div>
         </form>
       </div>
-    </section>
+    </div>
   </div>
-</div>
   </main>
   
   <script>

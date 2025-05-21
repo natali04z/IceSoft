@@ -128,74 +128,70 @@
         </div>
       </section>
   
-    <!-- Formulario de Registro de Permiso -->
+        <!-- Formulario de Registro de Permiso -->
     <div id="registerModal" class="modal">
       <div class="modal-content">
-        <span class="close" onclick="closeModal('registerModal')">&times;</span>
-        <section class="form-card">
-          <div class="card-header">
-            <h3 id="formTitle">Registrar Permiso</h3>
-          </div>
-          <div class="card-body">
-            <form id="permissionForm" novalidate>
-              <div class="form-row">
-                <div class="form-field">
-                  <input type="text" class="field-element" id="name" placeholder="Nombre">
-                  <div class="error-message" id="name-error">El campo es obligatorio.</div>
-                </div>
-                <div class="form-field">
-                  <input type="text" class="field-element" id="code" placeholder="Código">
-                  <div class="error-message" id="code-error">El campo es obligatorio.</div>
-                </div>
+        <div class="modal-header">
+          <h3 id="formTitle">Registrar Permiso</h3>
+          <button class="modal-close" onclick="closeModal('registerModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="permissionForm" novalidate>
+            <div class="form-row">
+              <div class="form-field">
+                <input type="text" class="field-element" id="name" placeholder="Nombre">
+                <div class="error-message" id="name-error">El campo es obligatorio.</div>
               </div>
-              <div class="form-row">
-                <div class="form-field">
-                  <textarea class="field-element" id="description" placeholder="Descripción"></textarea>
-                  <div class="error-message" id="description-error">El campo es obligatorio.</div>
-                </div>
+              <div class="form-field">
+                <input type="text" class="field-element" id="code" placeholder="Código">
+                <div class="error-message" id="code-error">El campo es obligatorio.</div>
               </div>
-              <div class="controls-container">
-                <button type="button" class="action-button" id="registerButton">Registrar</button>
+            </div>
+            <div class="form-row">
+              <div class="form-field" style="width: 100%;">
+                <textarea class="field-element" id="description" placeholder="Descripción"></textarea>
+                <div class="error-message" id="description-error">El campo es obligatorio.</div>
               </div>
-            </form>
-          </div>
-        </section>
+            </div>
+            <div class="controls-container">
+              <button type="button" class="action-button" id="registerButton">Registrar</button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
 
     <!-- Modal de Edición de Permiso -->
     <div id="editModal" class="modal">
       <div class="modal-content">
-        <span class="close" onclick="closeModal('editModal')">&times;</span>
-        <section class="form-card">
-          <div class="card-header">
-            <h3 id="editFormTitle">Editar Permiso</h3>
-          </div>
-          <div class="card-body">
-            <form id="editForm" novalidate>
-              <input type="hidden" id="editId">
-              <div class="form-row">
-                <div class="form-field">
-                  <input type="text" class="field-element" id="editName" placeholder="Nombre">
-                  <div class="error-message" id="editName-error">El campo es obligatorio.</div>
-                </div>
-                <div class="form-field">
-                  <input type="text" class="field-element" id="editCode" placeholder="Código">
-                  <div class="error-message" id="editCode-error">El campo es obligatorio.</div>
-                </div>
+        <div class="modal-header">
+          <h3 id="editFormTitle">Editar Permiso</h3>
+          <button class="modal-close" onclick="closeModal('editModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="editForm" novalidate>
+            <input type="hidden" id="editId">
+            <div class="form-row">
+              <div class="form-field">
+                <input type="text" class="field-element" id="editName" placeholder="Nombre">
+                <div class="error-message" id="editName-error">El campo es obligatorio.</div>
               </div>
-              <div class="form-row">
-                <div class="form-field">
-                  <textarea class="field-element" id="editDescription" placeholder="Descripción"></textarea>
-                  <div class="error-message" id="editDescription-error">El campo es obligatorio.</div>
-                </div>
+              <div class="form-field">
+                <input type="text" class="field-element" id="editCode" placeholder="Código">
+                <div class="error-message" id="editCode-error">El campo es obligatorio.</div>
               </div>
-              <div class="controls-container">
-                <button type="button" class="action-button" id="updateButton">Actualizar</button>
+            </div>
+            <div class="form-row">
+              <div class="form-field" style="width: 100%;">
+                <textarea class="field-element" id="editDescription" placeholder="Descripción"></textarea>
+                <div class="error-message" id="editDescription-error">El campo es obligatorio.</div>
               </div>
-            </form>
-          </div>
-        </section>
+            </div>
+            <div class="controls-container">
+              <button type="button" class="action-button" id="updateButton">Actualizar</button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   </main>

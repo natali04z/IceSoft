@@ -130,89 +130,85 @@
         </div>
       </section>
       
-      <!-- Formulario de Creación de Rol -->
-      <div id="roleModal" class="modal">
-        <div class="modal-content">
-          <span class="close" onclick="closeModal('roleModal')">×</span>
-          <section class="form-card">
-            <div class="card-header">
-              <h3 id="formTitle">Registrar Rol</h3>
+          <!-- Formulario de Creación de Rol -->
+    <div id="roleModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="formTitle">Registrar Rol</h3>
+          <button class="modal-close" onclick="closeModal('roleModal')">&times;</button>
+        </div>
+        
+        <div class="modal-body">
+          <form id="roleForm" novalidate>
+            <div class="form-row">
+              <div class="form-field">
+                <input type="text" class="field-element" id="name" placeholder="Nombre del rol">
+                <div class="error-message" id="name-error">El campo es obligatorio.</div>
+              </div>
+              <div class="form-field">
+                <input type="text" class="field-element" id="description" placeholder="Descripción">
+                <div class="error-message" id="description-error">El campo es obligatorio.</div>
+              </div>
             </div>
             
-            <div class="card-body">
-              <form id="roleForm" novalidate>
-                <div class="form-row">
-                  <div class="form-field">
-                    <input type="text" class="field-element" id="name" placeholder="Nombre del rol">
-                    <div class="error-message" id="name-error">El campo es obligatorio.</div>
-                  </div>
-                  <div class="form-field">
-                    <input type="text" class="field-element" id="description" placeholder="Descripción">
-                    <div class="error-message" id="description-error">El campo es obligatorio.</div>
-                  </div>
+            <div class="form-row">
+              <div class="form-field full-width">
+                <h4>Permisos</h4>
+                <div class="permissions-container" id="permissionsContainer">
+                  <!-- Permisos cargados dinámicamente -->
                 </div>
-                
-                <div class="form-row">
-                  <div class="form-field full-width">
-                    <h4>Permisos</h4>
-                    <div class="permissions-container" id="permissionsContainer">
-                      <!-- Permisos cargados dinámicamente -->
-                    </div>
-                    <div class="error-message" id="permissions-error">Debe seleccionar al menos un permiso.</div>
-                  </div>
-                </div>
-                
-                <div class="controls-container">
-                  <button type="button" class="action-button" id="createRoleButton">Crear</button>
-                </div>
-              </form>
-            </div>
-          </section>
-        </div>
-      </div>
-      
-      <!-- Modal de edición de rol -->
-      <div id="editRoleModal" class="modal">
-        <div class="modal-content">
-          <span class="close" onclick="closeModal('editRoleModal')">×</span>
-          <section class="form-card">
-            <div class="card-header">
-              <h3 id="editFormTitle">Editar rol</h3>
+                <div class="error-message" id="permissions-error">Debe seleccionar al menos un permiso.</div>
+              </div>
             </div>
             
-            <div class="card-body">
-              <form id="editRoleForm" novalidate>
-                <input type="hidden" id="editId">
-                
-                <div class="form-row">
-                  <div class="form-field">
-                    <input type="text" class="field-element" id="editName" placeholder="Nombre del rol">
-                    <div class="error-message" id="editName-error">El campo es obligatorio.</div>
-                  </div>
-                  <div class="form-field">
-                    <input type="text" class="field-element" id="editDescription" placeholder="Descripción">
-                    <div class="error-message" id="editDescription-error">El campo es obligatorio.</div>
-                  </div>
-                </div>
-                
-                <div class="form-row">
-                  <div class="form-field full-width">
-                    <h4>Permisos</h4>
-                    <div class="permissions-container" id="editPermissionsContainer">
-                      <!-- Permisos cargados dinámicamente -->
-                    </div>
-                    <div class="error-message" id="editPermissions-error">Debe seleccionar al menos un permiso.</div>
-                  </div>
-                </div>
-                
-                <div class="controls-container">
-                  <button type="button" class="action-button" id="updateRoleButton">Actualizar</button>
-                </div>
-              </form>
+            <div class="controls-container">
+              <button type="button" class="action-button" id="createRoleButton">Crear</button>
             </div>
-          </section>
+          </form>
         </div>
       </div>
+    </div>
+          
+    <!-- Modal de edición de rol -->
+    <div id="editRoleModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="editFormTitle">Editar rol</h3>
+          <button class="modal-close" onclick="closeModal('editRoleModal')">&times;</button>
+        </div>
+        
+        <div class="modal-body">
+          <form id="editRoleForm" novalidate>
+            <input type="hidden" id="editId">
+            
+            <div class="form-row">
+              <div class="form-field">
+                <input type="text" class="field-element" id="editName" placeholder="Nombre del rol">
+                <div class="error-message" id="editName-error">El campo es obligatorio.</div>
+              </div>
+              <div class="form-field">
+                <input type="text" class="field-element" id="editDescription" placeholder="Descripción">
+                <div class="error-message" id="editDescription-error">El campo es obligatorio.</div>
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-field full-width">
+                <h4>Permisos</h4>
+                <div class="permissions-container" id="editPermissionsContainer">
+                  <!-- Permisos cargados dinámicamente -->
+                </div>
+                <div class="error-message" id="editPermissions-error">Debe seleccionar al menos un permiso.</div>
+              </div>
+            </div>
+            
+            <div class="controls-container">
+              <button type="button" class="action-button" id="updateRoleButton">Actualizar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
   </main>
 
   <script src="js/menu.js"></script>

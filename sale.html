@@ -84,230 +84,246 @@
   
 <main class="main-content">
     <div class="container">
-        <h1 class="title">Gestión de Ventas</h1>
-
-      <!-- Barra de búsqueda -->
-      <section class="search-section">
-        <div class="search-container">
-          <div class="search-box">
-            <input 
-              type="text" 
-              id="searchInput" 
-              placeholder="Buscar venta..." 
-              aria-label="Buscar venta">
-            <button 
-              type="button" 
-              onclick="searchSale()" 
-              aria-label="Iniciar búsqueda">
-              <i class="material-icons">search</i>
+      <h2 class="title">Gestión de Ventas</h2>
+      
+      <div class="search-container">
+        <div class="search-box">
+          <input type="text" id="searchInput" placeholder="Buscar venta...">
+          <button onclick="searchSale()">
+            <i class="material-icons">search</i>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Sección de estadísticas -->
+      <section class="stats-section">
+        <div id="statisticsContainer" class="stats-container">
+          <!-- Aquí se cargarán las estadísticas dinámicamente -->
+        </div>
+      </section>
+      
+      <section class="table-card">
+        <div class="card-header card-header-flex">
+          <h3>Lista de Ventas</h3>
+          <div class="button-group">
+            <button type="button" class="add-button" id="reportButton">
+              <i class="material-icons">assessment</i> Informes
+            </button>
+            <button type="button" class="add-button" id="mobileAddButton">
+              <i class="material-icons">add</i> Añadir
             </button>
           </div>
         </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="users-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Cliente</th>
+                  <th>Productos</th>
+                  <th>Fecha</th>
+                  <th>Total</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="saleTableBody"></tbody>
+            </table>
+          </div>
+          <!-- Controles de paginación -->
+          <div class="pagination">
+            <div class="page-info"></div>
+            <div class="page-numbers"></div>
+          </div>
+        </div>
       </section>
-  
-      <!-- Tabla de Ventas -->
-      <section class="table-card">
-      <div class="card-header card-header-flex">
-          <div class="card-header card-header-flex">
-            <h2>Listado de Ventas</h2>
-            <div class="button-group">
-              <button 
-                type="button" 
-                class="action-button" 
-                id="reportButton" 
-                aria-label="Ver informes">
-                <i class="material-icons">assessment</i> 
-                <span>Informes</span>
-              </button>
-              <button type="button" class="add-button" id="mobileAddButton">
+      
+<!-- Modal de registro de venta -->
+<div id="registerModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal('registerModal')">&times;</span>
+    <section class="form-card">
+      <div class="card-header">
+        <h3 id="formTitle">Registrar Venta</h3>
+      </div>
+      <div class="card-body">
+        <form id="saleForm" novalidate>
+          <!-- Selección de cliente -->
+          <div class="form-row">
+            <div class="form-field">
+              <select class="field-element" id="customer">
+                <option value="" disabled selected hidden>Seleccionar cliente</option>
+                <!-- Los clientes se cargarán dinámicamente -->
+              </select>
+              <div class="error-message" id="customer-error">El campo es obligatorio.</div>
+            </div>
+          </div>
+          
+          <!-- Sección para añadir productos -->
+          <div class="product-selection-container">
+            <div class="product-inputs">
+              <div class="form-row">
+                <div class="form-field">
+                  <select class="field-element" id="product">
+                    <option value="" disabled selected hidden>Seleccionar producto</option>
+                    <!-- Las opciones se cargarán dinámicamente -->
+                  </select>
+                  <div class="error-message" id="product-error">El campo es obligatorio.</div>
+                </div>
+                <div class="form-field amount-field">
+                  <input type="number" class="field-element" id="quantity" min="1" value="1" placeholder="Cantidad" onkeypress="return isNumber(event)">
+                  <div class="error-message" id="quantity-error">El campo es obligatorio.</div>
+                </div>
+                <div class="form-field price-display">
+                  <strong>Precio:</strong> <span id="productPrice">$0</span>
+                </div>
+              </div>
+              <button type="button" class="action-button" id="addProductButton">
                 <i class="material-icons">add</i> Añadir
               </button>
             </div>
-          </div>
-          <div class="card-body">
-            <div class="table-responsive">
-              <table class="users-table">
-                <thead>
-                  <tr>
-                    <th scope="col">ID</th>
-                    <th scope="col">Cliente</th>
-                    <th scope="col">Producto</th>
-                    <th scope="col">Total</th>
-                    <th scope="col">Fecha de Creación</th>
-                    <th scope="col">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody id="salesTableBody">
-                  <!-- Ventas cargadas dinámicamente -->
-                </tbody>
-              </table>
+            
+            <!-- Contenedor para mostrar los productos añadidos -->
+            <div id="productItemsList" class="product-items-container">
+              <!-- Aquí se mostrarán los productos añadidos -->
+              <p class="text-muted">No hay productos agregados</p>
             </div>
-            <div class="pagination">
-              <div class="page-info">Mostrando <span style="font-weight: 500;">10 filas</span></div>
-              <div class="page-info">1-10 de 0</div>
-              <div class="page-numbers"></div>
+            <div class="error-message" id="productItems-error">Debe agregar al menos un producto.</div>
+            
+            <!-- Total de la venta -->
+            <div class="sale-total">
+              <h4>Total: <span id="totalAmount">$0</span></h4>
+              <input type="hidden" id="total" name="total" value="0">
             </div>
           </div>
-        </div>
-      </section>
-  
-      <!-- Modal de registro de venta -->
-      <div id="registerModal" class="modal">
-        <div class="modal-content">
-          <span class="close" onclick="closeModal('registerModal')">&times;</span>
-          <section class="form-card">
-            <div class="card-header">
-              <h2 id="formTitle">Registrar Venta</h2>
+          
+          <div class="form-row">
+            <div class="form-field">
+              <input type="date" class="field-element" id="salesDate">
+              <div class="error-message" id="salesDate-error">El campo es obligatorio.</div>
             </div>
-            <div class="card-body">
-              <form id="saleForm">
-                <!-- Selección de cliente -->
-                <div class="form-grid">
-                  <div class="form-field">
-                    <label for="customer">Cliente:</label>
-                    <select class="field-element" id="customer" required>
-                      <option value="" disabled selected hidden>Seleccionar cliente</option>
-                    </select>
-                  </div>
-                  
-                  <!-- Fecha de venta -->
-                  <div class="form-field">
-                    <label for="salesDate">Fecha de venta:</label>
-                    <input type="date" class="field-element" id="salesDate" required>
-                  </div>
-                </div>
-                
-                <!-- Sección para añadir productos -->
-                <div class="product-selection-container">
-                  <h3>Añadir Productos</h3>
-                  <div class="product-inputs">
-                    <div class="input-group">
-                      <div class="form-field">
-                        <select class="field-element" id="product">
-                          <option value="" disabled selected hidden>Seleccionar producto</option>
-                        </select>
-                      </div>
-                      <div class="form-field">
-                        <input type="number" class="field-element" id="quantity" min="1" value="1" placeholder="Cantidad">
-                      </div>
-                      <div class="form-field">
-                        <input type="number" class="field-element" id="price" min="0" step="0.01" placeholder="Precio">
-                      </div>
-                    </div>
-                    <button type="button" class="action-button" id="addProductButton">
-                      <i class="material-icons">add</i> Añadir
-                    </button>
-                  </div>
-                  
-                  <!-- Lista de productos seleccionados -->
-                  <div id="productItemsList" class="product-items-container">
-                    <p class="text-muted">No hay productos agregados</p>
-                  </div>
-                  
-                  <!-- Total de la venta -->
-                  <div class="total-container">
-                    <h3>Total: <span id="totalAmount">$0</span></h3>
-                  </div>
-                </div>
-                
-                <div class="button-group">
-                  <button type="button" class="btn btn-primary" id="registerButton">Registrar</button>
-                </div>
-              </form>
-            </div>
-          </section>
-        </div>
+          </div>          
+          <div class="controls-container">
+            <button type="button" class="action-button" id="registerButton">Registrar</button>
+          </div>
+        </form>
       </div>
+    </section>
+  </div>
+</div>
 
-      <div id="editModal" class="modal">
-        <div class="modal-content">
-          <span class="close" onclick="closeModal('editModal')">&times;</span>
-          <section class="form-card">
-            <div class="card-header">
-              <h2 id="editFormTitle">Editar Venta</h2>
-            </div>
-            <div class="card-body">
-              <form id="editForm">
-                <input type="hidden" id="editId">
-                
-                <div class="form-grid">
-                  <div class="form-field">
-                    <label for="editCustomer">Cliente:</label>
-                    <select class="field-element" id="editCustomer" required>
-                      <option value="" disabled selected hidden>Seleccionar cliente</option>
-                    </select>
-                    <p class="info-text">Nota: Solo se puede editar la información general de la venta.</p>
-                  </div>
-                  
-                  <div class="form-field">
-                    <label for="editSalesDate">Fecha de venta:</label>
-                    <input type="date" class="field-element" id="editSalesDate" required>
-                  </div>
-                </div>
-                
-                <!-- Sección informativa de productos -->
-                <div class="product-selection-container">
-                  <h3>Productos en esta venta</h3>
-                  <div id="editProductItemsList" class="product-items-container">
-                    <p class="text-muted">Cargando productos...</p>
-                  </div>
-                  
-                  <!-- Total de la venta -->
-                  <div class="total-container">
-                    <h3>Total: <span id="editTotalAmount">$0</span></h3>
-                  </div>
-                </div>
-                
-                <div class="button-group">
-                  <button type="submit" class="btn btn-primary" id="updateButton">Actualizar</button>
-                </div>
-              </form>
-            </div>
-          </section>
-        </div>
+<!-- Modal de edición de venta -->
+<div id="editModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal('editModal')">&times;</span>
+    <section class="form-card">
+      <div class="card-header">
+        <h3 id="editFormTitle">Editar Venta</h3>
       </div>
+      <div class="card-body">
+        <form id="editForm" novalidate>
+          <input type="hidden" id="editId">
+          
+          <div class="form-row">
+            <div class="form-field">
+              <select class="field-element" id="editCustomer">
+                <option value="" disabled selected hidden>Seleccionar cliente</option>
+                <!-- Los clientes se cargarán dinámicamente -->
+              </select>
+              <div class="error-message" id="editCustomer-error">El campo es obligatorio.</div>
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-field">
+              <input type="date" class="field-element" id="editSalesDate">
+              <div class="error-message" id="editSalesDate-error">El campo es obligatorio.</div>
+            </div>
+          </div>
+          <p class="info-text">Nota: Por motivos de integridad del sistema, solo se puede editar el cliente y la fecha de la venta. Para modificar productos o el estado, utiliza las opciones específicas.</p>
+          
+          <div class="controls-container">
+            <button type="button" class="action-button" id="updateButton" onclick="updateSale()">Actualizar</button>
+          </div>
+        </form>
+      </div>
+    </section>
+  </div>
+</div>
 
-      <!-- Modal de generación de informes -->
-      <div id="reportModal" class="modal">
-        <div class="modal-content">
-          <span class="close" onclick="closeModal('reportModal')">&times;</span>
-          <section class="form-card">
-            <div class="card-header">
-              <h2>Generar Informe de Ventas</h2>
-            </div>
-            <div class="card-body">
-              <form id="reportForm">
-                <div class="form-grid">
-                  <div class="form-field">
-                    <label for="reportStartDate">Fecha de inicio:</label>
-                    <input type="date" class="field-element" id="reportStartDate">
-                  </div>
-                  <div class="input-box">
-                    <label for="reportEndDate">Fecha de fin:</label>
-                    <input type="date" class="field-element" id="reportEndDate">
-                  </div>
-                  <div class="input-box">
-                    <label for="reportCustomer">Cliente:</label>
-                    <select class="field-element" id="reportCustomer">
-                      <option value="">Todos los clientes</option>
-                      <!-- Los clientes se cargarán dinámicamente -->
-                    </select>
-                  </div>
-                </div>
-                <div class="report-buttons">
-                  <button type="button" class="action-button pdf-button" id="pdfReportButton">
-                    <i class="material-icons">picture_as_pdf</i> Generar PDF
-                  </button>
-                  <button type="button" class="action-button excel-button" id="excelReportButton">
-                    <i class="material-icons">table_chart</i> Generar Excel
-                  </button>
-                </div>
-              </form>
-            </div>
-          </section>
-        </div>
+<!-- Modal de generación de informes -->
+<div id="reportModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal('reportModal')">&times;</span>
+    <section class="form-card">
+      <div class="card-header">
+        <h3>Generar informe de ventas</h3>
       </div>
-    </div>
+      <div class="card-body">
+        <form id="reportForm" novalidate>
+          <div class="form-row">
+            <div class="form-field">
+              <label for="reportStartDate">Fecha de inicio:</label>
+              <input type="date" class="field-element" id="reportStartDate">
+              <div class="error-message" id="reportStartDate-error">El campo es obligatorio.</div>
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-field">
+              <label for="reportEndDate">Fecha de finalización:</label>
+              <input type="date" class="field-element" id="reportEndDate">
+              <div class="error-message" id="reportEndDate-error">El campo es obligatorio.</div>
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-field">
+              <label for="reportCustomer">Cliente:</label>
+              <select class="field-element" id="reportCustomer">
+                <option value="">Todos los clientes</option>
+                <!-- Los clientes se cargarán dinámicamente -->
+              </select>
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-field">
+              <label for="reportProduct">Producto:</label>
+              <select class="field-element" id="reportProduct">
+                <option value="">Todos los productos</option>
+                <!-- Los productos se cargarán dinámicamente -->
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-field">
+              <label for="reportStatus">Estado:</label>
+              <select class="field-element" id="reportStatus">
+                <option value="">Todos los estados</option>
+                <option value="pending">Pendiente</option>
+                <option value="processing">Procesando</option>
+                <option value="completed">Completada</option>
+                <option value="cancelled">Cancelada</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="report-buttons">
+            <button type="button" class="action-button pdf-button" id="pdfReportButton">
+              <i class="material-icons">picture_as_pdf</i> Generar PDF
+            </button>
+            <button type="button" class="action-button excel-button" id="excelReportButton">
+              <i class="material-icons">table_chart</i> Generar Excel
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+  </div>
+</div>
   </main>
 
   <script src="js/menu.js"></script>
