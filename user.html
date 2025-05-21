@@ -132,120 +132,113 @@
       </div>
     </section>
     
-    <!-- Formulario de Registro -->
+        <!-- Formulario de Registro -->
     <div id="registerModal" class="modal">
       <div class="modal-content">
-        <span class="close" onclick="closeModal('registerModal')">×</span>
-        <section class="form-card">
-          <div class="card-header">
-            <h3 id="formTitle">Registrar Usuario</h3>
-          </div>
-          
-          <div class="card-body">
-            <form id="userForm" novalidate>
-              <div class="form-row">
-                <div class="form-field">
-                  <input type="text" class="field-element" id="name" placeholder="Nombre">
-                  <div class="error-message" id="name-error">El campo es obligatorio.</div>
-                </div>
-                <div class="form-field">
-                  <input type="text" class="field-element" id="lastname" placeholder="Apellido">
-                  <div class="error-message" id="lastname-error">El campo es obligatorio.</div>
-                </div>
+        <div class="modal-header">
+          <h3 id="formTitle">Registrar Usuario</h3>
+          <button class="modal-close" onclick="closeModal('registerModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="userForm" novalidate>
+            <div class="form-row">
+              <div class="form-field">
+                <input type="text" class="field-element" id="name" placeholder="Nombre">
+                <div class="error-message" id="name-error">El campo es obligatorio.</div>
               </div>
-              
-              <div class="form-row">
-                <div class="form-field">
-                  <input type="tel" class="field-element" id="contact_number" placeholder="Teléfono" inputmode="numeric">
-                  <div class="error-message" id="contact_number-error">El campo es obligatorio.</div>
-                </div>
-                <div class="form-field">
-                  <input type="email" class="field-element" id="email" placeholder="Correo electrónico">
-                  <div class="error-message" id="email-error">El campo es obligatorio.</div>
-                </div>
+              <div class="form-field">
+                <input type="text" class="field-element" id="lastname" placeholder="Apellido">
+                <div class="error-message" id="lastname-error">El campo es obligatorio.</div>
               </div>
-              
-              <div class="form-row">
-                <div class="form-field">
-                  <input type="password" class="field-element" id="password" placeholder="Contraseña">
-                  <div class="error-message" id="password-error">El campo es obligatorio.</div>
-                </div>
-                <div class="form-field">
-                  <select class="field-element" id="rol">
-                    <option value="" disabled selected hidden>Seleccionar rol</option>
-                    <!-- Los roles se cargarán dinámicamente -->
-                  </select>
-                  <div class="error-message" id="role-error">Debe seleccionar un rol.</div>
-                </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-field">
+                <input type="tel" class="field-element" id="contact_number" placeholder="Teléfono" inputmode="numeric">
+                <div class="error-message" id="contact_number-error">El campo es obligatorio.</div>
               </div>
-              
-              <div class="controls-container">
-                <button type="button" class="action-button" id="registerButton">Registrar</button>
+              <div class="form-field">
+                <input type="email" class="field-element" id="email" placeholder="Correo electrónico">
+                <div class="error-message" id="email-error">El campo es obligatorio.</div>
               </div>
-            </form>
-          </div>
-        </section>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-field">
+                <input type="password" class="field-element" id="password" placeholder="Contraseña">
+                <div class="error-message" id="password-error">El campo es obligatorio.</div>
+              </div>
+              <div class="form-field">
+                <select class="field-element" id="rol">
+                  <option value="" disabled selected hidden>Seleccionar rol</option>
+                  <!-- Los roles se cargarán dinámicamente -->
+                </select>
+                <div class="error-message" id="role-error">Debe seleccionar un rol.</div>
+              </div>
+            </div>
+            
+            <div class="controls-container">
+              <button type="button" class="action-button" id="registerButton">Registrar</button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
-    
+
     <!-- Modal de edición de usuario -->
     <div id="editModal" class="modal">
       <div class="modal-content">
-        <span class="close" onclick="closeModal('editModal')">×</span>
-        <section class="form-card">
-          <div class="card-header">
-            <h3 id="editFormTitle">Editar usuario</h3>
-          </div>
-          
-          <div class="card-body">
-            <form id="editForm" novalidate>
-              <input type="hidden" id="editId">
-              
-              <div class="form-row">
-                <div class="form-field">
-                  <input type="text" class="field-element" id="editName" placeholder="Nombre">
-                  <div class="error-message" id="editName-error">El campo es obligatorio.</div>
-                </div>
-                <div class="form-field">
-                  <input type="text" class="field-element" id="editLastname" placeholder="Apellido">
-                  <div class="error-message" id="editLastname-error">El campo es obligatorio.</div>
-                </div>
+        <div class="modal-header">
+          <h3 id="editFormTitle">Editar usuario</h3>
+          <button class="modal-close" onclick="closeModal('editModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="editForm" novalidate>
+            <input type="hidden" id="editId">
+            
+            <div class="form-row">
+              <div class="form-field">
+                <input type="text" class="field-element" id="editName" placeholder="Nombre">
+                <div class="error-message" id="editName-error">El campo es obligatorio.</div>
               </div>
-              
-              <div class="form-row">
-                <div class="form-field">
-                  <input type="tel" class="field-element" id="editContact" placeholder="Teléfono" inputmode="numeric">
-                  <div class="error-message" id="editContact-error">El campo es obligatorio.</div>
-                </div>
-                <div class="form-field">
-                  <input type="email" class="field-element" id="editEmail" placeholder="Correo electrónico">
-                  <div class="error-message" id="editEmail-error">El campo es obligatorio.</div>
-                </div>
+              <div class="form-field">
+                <input type="text" class="field-element" id="editLastname" placeholder="Apellido">
+                <div class="error-message" id="editLastname-error">El campo es obligatorio.</div>
               </div>
-              
-              <div class="form-row">
-                <div class="form-field">
-                  <select class="field-element" id="editRole">
-                    <option value="" disabled selected hidden>Seleccionar rol</option>
-                    <!-- Los roles se cargarán dinámicamente -->
-                  </select>
-                  <div class="error-message" id="editRole-error">Debe seleccionar un rol.</div>
-                </div>
-                <div class="form-field">
-                  <!-- Campo vacío para mantener el equilibrio del diseño -->
-                </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-field">
+                <input type="tel" class="field-element" id="editContact" placeholder="Teléfono" inputmode="numeric">
+                <div class="error-message" id="editContact-error">El campo es obligatorio.</div>
               </div>
-              
-              <div class="controls-container">
-                <button type="button" class="action-button" id="updateButton">Actualizar</button>
+              <div class="form-field">
+                <input type="email" class="field-element" id="editEmail" placeholder="Correo electrónico">
+                <div class="error-message" id="editEmail-error">El campo es obligatorio.</div>
               </div>
-            </form>
-          </div>
-        </section>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-field">
+                <select class="field-element" id="editRole">
+                  <option value="" disabled selected hidden>Seleccionar rol</option>
+                  <!-- Los roles se cargarán dinámicamente -->
+                </select>
+                <div class="error-message" id="editRole-error">Debe seleccionar un rol.</div>
+              </div>
+              <div class="form-field">
+                <!-- Campo vacío para mantener el equilibrio del diseño -->
+              </div>
+            </div>
+            
+            <div class="controls-container">
+              <button type="button" class="action-button" id="updateButton">Actualizar</button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
-  </div>
-</main>
+  </main>
 
   <script src="js/menu.js"></script>
   <script src="js/user.js"></script>

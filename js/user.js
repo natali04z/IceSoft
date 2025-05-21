@@ -9,6 +9,17 @@ let originalUsers = [];
 let currentPage = 1;
 const rowsPerPage = 10;
 
+// Función auxiliar para obtener el nombre de rol en español
+function getDisplayNameForRole(roleName) {
+  const roleTranslations = {
+    "admin": "Administrador",
+    "assistant": "Asistente",
+    "employee": "Empleado"
+  };
+  
+  return roleTranslations[roleName] || roleName;
+}
+
 // ===== FUNCIONES DE VALIDACIÓN =====
 
 // Función para validar un campo y mostrar error
@@ -97,17 +108,29 @@ function validatePassword(fieldId) {
 
 // Función para validar rol
 function validateRole(fieldId) {
-  const field = document.getElementById(fieldId);
+  // Si el fieldId es 'role', usar 'rol' para el formulario de registro
+  const actualFieldId = fieldId === 'role' ? 'rol' : fieldId;
+  
+  const field = document.getElementById(actualFieldId);
+  // Usar el fieldId original para el error
   const errorElement = document.getElementById(`${fieldId}-error`);
   
-  if (!field.value) {
-    errorElement.textContent = "Debe seleccionar un rol.";
-    errorElement.style.display = "block";
-    field.classList.add("input-error");
+  if (!field || !field.value) {
+    if (errorElement) {
+      errorElement.textContent = "Debe seleccionar un rol.";
+      errorElement.style.display = "block";
+    }
+    if (field) {
+      field.classList.add("input-error");
+    }
     return false;
   } else {
-    errorElement.style.display = "none";
-    field.classList.remove("input-error");
+    if (errorElement) {
+      errorElement.style.display = "none";
+    }
+    if (field) {
+      field.classList.remove("input-error");
+    }
     return true;
   }
 }
@@ -206,13 +229,15 @@ const renderUsersTable = (page = 1) => {
   const usersToShow = allUsers.slice(start, end);
 
   usersToShow.forEach(user => {
+    const roleName = user.role?.displayName || user.role?.name || "No Rol";
+    
     tbody.innerHTML += `
       <tr>
         <td>${user.name}</td>
         <td>${user.lastname}</td>
         <td>${user.contact_number}</td>
         <td>${user.email}</td>
-        <td>${user.role?.name || "No Rol"}</td>
+        <td>${roleName}</td>
         <td>
           <label class="switch">
             <input type="checkbox" ${user.status === "active" ? "checked" : ""} 
@@ -296,12 +321,10 @@ const getCurrentUserId = () => {
     const decoded = JSON.parse(atob(payload));
     return decoded.id || null;
   } catch (error) {
-    console.error("Error obteniendo ID de usuario actual:", error);
     return null;
   }
 };
 
-// Cargar roles desde el backend
 // Cargar roles desde el backend
 const loadRoles = async () => {
   try {
@@ -322,35 +345,50 @@ const loadRoles = async () => {
     const data = await res.json();
 
     if (res.ok) {
-      // Manejar diferentes formatos de respuesta posibles
       let roles = [];
       if (data.roles && Array.isArray(data.roles)) {
         roles = data.roles;
       } else if (Array.isArray(data)) {
         roles = data;
       } else {
-        console.warn("Formato de respuesta de roles inesperado:", data);
         roles = [];
       }
       
-      console.log("Roles cargados correctamente:", roles);
+      // Cambiar #role por #rol para el selector del formulario de registro
+      const roleSelectors = document.querySelectorAll('#rol, #editRole');
       
-      // Poblar los selectores de roles
-      const roleSelectors = document.querySelectorAll('#role, #editRole');
       roleSelectors.forEach(selector => {
         // Guardar la primera opción (si existe)
-        const defaultOption = selector.options[0];
+        let defaultOption = null;
+        if (selector.options.length > 0) {
+          defaultOption = selector.options[0];
+        }
+        
+        // Limpiar el selector
         selector.innerHTML = '';
+        
+        // Restaurar la opción por defecto
         if (defaultOption) {
           selector.appendChild(defaultOption);
+        } else {
+          // Si no había opción por defecto, crear una
+          const option = document.createElement('option');
+          option.value = "";
+          option.textContent = "Seleccione un rol";
+          option.disabled = true;
+          option.selected = true;
+          selector.appendChild(option);
         }
         
         // Añadir los roles desde la base de datos
         // Solo incluir roles activos
-        roles.filter(role => role.status === "active").forEach(role => {
+        const activeRoles = roles.filter(role => role.status === "active");
+        
+        activeRoles.forEach(role => {
           const option = document.createElement('option');
           option.value = role._id;
-          option.textContent = role.name;
+          const displayName = role.displayName || getDisplayNameForRole(role.name) || role.name;
+          option.textContent = displayName;
           selector.appendChild(option);
         });
       });
@@ -361,7 +399,6 @@ const loadRoles = async () => {
       return [];
     }
   } catch (err) {
-    console.error("Error al cargar roles:", err);
     showError("Error al cargar roles: " + (err.message || "desconocido"));
     return [];
   }
@@ -390,6 +427,22 @@ const loadUsersInternal = async () => {
     
     if (res.ok) {
       originalUsers = data.users || data;
+      
+      // Añadir displayName a los roles si no lo tienen
+      originalUsers = originalUsers.map(user => {
+        if (user.role) {
+          if (typeof user.role === 'string') {
+            user.role = {
+              name: user.role,
+              displayName: getDisplayNameForRole(user.role)
+            };
+          } else if (typeof user.role === 'object' && !user.role.displayName) {
+            user.role.displayName = getDisplayNameForRole(user.role.name);
+          }
+        }
+        return user;
+      });
+      
       allUsers = [...originalUsers];
       currentPage = 1;
       renderUsersTable(currentPage);
@@ -397,7 +450,6 @@ const loadUsersInternal = async () => {
       showError(data.message || "No tienes permisos para listar usuarios.");
     }
   } catch (err) {
-    console.error("Error al listar usuarios:", err);
     showError("Error al listar usuarios");
   }
 };
@@ -427,6 +479,22 @@ const listUsers = async () => {
     
     if (res.ok) {
       originalUsers = data.users || data;
+      
+      // Añadir displayName a los roles si no lo tienen
+      originalUsers = originalUsers.map(user => {
+        if (user.role) {
+          if (typeof user.role === 'string') {
+            user.role = {
+              name: user.role,
+              displayName: getDisplayNameForRole(user.role)
+            };
+          } else if (typeof user.role === 'object' && !user.role.displayName) {
+            user.role.displayName = getDisplayNameForRole(user.role.name);
+          }
+        }
+        return user;
+      });
+      
       allUsers = [...originalUsers];
       currentPage = 1;
       renderUsersTable(currentPage);
@@ -435,7 +503,6 @@ const listUsers = async () => {
     }
   } catch (err) {
     hideLoadingIndicator();
-    console.error("Error al listar usuarios:", err);
     showError("Error al listar usuarios");
   }
 };
@@ -448,7 +515,6 @@ const registerUser = async () => {
     return;
   }
 
-  // Validar campos usando las nuevas funciones
   const nameValid = validateField("name", "El nombre es obligatorio.");
   const lastnameValid = validateField("lastname", "El apellido es obligatorio.");
   const phoneValid = validatePhone("contact_number");
@@ -456,7 +522,6 @@ const registerUser = async () => {
   const passwordValid = validatePassword("password");
   const roleValid = validateRole("role");
 
-  // Si algún campo no es válido, detener el proceso
   if (!nameValid || !lastnameValid || !phoneValid || !emailValid || !passwordValid || !roleValid) {
     return;
   }
@@ -466,7 +531,7 @@ const registerUser = async () => {
   const email = document.getElementById("email").value.trim();
   const contact_number = document.getElementById("contact_number").value.trim();
   const password = document.getElementById("password").value.trim();
-  const role = document.getElementById("role").value;
+  const role = document.getElementById("rol").value;
 
   try {
     const res = await fetch(API_AUTH, {
@@ -476,18 +541,27 @@ const registerUser = async () => {
         Authorization: `Bearer ${token}`
       },
       body: JSON.stringify({
-        name, 
-        lastname, 
-        email, 
-        contact_number, 
-        password, 
-        role
+        name, lastname, email, contact_number, password, role
       })
     });
 
     const data = await res.json();
 
     if (res.status === 201 || res.ok) {
+      if (data.user && data.user.role) {
+        const registeredUser = data.user;
+        
+        if (typeof registeredUser.role === 'string') {
+          const roleName = registeredUser.role;
+          registeredUser.role = {
+            name: roleName,
+            displayName: getDisplayNameForRole(roleName)
+          };
+        } else if (typeof registeredUser.role === 'object' && !registeredUser.role.displayName) {
+          registeredUser.role.displayName = getDisplayNameForRole(registeredUser.role.name);
+        }
+      }
+      
       Swal.fire({
         icon: 'success',
         title: 'Éxito',
@@ -502,7 +576,6 @@ const registerUser = async () => {
       showError(data.message || "Error al registrar usuario.");
     }
   } catch (err) {
-    console.error("Error al registrar usuario:", err);
     showError("Error al registrar usuario");
   }
 };
@@ -529,7 +602,6 @@ const fillEditForm = async (id) => {
       return;
     }
 
-    // Limpiar mensajes de validación
     clearValidationErrors('editForm');
 
     const user = data;
@@ -546,7 +618,14 @@ const fillEditForm = async (id) => {
         roleSelect.value = roleId;
 
         if (roleSelect.value !== roleId) {
-          console.warn(`El rol con ID ${roleId} no existe en las opciones disponibles`);
+          if (typeof user.role === 'object' && user.role.name) {
+            const option = document.createElement('option');
+            option.value = roleId;
+            // Usar displayName si está disponible, sino usar el nombre original
+            option.textContent = user.role.displayName || getDisplayNameForRole(user.role.name) || user.role.name;
+            roleSelect.appendChild(option);
+            roleSelect.value = roleId;
+          }
         }
       } else {
         roleSelect.value = "";
@@ -555,7 +634,6 @@ const fillEditForm = async (id) => {
 
     openModal("editModal");
   } catch (err) {
-    console.error("Error al cargar el usuario:", err);
     showError(`Ocurrió un error: ${err.message || err}`);
   }
 };
@@ -568,14 +646,12 @@ const updateUser = async () => {
     return;
   }
   
-  // Validar campos usando las nuevas funciones
   const nameValid = validateField("editName", "El nombre es obligatorio.");
   const lastnameValid = validateField("editLastname", "El apellido es obligatorio.");
   const phoneValid = validatePhone("editContact");
   const emailValid = validateEmail("editEmail");
   const roleValid = validateRole("editRole");
 
-  // Si algún campo no es válido, detener el proceso
   if (!nameValid || !lastnameValid || !phoneValid || !emailValid || !roleValid) {
     return;
   }
@@ -588,10 +664,7 @@ const updateUser = async () => {
   const roleSelect = document.getElementById("editRole");
   
   const userData = { 
-    name, 
-    lastname, 
-    email, 
-    contact_number
+    name, lastname, email, contact_number
   };
 
   if (roleSelect && roleSelect.value) {
@@ -608,16 +681,34 @@ const updateUser = async () => {
       body: JSON.stringify(userData)
     });
     
-    // Intentar parsear la respuesta como JSON
     let data;
     try {
       data = await res.json();
     } catch (jsonError) {
-      console.error("Error al parsear JSON:", jsonError);
       data = { message: "Error en formato de respuesta" };
     }
     
     if (res.ok) {
+      if (data.user && data.user.role) {
+        const updatedUser = data.user;
+        
+        if (typeof updatedUser.role === 'string') {
+          const roleName = updatedUser.role;
+          updatedUser.role = {
+            name: roleName,
+            displayName: getDisplayNameForRole(roleName)
+          };
+        } else if (typeof updatedUser.role === 'object' && !updatedUser.role.displayName) {
+          updatedUser.role.displayName = getDisplayNameForRole(updatedUser.role.name);
+        }
+        
+        const userIndex = allUsers.findIndex(u => u._id === id);
+        if (userIndex !== -1) {
+          allUsers[userIndex] = { ...allUsers[userIndex], ...updatedUser };
+          renderUsersTable(currentPage);
+        }
+      }
+      
       Swal.fire({
         icon: 'success',
         title: 'Éxito',
@@ -628,20 +719,13 @@ const updateUser = async () => {
       document.getElementById("editForm").reset();
       loadUsersInternal();
     } else {
-      // Mensaje de error más detallado
       let errorMsg = data.message || `Error al actualizar el usuario (${res.status})`;
       if (data.error) {
         errorMsg += `: ${data.error}`;
       }
       showError(errorMsg);
-
-      console.error("Error response:", {
-        status: res.status,
-        data: data
-      });
     }
   } catch (err) {
-    console.error("Error al actualizar usuario:", err);
     showError(`Ocurrió un error de red: ${err.message || err}`);
   }
 };
@@ -676,7 +760,6 @@ const updateUserStatus = async (id, status) => {
     try {
       data = await res.json();
     } catch (jsonError) {
-      console.error("Error al parsear JSON:", jsonError);
       data = { message: "Error en formato de respuesta" };
     }
     
@@ -689,22 +772,14 @@ const updateUserStatus = async (id, status) => {
       });
       loadUsersInternal();
     } else {
-      // Mensaje de error más detallado
       let errorMsg = data.message || `Error al ${status === 'active' ? 'activar' : 'desactivar'} el usuario (${res.status})`;
       if (data.error) {
         errorMsg += `: ${data.error}`;
       }
       showError(errorMsg);
-      
-      // Log completo del error para debugging
-      console.error("Error response:", {
-        status: res.status,
-        data: data
-      });
       loadUsersInternal();
     }
   } catch (err) {
-    console.error("Error al actualizar estado:", err);
     showError(`Ocurrió un error de red: ${err.message || err}`);
     loadUsersInternal();
   }
@@ -750,7 +825,6 @@ const deleteUser = async (id) => {
       showError(data.message || "No se pudo eliminar el usuario");
     }
   } catch (err) {
-    console.error("Error al eliminar usuario:", err);
     showError("Error al eliminar usuario");
   }
 };
@@ -768,20 +842,84 @@ const searchUser = () => {
   renderUsersTable(currentPage);
 };
 
+// Mostrar indicador de carga
+function showLoadingIndicator() {
+  const loader = document.getElementById("loadingIndicator");
+  if (loader) {
+    loader.style.display = "flex";
+  }
+}
+
+// Ocultar indicador de carga
+function hideLoadingIndicator() {
+  const loader = document.getElementById("loadingIndicator");
+  if (loader) {
+    loader.style.display = "none";
+  }
+}
+
+// Mostrar mensaje de error
+function showError(message) {
+  Swal.fire({
+    icon: 'error',
+    title: 'Error',
+    text: message,
+    showConfirmButton: true,
+  });
+}
+
+// Mostrar confirmación
+function showConfirm({ title, text, confirmText, cancelText }) {
+  return Swal.fire({
+    title: title,
+    text: text,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#3085d6',
+    cancelButtonColor: '#d33',
+    confirmButtonText: confirmText,
+    cancelButtonText: cancelText
+  }).then((result) => {
+    return result.isConfirmed;
+  });
+}
+
 // ===== EVENTOS =====
 
-document.addEventListener("DOMContentLoaded", () => {
-  // Desactivar validación nativa del navegador
+document.addEventListener("DOMContentLoaded", async () => {
   disableNativeBrowserValidation();
-  
-  listUsers(); // Esta usa el indicador de carga
-  loadRoles();
   setupPhoneNumberValidation();
+  
+  // Cargar roles primero para asegurar que los selectores estén poblados
+  try {
+    await loadRoles();
+  } catch (error) {
+    // Manejo silencioso del error
+  }
+  
+  // Luego cargar los usuarios
+  try {
+    await listUsers();
+  } catch (error) {
+    // Manejo silencioso del error
+  }
   
   // Configurar botones y eventos
   const mobileAddButton = document.getElementById("mobileAddButton");
   if (mobileAddButton) {
-    mobileAddButton.onclick = () => openModal('registerModal');
+    mobileAddButton.onclick = async () => {
+      // Recargar roles antes de abrir el modal para asegurar que estén actualizados
+      await loadRoles();
+      openModal('registerModal');
+    };
+  }
+  
+ const addUserButton = document.getElementById("addUserButton");
+  if (addUserButton) {
+    addUserButton.onclick = async () => {
+      await loadRoles();
+      openModal('registerModal');
+    };
   }
   
   const registerButton = document.getElementById("registerButton");
@@ -799,15 +937,20 @@ document.addEventListener("DOMContentLoaded", () => {
     searchInput.addEventListener("keyup", searchUser);
   }
 
-  // Agregar validación para campos individuales en tiempo real - Formulario de registro
+  // Validación para formulario de registro
   document.getElementById("name").addEventListener("blur", () => validateField("name", "El nombre es obligatorio."));
   document.getElementById("lastname").addEventListener("blur", () => validateField("lastname", "El apellido es obligatorio."));
   document.getElementById("contact_number").addEventListener("blur", () => validatePhone("contact_number"));
   document.getElementById("email").addEventListener("blur", () => validateEmail("email"));
   document.getElementById("password").addEventListener("blur", () => validatePassword("password"));
-  document.getElementById("role").addEventListener("change", () => validateRole("role"));
   
-  // Agregar validación para campos individuales en tiempo real - Formulario de edición
+  // Usar 'rol' en lugar de 'role' para el selector del formulario de registro
+  const rolSelector = document.getElementById("rol");
+  if (rolSelector) {
+    rolSelector.addEventListener("change", () => validateRole("role"));
+  }
+  
+  // Validación para formulario de edición
   document.getElementById("editName").addEventListener("blur", () => validateField("editName", "El nombre es obligatorio."));
   document.getElementById("editLastname").addEventListener("blur", () => validateField("editLastname", "El apellido es obligatorio."));
   document.getElementById("editContact").addEventListener("blur", () => validatePhone("editContact"));

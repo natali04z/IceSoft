@@ -131,109 +131,105 @@
         </div>
       </section>
   
-      <!-- Modal de Registro de Producto -->
-      <div id="registerModal" class="modal">
-        <div class="modal-content">
-          <span class="close" onclick="closeModal('registerModal')">&times;</span>
-          <section class="form-card">
-            <div class="card-header">
-              <h3 id="formTitle">Registrar Producto</h3>
+    <!-- Modal de Registro de Producto -->
+    <div id="registerModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="formTitle">Registrar Producto</h3>
+          <button class="modal-close" onclick="closeModal('registerModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="productForm" novalidate>
+            <!-- Campo Nombre a ancho completo -->
+            <div class="form-field" style="margin-bottom: 15px;">
+              <input type="text" class="field-element" id="name" placeholder="Nombre">
+              <div class="error-message" id="name-error">El campo es obligatorio.</div>
             </div>
-            <div class="card-body">
-              <form id="productForm" novalidate>
-                <div class="form-row">
-                  <div class="form-field">
-                    <input type="text" class="field-element" id="name" placeholder="Nombre">
-                    <div class="error-message" id="name-error">El campo es obligatorio.</div>
-                  </div>
-                  <div class="form-field">
-                    <select class="field-element" id="category">
-                      <option value="" disabled selected hidden>Seleccionar categoría</option>
-                    </select>
-                    <div class="error-message" id="category-error">Debe seleccionar una categoría.</div>
-                  </div>
-                </div>
-                <div class="form-row">
-                  <div class="form-field">
-                    <input type="number" class="field-element" id="price" placeholder="Precio">
-                    <div class="error-message" id="price-error">El precio es obligatorio.</div>
-                  </div>
-                  <div class="form-field">
-                    <label>Fecha de Lote:</label>
-                    <input type="date" class="field-element" id="batchDate">
-                    <div class="error-message" id="batchDate-error">La fecha de lote es obligatoria.</div>
-                  </div>
-                </div>
-                <div class="form-row">
-                  <div class="form-field">
-                    <label>Fecha de Expiración:</label>
-                    <input type="date" class="field-element" id="expirationDate">
-                    <div class="error-message" id="expirationDate-error">La fecha de expiración es obligatoria.</div>
-                  </div>
-                  <div class="form-field">
-                    <!-- Campo vacío para mantener el balance del diseño -->
-                  </div>
-                </div>
-                <div class="controls-container">
-                  <button type="button" class="action-button" id="registerButton">Registrar</button>
-                </div>
-              </form>
+            
+            <!-- Los demás campos en filas -->
+            <div class="form-row">
+              <div class="form-field">
+                <select class="field-element" id="category">
+                  <option value="" disabled selected hidden>Seleccionar categoría</option>
+                </select>
+                <div class="error-message" id="category-error">Debe seleccionar una categoría.</div>
+              </div>
+              <div class="form-field">
+                <input type="number" class="field-element" id="price" placeholder="Precio">
+                <div class="error-message" id="price-error">El precio es obligatorio.</div>
+              </div>
             </div>
-          </section>
+            <div class="form-row">
+              <div class="form-field">
+                <input type="text" class="field-element date-input" id="batchDate" placeholder="Fecha de Lote" onfocus="this.type='date'; this.placeholder=''" onblur="if(!this.value) {this.type='text'; this.placeholder='Fecha de Lote'}">
+                <div class="error-message" id="batchDate-error">La fecha de lote es obligatoria.</div>
+              </div>
+              <div class="form-field">
+                <input type="text" class="field-element date-input" id="expirationDate" placeholder="Fecha de Expiración" onfocus="this.type='date'; this.placeholder=''" onblur="if(!this.value) {this.type='text'; this.placeholder='Fecha de Expiración'}">
+                <div class="error-message" id="expirationDate-error">La fecha de expiración es obligatoria.</div>
+              </div>
+            </div>
+            <div class="controls-container">
+              <button type="button" class="action-button" id="registerButton">Registrar</button>
+            </div>
+          </form>
         </div>
       </div>
-  
-      <!-- Modal de Edición de Producto -->
-      <div id="editModal" class="modal">
-        <div class="modal-content">
-          <span class="close" onclick="closeModal('editModal')">&times;</span>
-          <section class="form-card">
-            <div class="card-header">
-              <h3 id="editFormTitle">Editar Producto</h3>
+    </div>
+
+    <!-- Modal de Edición de Producto -->
+    <div id="editModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="editFormTitle">Editar Producto</h3>
+          <button class="modal-close" onclick="closeModal('editModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="editForm" novalidate>
+            <input type="hidden" id="editId">
+            
+            <!-- Campo Nombre a ancho completo -->
+            <div class="form-field" style="margin-bottom: 15px;">
+              <input type="text" class="field-element" id="editName" placeholder="Nombre">
+              <div class="error-message" id="editName-error">El campo es obligatorio.</div>
             </div>
-            <div class="card-body">
-              <form id="editForm" novalidate>
-                <input type="hidden" id="editId">
-                <div class="form-row">
-                  <div class="form-field">
-                    <input type="text" class="field-element" id="editName" placeholder="Nombre">
-                    <div class="error-message" id="editName-error">El campo es obligatorio.</div>
-                  </div>
-                  <div class="form-field">
-                    <select class="field-element" id="editCategory">
-                      <option value="" disabled selected hidden>Seleccionar categoría</option>
-                    </select>
-                    <div class="error-message" id="editCategory-error">Debe seleccionar una categoría.</div>
-                  </div>
-                </div>
-                <div class="form-row">
-                  <div class="form-field">
-                    <input type="number" class="field-element" id="editPrice" placeholder="Precio">
-                    <div class="error-message" id="editPrice-error">El precio es obligatorio.</div>
-                  </div>
-                  <div class="form-field">
-                    <input type="number" class="field-element" id="editStock" placeholder="Stock">
-                    <div class="error-message" id="editStock-error">El stock es obligatorio.</div>
-                  </div>
-                </div>
-                <div class="form-row">
-                  <div class="form-field">
-                    <label>Fecha de Lote:</label>
-                    <input type="date" class="field-element" id="editBatchDate">
-                    <div class="error-message" id="editBatchDate-error">La fecha de lote es obligatoria.</div>
-                  </div>
-                  <div class="form-field">
-                    <label>Fecha de Expiración:</label>
-                    <input type="date" class="field-element" id="editExpirationDate">
-                    <div class="error-message" id="editExpirationDate-error">La fecha de expiración es obligatoria.</div>
-                  </div>
-                </div>
-                <div class="controls-container">
-                  <button type="button" class="action-button" id="updateButton" onclick="updateProduct()">Actualizar</button>
-                </div>
-              </form>
+            
+            <!-- Los demás campos en filas -->
+            <div class="form-row">
+              <div class="form-field">
+                <select class="field-element" id="editCategory">
+                  <option value="" disabled selected hidden>Seleccionar categoría</option>
+                </select>
+                <div class="error-message" id="editCategory-error">Debe seleccionar una categoría.</div>
+              </div>
+              <div class="form-field">
+                <input type="number" class="field-element" id="editPrice" placeholder="Precio">
+                <div class="error-message" id="editPrice-error">El precio es obligatorio.</div>
+              </div>
             </div>
-          </section>
+            <div class="form-row">
+              <div class="form-field">
+                <input type="number" class="field-element" id="editStock" placeholder="Stock">
+                <div class="error-message" id="editStock-error">El stock es obligatorio.</div>
+              </div>
+              <div class="form-field">
+                <input type="text" class="field-element date-input" id="editBatchDate" placeholder="Fecha de Lote" onfocus="this.type='date'; this.placeholder=''" onblur="if(!this.value) {this.type='text'; this.placeholder='Fecha de Lote'}">
+                <div class="error-message" id="editBatchDate-error">La fecha de lote es obligatoria.</div>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-field">
+                <input type="text" class="field-element date-input" id="editExpirationDate" placeholder="Fecha de Expiración" onfocus="this.type='date'; this.placeholder=''" onblur="if(!this.value) {this.type='text'; this.placeholder='Fecha de Expiración'}">
+                <div class="error-message" id="editExpirationDate-error">La fecha de expiración es obligatoria.</div>
+              </div>
+              <div class="form-field">
+                <!-- Campo vacío para mantener el balance del diseño -->
+              </div>
+            </div>
+            <div class="controls-container">
+              <button type="button" class="action-button" id="updateButton" onclick="updateProduct()">Actualizar</button>
+            </div>
+          </form>
         </div>
       </div>
     </div>

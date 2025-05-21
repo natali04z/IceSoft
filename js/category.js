@@ -20,12 +20,61 @@ function getUserPermissions() {
   }
 }
 
+// Función para validar un campo y mostrar error
+function validateField(fieldId, errorMessage) {
+  const field = document.getElementById(fieldId);
+  const errorElement = document.getElementById(`${fieldId}-error`);
+  
+  if (!field || !field.value.trim()) {
+    if (errorElement) {
+      errorElement.textContent = errorMessage || "El campo es obligatorio.";
+      errorElement.style.display = "block";
+    }
+    if (field) {
+      field.classList.add("input-error");
+    }
+    return false;
+  } else {
+    if (errorElement) {
+      errorElement.style.display = "none";
+    }
+    if (field) {
+      field.classList.remove("input-error");
+    }
+    return true;
+  }
+}
+
+// Limpiar mensajes de error
+function clearValidationErrors(formId) {
+  const form = document.getElementById(formId);
+  if (!form) return;
+  
+  const errorElements = form.querySelectorAll('.error-message');
+  const inputElements = form.querySelectorAll('.field-element');
+  
+  errorElements.forEach(element => {
+    element.style.display = "none";
+  });
+  
+  inputElements.forEach(element => {
+    element.classList.remove("input-error");
+  });
+}
 
 // Abrir modal
 function openModal(modalId) {
   const modal = document.getElementById(modalId);
   if (modal) {
     modal.style.display = "flex";
+    
+    // Resetear mensajes de error al abrir el modal
+    if (modalId === 'registerModal') {
+      clearValidationErrors('categoryForm');
+      document.getElementById("categoryForm").reset();
+    } else if (modalId === 'editModal') {
+      clearValidationErrors('editForm');
+    }
   } else {
     console.error(`Modal con ID "${modalId}" no encontrado`);
   }
@@ -40,53 +89,6 @@ function closeModal(modalId) {
     console.error(`Modal con ID "${modalId}" no encontrado`);
   }
 }
-
-// Mostrar formulario de registro
-const showRegisterForm = () => {
-  hideForms();
-  const registerFormSection = document.getElementById("registerFormSection");
-  const formTitle = document.getElementById("formTitle");
-  
-  if (registerFormSection) {
-    registerFormSection.style.display = "block";
-  } else {
-    console.error("Elemento registerFormSection no encontrado");
-  }
-  
-  if (formTitle) {
-    formTitle.textContent = "Registrar Categoría";
-  }
-  
-  window.scrollTo(0, document.body.scrollHeight);
-};
-
-// Ocultar formulario de registro
-const hideRegisterForm = () => {
-  const registerFormSection = document.getElementById("registerFormSection");
-  const categoryForm = document.getElementById("categoryForm");
-  
-  if (registerFormSection) {
-    registerFormSection.style.display = "none";
-  }
-  
-  if (categoryForm) {
-    categoryForm.reset();
-  }
-};
-
-// Ocultar formularios
-const hideForms = () => {
-  const registerFormSection = document.getElementById("registerFormSection");
-  const editFormSection = document.getElementById("editFormSection");
-  
-  if (registerFormSection) {
-    registerFormSection.style.display = "none";
-  }
-  
-  if (editFormSection) {
-    editFormSection.style.display = "none";
-  }
-};
 
 // Renderizar tabla de categorías
 const renderCategoriesTable = (page = 1) => {
@@ -200,7 +202,7 @@ const loadCategoriesInternal = async () => {
   try {
     const token = localStorage.getItem("token");
     if (!token) {
-      showError("Token no encontrado. Inicie sesión nuevamente.");
+      showError("Sesión expirada. Por favor, inicie sesión nuevamente.");
       return;
     }
     
@@ -224,11 +226,11 @@ const loadCategoriesInternal = async () => {
       currentPage = 1;
       renderCategoriesTable(currentPage);
     } else {
-      showError(data.message || "Error al listar categorías.");
+      showError(data.message || "No se pudieron cargar las categorías. Intente nuevamente.");
     }
   } catch (err) {
     console.error("Error al listar categorías:", err);
-    showError("Error al listar categorías: " + (err.message || err));
+    showError("Error de conexión al cargar las categorías. Verifique su conexión a internet.");
   }
 };
 
@@ -238,7 +240,7 @@ const listCategories = async () => {
     
     const token = localStorage.getItem("token");
     if (!token) {
-      showError("Token no encontrado. Inicie sesión nuevamente.");
+      showError("Sesión expirada. Por favor, inicie sesión nuevamente.");
       return;
     }
  
@@ -266,12 +268,12 @@ const listCategories = async () => {
       currentPage = 1;
       renderCategoriesTable(currentPage);
     } else {
-      showError(data.message || "Error al listar categorías.");
+      showError(data.message || "No se pudieron cargar las categorías. Intente nuevamente.");
     }
   } catch (err) {
     hideLoadingIndicator();
     console.error("Error al listar categorías:", err);
-    showError("Error al listar categorías: " + (err.message || err));
+    showError("Error de conexión al cargar las categorías. Verifique su conexión a internet.");
   }
 };
 
@@ -279,23 +281,18 @@ const listCategories = async () => {
 const registerCategory = async () => {
   const token = localStorage.getItem("token");
   if (!token) {
-    showError("Token no encontrado. Inicie sesión nuevamente.");
+    showError("Sesión expirada. Por favor, inicie sesión nuevamente.");
     return;
   }
   
-  const nameElement = document.getElementById("name");
+  // Validar el campo nombre
+  const nameValid = validateField("name", "El nombre de la categoría es obligatorio");
   
-  if (!nameElement) {
-    showError("No se encontró el campo de nombre");
+  if (!nameValid) {
     return;
   }
   
-  const name = nameElement.value.trim();
-
-  if (!name) {
-    showValidation("El nombre es obligatorio.");
-    return;
-  }
+  const name = document.getElementById("name").value.trim();
 
   try { 
     const res = await fetch(API_URL, {
@@ -310,12 +307,7 @@ const registerCategory = async () => {
     const data = await res.json();
     
     if (res.status === 201 || res.ok) {
-      Swal.fire({
-        icon: 'success',
-        title: 'Éxito',
-        text: `Categoría registrada correctamente.`,
-        showConfirmButton: true,
-      });
+      showSuccess('La categoría ha sido registrada');
       closeModal('registerModal');
       
       const categoryForm = document.getElementById("categoryForm");
@@ -325,13 +317,13 @@ const registerCategory = async () => {
         console.warn("Formulario categoryForm no encontrado");
       }
       
-      loadCategoriesInternal(); // Cambiado a la versión sin indicador
+      loadCategoriesInternal();
     } else {
-      showError(data.message || "Error al registrar categoría.");
+      showError(data.message || "No se pudo registrar la categoría. Intente nuevamente.");
     }
   } catch (err) {
     console.error("Error al registrar categoría:", err);
-    showError("Error al registrar categoría: " + (err.message || err));
+    showError("Error de conexión al registrar la categoría. Verifique su conexión a internet.");
   }
 };
 
@@ -339,7 +331,7 @@ const registerCategory = async () => {
 const fillEditForm = async (id) => {
   const token = localStorage.getItem("token");
   if (!token) {
-    showError("Token no encontrado. Inicie sesión nuevamente.");
+    showError("Sesión expirada. Por favor, inicie sesión nuevamente.");
     return;
   }
 
@@ -354,11 +346,14 @@ const fillEditForm = async (id) => {
 
     if (!res.ok) {
       const data = await res.json();
-      showError(data.message || "Error al cargar los datos de la categoría.");
+      showError(data.message || "No se pudo cargar la información de la categoría.");
       return;
     }
 
     const category = await res.json();
+    
+    // Limpiar errores de validación
+    clearValidationErrors('editForm');
 
     const editIdElement = document.getElementById("editId");
     const editNameElement = document.getElementById("editName");
@@ -371,7 +366,7 @@ const fillEditForm = async (id) => {
     openModal('editModal');
   } catch (err) {
     console.error("Error al cargar la categoría:", err);
-    showError(`Ocurrió un error: ${err.message || err}`);
+    showError("Error de conexión al cargar la información de la categoría.");
   }
 };
 
@@ -379,7 +374,14 @@ const fillEditForm = async (id) => {
 const updateCategory = async () => {
   const token = localStorage.getItem("token");
   if (!token) {
-    showError("Token no encontrado. Inicie sesión nuevamente.");
+    showError("Sesión expirada. Por favor, inicie sesión nuevamente.");
+    return;
+  }
+
+  // Validar el campo nombre
+  const nameValid = validateField("editName", "El nombre de la categoría es obligatorio");
+  
+  if (!nameValid) {
     return;
   }
 
@@ -387,20 +389,14 @@ const updateCategory = async () => {
   const editNameElement = document.getElementById("editName");
   
   if (!editIdElement || !editNameElement) {
-    showError("No se encontraron los campos del formulario de edición");
+    showError("Error en el formulario. No se encontraron los campos requeridos.");
     return;
   }
 
   const id = editIdElement.value;
   const name = editNameElement.value.trim();
 
-  if (!name) {
-    showValidation("El nombre es obligatorio.");
-    return;
-  }
-
   try {
-
     const res = await fetch(`${API_URL}/${id}`, {
       method: "PUT",
       headers: {
@@ -413,12 +409,7 @@ const updateCategory = async () => {
     const data = await res.json();
  
     if (res.ok) {
-      Swal.fire({
-        icon: 'success',
-        title: 'Éxito',
-        text: `Categoría actualizada correctamente.`,
-        showConfirmButton: true,
-      });
+      showSuccess('La categoría ha sido actualizada');
       closeModal('editModal');
       
       const editForm = document.getElementById("editForm");
@@ -428,13 +419,13 @@ const updateCategory = async () => {
         console.warn("Formulario editForm no encontrado");
       }
       
-      loadCategoriesInternal(); // Cambiado a la versión sin indicador
+      loadCategoriesInternal();
     } else {
-      showError(data.message || "Error al actualizar la categoría.");
+      showError(data.message || "No se pudo actualizar la categoría. Intente nuevamente.");
     }
   } catch (err) {
     console.error("Error al actualizar categoría:", err);
-    showError(`Ocurrió un error: ${err.message || err}`);
+    showError("Error de conexión al actualizar la categoría. Verifique su conexión a internet.");
   }
 };
 
@@ -442,7 +433,7 @@ const updateCategory = async () => {
 const updateCategoryStatus = async (id, status) => {
   const token = localStorage.getItem("token");
   if (!token) {
-    showError("Token no encontrado. Inicie sesión nuevamente.");
+    showError("Sesión expirada. Por favor, inicie sesión nuevamente.");
     return;
   }
   
@@ -465,27 +456,17 @@ const updateCategoryStatus = async (id, status) => {
     }
     
     if (res.ok) {
-      Swal.fire({
-        icon: 'success',
-        title: 'Éxito',
-        text: `Categoría ${status === 'active' ? 'activada' : 'desactivada'} correctamente.`,
-        showConfirmButton: true,
-      });
+      showSuccess(`La categoría ha sido ${status === 'active' ? 'activada' : 'desactivada'}`);
       
-      loadCategoriesInternal(); // Cambiado a la versión sin indicador
+      loadCategoriesInternal();
     } else {
-      let errorMsg = data.message || `Error al ${status === 'active' ? 'activar' : 'desactivar'} la categoría (${res.status})`;
+      let errorMsg = data.message || `No se pudo ${status === 'active' ? 'activar' : 'desactivar'} la categoría.`;
       
       if (res.status === 400 && data.message && data.message.includes('active products associated')) {
-        Swal.fire({
-          icon: 'warning',
-          title: 'No se puede desactivar',
-          text: 'Esta categoría tiene productos activos asociados. Debe desactivar o reasignar estos productos primero.',
-          confirmButtonColor: '#3085d6'
-        });
+        showValidation('No se puede desactivar la categoría porque tiene productos activos asociados. Desactive o reasigne estos productos primero.');
       } else {
         if (data.error) {
-          errorMsg += `: ${data.error}`;
+          errorMsg += ` ${data.error}`;
         }
         showError(errorMsg);
       }
@@ -494,12 +475,12 @@ const updateCategoryStatus = async (id, status) => {
         status: res.status,
         data: data
       });
-      loadCategoriesInternal(); // Cambiado a la versión sin indicador
+      loadCategoriesInternal();
     }
   } catch (err) {
     console.error("Error al actualizar estado:", err);
-    showError(`Ocurrió un error de red: ${err.message || err}`);
-    loadCategoriesInternal(); // Cambiado a la versión sin indicador
+    showError("Error de conexión al cambiar el estado de la categoría. Verifique su conexión a internet.");
+    loadCategoriesInternal();
   }
 };
 
@@ -507,9 +488,19 @@ const updateCategoryStatus = async (id, status) => {
 const deleteCategory = async (id) => {
   const token = localStorage.getItem("token");
   if (!token) {
-    showError("Token no encontrado. Inicie sesión nuevamente.");
+    showError("Sesión expirada. Por favor, inicie sesión nuevamente.");
     return;
   }
+  
+  // Confirmar antes de eliminar
+  const confirmed = await showConfirm({ 
+    title: "¿Estás seguro de eliminar esta categoría?", 
+    text: "Esta acción no se puede deshacer.", 
+    confirmText: "Eliminar", 
+    cancelText: "Cancelar" 
+  });
+
+  if (!confirmed) return;
   
   try {
     const res = await fetch(`${API_URL}/${id}`, {
@@ -522,19 +513,14 @@ const deleteCategory = async (id) => {
     const data = await res.json();
     
     if (res.ok) {
-      Swal.fire({
-        icon: 'success',
-        title: 'Éxito',
-        text: `Categoría eliminada correctamente.`,
-        showConfirmButton: true,
-      });
-      loadCategoriesInternal(); // Cambiado a la versión sin indicador
+      showSuccess('La categoría ha sido eliminada');
+      loadCategoriesInternal();
     } else {
-      showError(data.message || "No se pudo eliminar la categoría");
+      showError(data.message || "No se pudo eliminar la categoría. Intente nuevamente.");
     }
   } catch (err) {
     console.error("Error al eliminar categoría:", err);
-    showError("Error al eliminar categoría: " + (err.message || err));
+    showError("Error de conexión al eliminar la categoría. Verifique su conexión a internet.");
   }
 };
 
@@ -563,6 +549,11 @@ const searchCategory = () => {
   currentPage = 1;
   renderCategoriesTable(currentPage);
 };
+
+// Función para cerrar el indicador de carga
+function hideLoadingIndicator() {
+  Swal.close();
+}
 
 // Inicialización
 document.addEventListener("DOMContentLoaded", () => {
@@ -598,6 +589,17 @@ document.addEventListener("DOMContentLoaded", () => {
     console.warn("Elemento searchInput no encontrado");
   }
 
+  // Agregar validación en tiempo real para los campos
+  const nameInput = document.getElementById("name");
+  if (nameInput) {
+    nameInput.addEventListener("blur", () => validateField("name", "El nombre de la categoría es obligatorio"));
+  }
+  
+  const editNameInput = document.getElementById("editName");
+  if (editNameInput) {
+    editNameInput.addEventListener("blur", () => validateField("editName", "El nombre de la categoría es obligatorio"));
+  }
+
   const editForm = document.getElementById("editForm");
   if (editForm) {
     editForm.onsubmit = async (event) => {
@@ -607,6 +609,22 @@ document.addEventListener("DOMContentLoaded", () => {
   } else {
     console.warn("Elemento editForm no encontrado");
   }
+  
+  // Código CSS para mensajes de error
+  const styleElement = document.createElement('style');
+  styleElement.textContent = `
+    .error-message {
+      color: #e74c3c;
+      font-size: 12px;
+      margin-top: 5px;
+      display: none;
+    }
+    
+    .input-error {
+      border-color: #e74c3c !important;
+    }
+  `;
+  document.head.appendChild(styleElement);
 });
 
 // Exportar funciones globales
@@ -615,5 +633,3 @@ window.updateCategoryStatus = updateCategoryStatus;
 window.deleteCategory = deleteCategory;
 window.openModal = openModal;
 window.closeModal = closeModal;
-window.showRegisterForm = showRegisterForm;
-window.hideRegisterForm = hideRegisterForm;

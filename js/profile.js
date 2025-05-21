@@ -5,142 +5,14 @@ const API_PROFILE = `${API_BASE_URL}/users/profile/me`;
 // Variable global para almacenar los datos del perfil
 let userProfile = null;
 
-// Función para validar un campo y mostrar error
-function validateField(fieldId, errorMessage) {
-  const field = document.getElementById(fieldId);
-  const errorElement = document.getElementById(`${fieldId}-error`);
-  
-  if (!field.value.trim()) {
-    errorElement.textContent = errorMessage || "El campo es obligatorio.";
-    errorElement.style.display = "block";
-    field.classList.add("input-error");
-    return false;
-  } else {
-    errorElement.style.display = "none";
-    field.classList.remove("input-error");
-    return true;
-  }
-}
-
-// Función para validar teléfono
-function validatePhone(fieldId) {
-  const field = document.getElementById(fieldId);
-  const errorElement = document.getElementById(`${fieldId}-error`);
-  
-  if (!field.value.trim()) {
-    errorElement.textContent = "El teléfono es obligatorio.";
-    errorElement.style.display = "block";
-    field.classList.add("input-error");
-    return false;
-  } else if (!/^\d+$/.test(field.value.trim())) {
-    errorElement.textContent = "El teléfono debe contener solo dígitos.";
-    errorElement.style.display = "block";
-    field.classList.add("input-error");
-    return false;
-  } else {
-    errorElement.style.display = "none";
-    field.classList.remove("input-error");
-    return true;
-  }
-}
-
-// Función para validar email
-function validateEmail(fieldId) {
-  const field = document.getElementById(fieldId);
-  const errorElement = document.getElementById(`${fieldId}-error`);
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  
-  if (!field.value.trim()) {
-    errorElement.textContent = "El correo es obligatorio.";
-    errorElement.style.display = "block";
-    field.classList.add("input-error");
-    return false;
-  } else if (!emailRegex.test(field.value.trim())) {
-    errorElement.textContent = "El formato del correo electrónico no es válido.";
-    errorElement.style.display = "block";
-    field.classList.add("input-error");
-    return false;
-  } else {
-    errorElement.style.display = "none";
-    field.classList.remove("input-error");
-    return true;
-  }
-}
-
-// Limpiar mensajes de error
-function clearValidationErrors(formId) {
-  const form = document.getElementById(formId);
-  const errorElements = form.querySelectorAll('.error-message');
-  const inputElements = form.querySelectorAll('.field-element');
-  
-  errorElements.forEach(element => {
-    element.style.display = "none";
-  });
-  
-  inputElements.forEach(element => {
-    element.classList.remove("input-error");
-  });
-}
-
-// Desactivar validación nativa del navegador en los formularios
-function disableNativeBrowserValidation() {
-  // Desactivar validación del formulario de perfil
-  const profileForm = document.getElementById("profileForm");
-  if (profileForm) {
-    profileForm.setAttribute("novalidate", "");
-    
-    // Quitar atributos 'required' y 'pattern' de los campos
-    const inputs = profileForm.querySelectorAll("input");
-    inputs.forEach(input => {
-      input.removeAttribute("required");
-      input.removeAttribute("pattern");
-    });
-  }
-}
-
-// Validación de campos numéricos
-function setupNumericValidation() {
-  const phoneInput = document.getElementById('editProfileContact');
-  
-  if (phoneInput) {
-    phoneInput.addEventListener('keypress', function(e) {
-      if (!/^\d$/.test(e.key) && !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key)) {
-        e.preventDefault();
-      }
-    });
-    
-    phoneInput.addEventListener('input', function() {
-      this.value = this.value.replace(/\D/g, '');
-    });
-  }
-}
-
-// Manejo de modales
-function openModal(modalId) {
-  const modal = document.getElementById(modalId);
-  if (modal) {
-    modal.style.display = "flex";
-    
-    // Resetear mensajes de error al abrir el modal
-    if (modalId === 'editProfileModal') {
-      clearValidationErrors('profileForm');
-    }
-  }
-}
-
-function closeModal(modalId) {
-  const modal = document.getElementById(modalId);
-  if (modal) {
-    modal.style.display = "none";
-  }
-}
+// ===== FUNCIONES DE CARGA Y VISUALIZACIÓN =====
 
 // Cargar perfil del usuario
 const loadProfile = async () => {
   try {
     const token = localStorage.getItem("token");
     if (!token) {
-      showError("Token no encontrado. Inicie sesión nuevamente.");
+      window.location.href = "login.html";
       return;
     }
     
@@ -162,17 +34,11 @@ const loadProfile = async () => {
       userProfile = data;
       displayProfile(userProfile);
       
-      // Actualizar el nombre en el encabezado del perfil
-      const profileHeaderName = document.getElementById('profileHeaderName');
-      if (profileHeaderName) {
-        profileHeaderName.textContent = userProfile.name || 'Usuario';
-      }
-      
       // Actualizar el nombre en el navbar
-      const loggedUserName = document.getElementById('loggedUserName');
-      if (loggedUserName) {
-        loggedUserName.textContent = userProfile.name || 'Usuario';
-      }
+      updateUserNameInHeader(userProfile);
+      
+      // Guardar datos en localStorage para uso en otras páginas
+      saveUserDataToLocalStorage(userProfile);
     } else {
       showError(data.message || "Error al cargar el perfil de usuario.");
     }
@@ -186,149 +52,149 @@ const loadProfile = async () => {
 const displayProfile = (profile) => {
   if (!profile) return;
   
+  // Información básica del perfil
   document.getElementById('profileName').textContent = profile.name || 'No disponible';
   document.getElementById('profileLastname').textContent = profile.lastname || 'No disponible';
   document.getElementById('profileContact').textContent = profile.contact_number || 'No disponible';
   document.getElementById('profileEmail').textContent = profile.email || 'No disponible';
-  document.getElementById('profileRole').textContent = profile.role?.name || 'No asignado';
   
-  // Mostrar el estado como un switch desactivado
+  // Mostrar el nombre del rol (usando displayName si está disponible)
+  const roleElement = document.getElementById('profileRole');
+  if (roleElement) {
+    let roleName = 'No asignado';
+    
+    if (profile.role) {
+      if (typeof profile.role === 'string') {
+        roleName = profile.role;
+      } else if (profile.role.displayName) {
+        roleName = profile.role.displayName;
+      } else if (profile.role.name) {
+        roleName = profile.role.name;
+      }
+    }
+    
+    roleElement.textContent = roleName;
+  }
+  
+  // Mostrar el estado como texto
   const statusElement = document.getElementById('profileStatus');
   if (statusElement) {
-    statusElement.innerHTML = `
-      <label class="switch">
-        <input type="checkbox" ${profile.status === "active" ? "checked" : ""} disabled>
-        <span class="slider round"></span>
-      </label>
-    `;
+    statusElement.textContent = profile.status === "active" ? "Activo" : "Inactivo";
   }
 };
 
-// Abrir modal de edición
-const openEditProfileModal = () => {
-  if (!userProfile) {
-    showError("No se ha cargado la información del perfil");
-    return;
+// Actualizar el nombre de usuario en el header
+const updateUserNameInHeader = (profile) => {
+  if (!profile) return;
+  
+  const loggedUserName = document.getElementById('loggedUserName');
+  if (loggedUserName) {
+    loggedUserName.textContent = `${profile.name || ''} ${profile.lastname || ''}`.trim() || 'Usuario';
   }
-  
-  // Limpiar mensajes de validación
-  clearValidationErrors('profileForm');
-  
-  document.getElementById('editProfileName').value = userProfile.name || '';
-  document.getElementById('editProfileLastname').value = userProfile.lastname || '';
-  document.getElementById('editProfileContact').value = userProfile.contact_number || '';
-  document.getElementById('editProfileEmail').value = userProfile.email || '';
-  
-  openModal('editProfileModal');
 };
 
-// Actualizar perfil
-const updateProfile = async () => {
-  const token = localStorage.getItem("token");
-  if (!token) {
-    showError("Token no encontrado. Inicie sesión nuevamente.");
-    return;
+// Guardar datos del usuario en localStorage
+const saveUserDataToLocalStorage = (profile) => {
+  if (!profile) return;
+  
+  let roleName = '';
+  if (profile.role) {
+    if (typeof profile.role === 'string') {
+      roleName = profile.role;
+    } else if (profile.role.displayName) {
+      roleName = profile.role.displayName;
+    } else if (profile.role.name) {
+      roleName = profile.role.name;
+    }
   }
   
-  // Validar campos usando las nuevas funciones
-  const nameValid = validateField("editProfileName", "El nombre es obligatorio.");
-  const lastnameValid = validateField("editProfileLastname", "El apellido es obligatorio.");
-  const phoneValid = validatePhone("editProfileContact");
-  const emailValid = validateEmail("editProfileEmail");
+  const userData = {
+    name: profile.name || '',
+    lastname: profile.lastname || '',
+    email: profile.email || '',
+    role: roleName,
+    status: profile.status || 'inactive'
+  };
+  
+  localStorage.setItem('userData', JSON.stringify(userData));
+};
 
-  // Si algún campo no es válido, detener el proceso
-  if (!nameValid || !lastnameValid || !phoneValid || !emailValid) {
-    return;
-  }
+// ===== FUNCIONES DE INTERFAZ DE USUARIO =====
+
+// Función para configurar el desplegable del usuario en el header
+const setupUserDropdown = () => {
+  const dropdownToggle = document.getElementById("userDropdownToggle");
+  const dropdownMenu = document.getElementById("userDropdownMenu");
   
-  const name = document.getElementById('editProfileName').value.trim();
-  const lastname = document.getElementById('editProfileLastname').value.trim();
-  const contact_number = document.getElementById('editProfileContact').value.trim();
-  const email = document.getElementById('editProfileEmail').value.trim();
-  
-  try {
-    
-    const res = await fetch(API_PROFILE, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        name,
-        lastname,
-        contact_number,
-        email
-      })
+  if (dropdownToggle && dropdownMenu) {
+    // Toggle del menú al hacer clic
+    dropdownToggle.addEventListener("click", () => {
+      dropdownMenu.classList.toggle("show");
     });
     
-    const data = await res.json();
-        
-    if (res.ok) {
-      Swal.fire({
-        icon: 'success',
-        title: 'Éxito',
-        text: `Perfil actualizado correctamente.`,
-        showConfirmButton: true,
-      });
-      closeModal('editProfileModal');
-      
-      userProfile = data.user;
-      displayProfile(userProfile);
-      
-      const loggedUserName = document.getElementById('loggedUserName');
-      if (loggedUserName) {
-        loggedUserName.textContent = userProfile.name || 'Usuario';
+    // Cerrar el menú al hacer clic fuera de él
+    document.addEventListener("click", (event) => {
+      if (!dropdownToggle.contains(event.target) && !dropdownMenu.contains(event.target)) {
+        dropdownMenu.classList.remove("show");
       }
-    } else {
-      showError(data.message || "Error al actualizar el perfil");
-    }
-  } catch (err) {
-    hideLoadingIndicator();
-    showError("Error al actualizar el perfil: " + (err.message || err));
+    });
   }
 };
 
-// Inicialización
+// Función de cierre de sesión
+const logout = () => {
+  localStorage.removeItem("token");
+  localStorage.removeItem("userData");
+  window.location.href = "login.html";
+};
+
+// ===== FUNCIONES DE UTILIDAD =====
+
+// Mostrar indicador de carga
+function showLoadingIndicator() {
+  const loader = document.getElementById("loadingIndicator");
+  if (loader) {
+    loader.style.display = "flex";
+  }
+}
+
+// Ocultar indicador de carga
+function hideLoadingIndicator() {
+  const loader = document.getElementById("loadingIndicator");
+  if (loader) {
+    loader.style.display = "none";
+  }
+}
+
+// Mostrar mensaje de error
+function showError(message) {
+  Swal.fire({
+    icon: 'error',
+    title: 'Error',
+    text: message,
+    showConfirmButton: true,
+  });
+}
+
+// ===== INICIALIZACIÓN =====
+
 document.addEventListener("DOMContentLoaded", () => {
-  // Desactivar validación nativa del navegador
-  disableNativeBrowserValidation();
+  // Configurar el dropdown del usuario
+  setupUserDropdown();
   
+  // Cargar datos del perfil
   loadProfile();
-  setupNumericValidation();
   
-  const editProfileBtn = document.getElementById('editProfileBtn');
-  if (editProfileBtn) {
-    editProfileBtn.addEventListener('click', openEditProfileModal);
-  }
+  // Configurar el menú lateral (si existe)
+  const menuBtn = document.querySelector(".btn-menu");
+  const sidebar = document.querySelector(".sidebar");
   
-  const updateProfileBtn = document.getElementById('updateProfileBtn');
-  if (updateProfileBtn) {
-    updateProfileBtn.addEventListener('click', updateProfile);
-  }
-  
-  // Agregar validación para campos individuales en tiempo real
-  const editProfileName = document.getElementById('editProfileName');
-  if (editProfileName) {
-    editProfileName.addEventListener('blur', () => validateField('editProfileName', 'El nombre es obligatorio.'));
-  }
-  
-  const editProfileLastname = document.getElementById('editProfileLastname');
-  if (editProfileLastname) {
-    editProfileLastname.addEventListener('blur', () => validateField('editProfileLastname', 'El apellido es obligatorio.'));
-  }
-  
-  const editProfileContact = document.getElementById('editProfileContact');
-  if (editProfileContact) {
-    editProfileContact.addEventListener('blur', () => validatePhone('editProfileContact'));
-  }
-  
-  const editProfileEmail = document.getElementById('editProfileEmail');
-  if (editProfileEmail) {
-    editProfileEmail.addEventListener('blur', () => validateEmail('editProfileEmail'));
+  if (menuBtn && sidebar) {
+    menuBtn.addEventListener("click", () => {
+      sidebar.classList.toggle("active");
+    });
   }
 });
 
-// Funciones globales
-window.openModal = openModal;
-window.closeModal = closeModal;
+// Exponer funciones globales
+window.logout = logout;
