@@ -1,4 +1,4 @@
-const API_URL = "https://backend-icesoft.onrender.com/api/branches";
+const API_URL = "https://backend-yy4o.onrender.com/api/branches";
   
 // Variables globales
 let branches = [];
