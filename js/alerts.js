@@ -2,12 +2,13 @@
 function showSuccess(message = "Operación exitosa") {
   return Swal.fire({
     icon: 'success',
-    title: 'Éxito',
     text: message,
     toast: true,
     position: 'top-end',
     showConfirmButton: false,
-    timer: 3000
+    showCloseButton: true,
+    timer: 5000,
+    timerProgressBar: true
   });
 }
 
@@ -15,12 +16,13 @@ function showSuccess(message = "Operación exitosa") {
 function showError(message = "Ha ocurrido un error") {
   return Swal.fire({
     icon: 'error',
-    title: 'Error',
     text: message,
     toast: true,
     position: 'top-end',
     showConfirmButton: false,
-    timer: 3000
+    showCloseButton: true,
+    timer: 5000,
+    timerProgressBar: true
   });
 }
 
@@ -28,12 +30,13 @@ function showError(message = "Ha ocurrido un error") {
 function showValidation(message = "Por favor, completa todos los campos") {
   return Swal.fire({
     icon: 'warning',
-    title: 'Validación',
     text: message,
     toast: true,
     position: 'top-end',
     showConfirmButton: false,
-    timer: 3000
+    showCloseButton: true,
+    timer: 5000,
+    timerProgressBar: true
   });
 }
 
@@ -41,16 +44,17 @@ function showValidation(message = "Por favor, completa todos los campos") {
 function showInfo(message = "Información") {
   return Swal.fire({
     icon: "info",
-    title: "Información",
     text: message,
     toast: true,
     position: 'top-end',
     showConfirmButton: false,
-    timer: 3000
+    showCloseButton: true,
+    timer: 5000,
+    timerProgressBar: true 
   });
 }
 
-// Mostrar confirmación
+// Mostrar confirmación (sin cambios, ya tiene botones)
 function showConfirm({ title = "¿Estás seguro?", text = "", confirmText = "Ok", cancelText = "Cancelar" } = {}) {
   return Swal.fire({
     title: title,
@@ -65,10 +69,11 @@ function showConfirm({ title = "¿Estás seguro?", text = "", confirmText = "Ok"
 function showLoadingIndicator() {
   Swal.fire({
     title: '',
-    html: '<div class="swal2-loader-custom"></div><div class="swal2-title-custom">Cargando</div>',
+    html: '<div class="loading-content"><div class="spinner"></div><div class="loading-text">Cargando</div></div>',
     showConfirmButton: false,
     allowOutsideClick: false,
     width: '250px',
+    background: 'rgba(255, 255, 255, 0.95)',
     customClass: {
       popup: 'swal-custom-loading'
     },
@@ -77,7 +82,6 @@ function showLoadingIndicator() {
       backdrop: 'swal2-backdrop-show'
     },
     didOpen: () => {
-      // Puedes agregar código adicional aquí si es necesario
     }
   });
 }

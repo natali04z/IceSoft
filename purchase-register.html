@@ -3,19 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Compras | ICESOFT</title>
+  <title>Registro de Compras | ICESOFT</title>
   <link rel="icon" href="assets/icesoft.png" type="image/png">
   <link rel="stylesheet" href="css/style.css">
   <script src="js/alerts.js"></script>
-  <!-- LIBRERÍAS CDN PARA EXPORTACIÓN -->
-  <script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.materialdesignicons.com/6.5.95/css/materialdesignicons.min.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  
 </head>
 <body class="dashboard-page">
   <section class="navLateral">
@@ -88,123 +84,109 @@
 
   <main class="main-content">
     <div class="container">
-      <h2 class="title">Gestión de Compras</h2>
+      <h2 class="title">Registro de Compras</h2>
+    <div class="page-header">
+      <button type="button" class="add-button" onclick="window.location.href='purchases.html'">
+        <i class="material-icons">arrow_back</i> Volver a Compras
+      </button>
+    </div>
       
-      <div class="search-container">
-        <div class="search-box">
-          <input type="text" id="searchInput" placeholder="Buscar compra...">
-          <button onclick="searchPurchase()">
-            <i class="material-icons">search</i>
-          </button>
-        </div>
-      </div>
-      
-      <!-- Sección de estadísticas -->
-      <section class="stats-section">
-        <div id="statisticsContainer" class="stats-container">
-          <!-- Aquí se cargarán las estadísticas dinámicamente -->
-        </div>
-      </section>
-      
-      <section class="table-card">
-        <div class="card-header card-header-flex">
-          <h3>Lista de Compras</h3>
-          <div class="button-group">
-            <!-- BOTÓN DE EXPORTACIÓN CORREGIDO -->
-            <div class="dropdown-export">
-              <button class="add-button" onclick="toggleExportDropdown()">
-                <i class="material-icons">file_download</i>
-                Exportar
-              </button>
-              
-              <div class="dropdown-menu" id="exportDropdownMenu">
-                <a href="#" onclick="showExportModal(); toggleExportDropdown(); return false;">
-                  <i class="material-icons">tune</i>
-                  Exportar con filtros
-                </a>
-                <div class="dropdown-divider"></div>
-                <a href="#" onclick="exportToPDF({}); toggleExportDropdown(); return false;">
-                  <i class="material-icons">picture_as_pdf</i>
-                  Exportar todo a PDF
-                </a>
-                <a href="#" onclick="exportToExcel({}); toggleExportDropdown(); return false;">
-                  <i class="material-icons">table_chart</i>
-                  Exportar todo a Excel
-                </a>
+    <div class="purchase-register-container">
+      <div class="purchase-modal-content" style="display: flex; position: relative; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin: 20px auto;">
+        <!-- Panel izquierdo - Formulario -->
+        <div class="purchase-modal-left">
+          <div class="purchase-modal-header">
+            <h3 id="formTitle">Detalles de la Compra</h3>
+          </div>
+          
+          <form id="purchaseForm" novalidate>
+            <div class="purchase-form-group">
+              <label for="provider">Proveedor</label>
+              <select class="field-element" id="provider">
+                <option value="" disabled selected hidden>Seleccionar proveedor</option>
+                <!-- Los proveedores se cargarán dinámicamente -->
+              </select>
+              <div class="error-message" id="provider-error" style="display:none;">El campo es obligatorio.</div>
+            </div>
+            
+            <div class="purchase-form-group">
+              <label for="product">Producto</label>
+              <select class="field-element" id="product">
+                <option value="" disabled selected hidden>Seleccionar producto</option>
+                <!-- Los productos se cargarán dinámicamente -->
+              </select>
+              <div class="error-message" id="product-error" style="display:none;">El campo es obligatorio.</div>
+            </div>
+            
+            <div class="purchase-form-group">
+              <label for="quantity">Cantidad</label>
+              <input type="number" class="field-element" id="quantity" min="1" value="1" onkeypress="return isNumber(event)">
+              <div class="error-message" id="quantity-error" style="display:none;">El campo es obligatorio.</div>
+            </div>
+            
+            <div class="purchase-form-group">
+              <label for="purchasePrice">Precio Compra</label>
+              <input type="number" class="field-element" id="purchasePrice" min="0" step="0.01"  onkeypress="return isNumber(event, true)">
+              <div class="error-message" id="purchasePrice-error" style="display:none;">El campo es obligatorio.</div>
+            </div>
+            
+            <div class="purchase-form-group">
+              <label for="purchaseDate">Fecha de compra</label>
+              <input type="date" class="field-element" id="purchaseDate">
+              <div class="error-message" id="purchaseDate-error" style="display:none;">El campo es obligatorio.</div>
+            </div>
+            
+            <div class="purchase-buttons-group">
+              <div class="purchase-total-product">
+                <label>Total del producto:</label>
+                <span id="product-total">0</span>
               </div>
             </div>
             
-            <button type="button" class="add-button" id="mobileAddButton">
-              <i class="material-icons">add</i> Añadir
-            </button>
+            <div class="purchase-modal-footer">
+              <button type="button" id="addToListBtn" class="add-button">
+                <i class="material-icons">add</i> Añadir
+              </button>
+            </div>
+          </form>
+        </div>
+        
+        <!-- Panel derecho - Tabla de productos -->
+        <div class="purchase-modal-right">
+          <div class="purchase-modal-header">
+            <h3>Lista de productos</h3>
+          </div>
+          
+          <table class="purchase-table">
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Cant.</th>
+                <th>Precio Compra
+                <th>Total</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody id="modal-product-list">
+              <!-- Los productos se añadirán aquí -->
+            </tbody>
+          </table>
+          <div id="productItemsList-error" class="error-message text-center" style="display:none;">
+            Debe agregar al menos un producto a la compra.
+          </div>
+          
+          <div class="purchase-modal-footer">
+            <button id="registerButton" class="add-button">Guardar</button>
+            <div class="purchase-total">
+              Total: <span id="totalAmount">0</span>
+            </div>
           </div>
         </div>
-        <div class="card-body">
-          <div class="table-responsive">
-            <table class="users-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Proveedor</th>
-                  <th>Fecha</th>
-                  <th>Total</th>
-                  <th>Estado</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody id="purchaseTableBody"></tbody>
-            </table>
-          </div>
-          <!-- Controles de paginación -->
-          <div class="pagination">
-            <div class="page-info"></div>
-            <div class="page-numbers"></div>
-          </div>
-        </div>
-      </section>
+      </div>
     </div>
   </main>
   
-  <!-- SCRIPTS EN EL ORDEN CORRECTO -->
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      if (typeof window.jspdf !== 'undefined') {
-        window.jsPDF = window.jspdf.jsPDF;
-      }
-      
-      console.log('jsPDF disponible:', typeof window.jsPDF !== 'undefined');
-      console.log('XLSX disponible:', typeof window.XLSX !== 'undefined');
-    });
-
-    function toggleExportDropdown() {
-      const dropdown = document.querySelector('.dropdown-export');
-      if (dropdown) {
-        dropdown.classList.toggle('active');
-      }
-    }
-
-    // Cerrar dropdown al hacer click fuera
-    document.addEventListener('click', function(event) {
-      const dropdown = document.querySelector('.dropdown-export');
-      if (dropdown && !dropdown.contains(event.target)) {
-        dropdown.classList.remove('active');
-      }
-    });
-    document.addEventListener('DOMContentLoaded', function() {
-      const dropdownMenu = document.getElementById('exportDropdownMenu');
-      if (dropdownMenu) {
-        dropdownMenu.addEventListener('click', function(event) {
-          event.stopPropagation();
-        });
-      }
-    });
-  </script>
-  
-  <!-- CARGAR SCRIPTS EN ORDEN -->
   <script src="js/menu.js"></script>
   <script src="js/purchases.js"></script>
-  <script src="js/products.js"></script>
-  <script src="js/providers.js"></script>
-  <script src="js/purchases-export.js"></script>
 </body>
 </html>

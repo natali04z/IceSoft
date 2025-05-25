@@ -130,7 +130,7 @@
         </div>
       </section>
   
-        <!-- Modal de Registro de Proveedor -->
+    <!-- Modal de Registro de Proveedor -->
     <div id="registerModal" class="modal">
       <div class="modal-content">
         <div class="modal-header">
@@ -139,33 +139,38 @@
         </div>
         <div class="modal-body">
           <form id="providerForm" novalidate>
+          <div class="form-row">
+            <div class="form-field">
+              <label for="nit">NIT</label>
+              <input type="tel" class="field-element" id="nit" inputmode="numeric">
+              <div class="error-message" id="nit-error">El campo es obligatorio.</div>
+            </div>
+            <div class="form-field"></div>
+          </div>
             <div class="form-row">
-              <div class="form-field">
-                <input type="tel" class="field-element" id="nit" placeholder="NIT" inputmode="numeric">
-                <div class="error-message" id="nit-error">El campo es obligatorio.</div>
-              </div>
-              <div class="form-field">
-                <input type="text" class="field-element" id="company" placeholder="Empresa">
+              <div class="form-field full-width">
+                <label for="company">Empresa</label>
+                <input type="text" class="field-element" id="company">
                 <div class="error-message" id="company-error">El campo es obligatorio.</div>
               </div>
             </div>
             <div class="form-row">
               <div class="form-field">
-                <input type="text" class="field-element" id="name" placeholder="Nombre Contacto">
+                <label for="name">Nombre Contacto</label>
+                <input type="text" class="field-element" id="name">
                 <div class="error-message" id="name-error">El campo es obligatorio.</div>
               </div>
               <div class="form-field">
-                <input type="tel" class="field-element" id="contact_phone" placeholder="Teléfono de contacto" inputmode="numeric">
+                <label for="contact_phone">Teléfono</label>
+                <input type="tel" class="field-element" id="contact_phone" inputmode="numeric">
                 <div class="error-message" id="contact_phone-error">El campo es obligatorio.</div>
               </div>
             </div>
             <div class="form-row">
-              <div class="form-field">
-                <input type="email" class="field-element" id="email" placeholder="Correo">
+              <div class="form-field full-width">
+                <label for="email">Correo</label>
+                <input type="email" class="field-element" id="email">
                 <div class="error-message" id="email-error">El campo es obligatorio.</div>
-              </div>
-              <div class="form-field">
-                <!-- Campo vacío para mantener el balance del diseño -->
               </div>
             </div>
             <div class="controls-container">
@@ -188,31 +193,36 @@
             <input type="hidden" id="editId">
             <div class="form-row">
               <div class="form-field">
-                <input type="tel" class="field-element" id="editNit" placeholder="NIT" inputmode="numeric">
+                <label for="editNit">NIT</label>
+                <input type="tel" class="field-element" id="editNit" inputmode="numeric">
                 <div class="error-message" id="editNit-error">El campo es obligatorio.</div>
               </div>
-              <div class="form-field">
-                <input type="text" class="field-element" id="editCompany" placeholder="Empresa">
+              <div class="form-field"></div>
+            </div>
+            <div class="form-row">
+              <div class="form-field full-width">
+                <label for="editCompany">Empresa</label>
+                <input type="text" class="field-element" id="editCompany">
                 <div class="error-message" id="editCompany-error">El campo es obligatorio.</div>
               </div>
             </div>
             <div class="form-row">
               <div class="form-field">
-                <input type="text" class="field-element" id="editName" placeholder="Nombre Contacto">
+                <label for="editName">Nombre Contacto</label>
+                <input type="text" class="field-element" id="editName">
                 <div class="error-message" id="editName-error">El campo es obligatorio.</div>
               </div>
               <div class="form-field">
-                <input type="tel" class="field-element" id="editContactPhone" placeholder="Teléfono de contacto" inputmode="numeric">
+                <label for="editContactPhone">Teléfono</label>
+                <input type="tel" class="field-element" id="editContactPhone" inputmode="numeric">
                 <div class="error-message" id="editContactPhone-error">El campo es obligatorio.</div>
               </div>
             </div>
             <div class="form-row">
-              <div class="form-field">
-                <input type="email" class="field-element" id="editEmail" placeholder="Correo">
+              <div class="form-field full-width">
+                <label for="editEmail">Correo</label>
+                <input type="email" class="field-element" id="editEmail">
                 <div class="error-message" id="editEmail-error">El campo es obligatorio.</div>
-              </div>
-              <div class="form-field">
-                <!-- Campo vacío para mantener el balance del diseño -->
               </div>
             </div>
             <div class="controls-container">

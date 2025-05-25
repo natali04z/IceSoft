@@ -219,7 +219,7 @@ function setupPhoneNumberValidation() {
 
 // ===== FUNCIONES DE RENDERIZADO =====
 
-// Renderizar tabla de usuarios
+// Renderizar tabla de usuarios - SIN botones deshabilitados
 const renderUsersTable = (page = 1) => {
   const tbody = document.getElementById("userTableBody");
   tbody.innerHTML = "";
@@ -230,9 +230,11 @@ const renderUsersTable = (page = 1) => {
 
   usersToShow.forEach(user => {
     const roleName = user.role?.displayName || user.role?.name || "No Rol";
+    const isCurrentUser = user._id === getCurrentUserId();
+    const currentUserClass = isCurrentUser ? 'current-user' : '';
     
     tbody.innerHTML += `
-      <tr>
+      <tr class="${currentUserClass}">
         <td>${user.name}</td>
         <td>${user.lastname}</td>
         <td>${user.contact_number}</td>
@@ -241,18 +243,16 @@ const renderUsersTable = (page = 1) => {
         <td>
           <label class="switch">
             <input type="checkbox" ${user.status === "active" ? "checked" : ""} 
-              onchange="updateUserStatus('${user._id}', this.checked ? 'active' : 'inactive')" 
-              ${user._id === getCurrentUserId() ? "disabled" : ""}>
+              onchange="updateUserStatus('${user._id}', this.checked ? 'active' : 'inactive')">
             <span class="slider round"></span>
           </label>
         </td>
         <td>
           <div class="action-buttons">
-            <button onclick="fillEditForm('${user._id}')" class="icon-button edit-button" title="Editar">
+            <button onclick="fillEditForm('${user._id}')" class="icon-button edit-button" title="Editar usuario">
               <i class="material-icons">edit</i>
             </button>
-            <button onclick="deleteUser('${user._id}')" class="icon-button delete-button" title="Eliminar" 
-              ${user._id === getCurrentUserId() ? "disabled" : ""}>
+            <button onclick="deleteUser('${user._id}')" class="icon-button delete-button" title="Eliminar usuario">
               <i class="material-icons">delete</i>
             </button>
           </div>
@@ -325,12 +325,12 @@ const getCurrentUserId = () => {
   }
 };
 
-// Cargar roles desde el backend
+// Cargar roles desde el backend - CORREGIDO
 const loadRoles = async () => {
   try {
     const token = localStorage.getItem("token");
     if (!token) {
-      showError("Token no encontrado. Inicie sesión nuevamente.");
+      showError("Inicie sesión nuevamente.");
       return [];
     }
 
@@ -358,20 +358,16 @@ const loadRoles = async () => {
       const roleSelectors = document.querySelectorAll('#rol, #editRole');
       
       roleSelectors.forEach(selector => {
-        // Guardar la primera opción (si existe)
         let defaultOption = null;
         if (selector.options.length > 0) {
           defaultOption = selector.options[0];
         }
         
-        // Limpiar el selector
         selector.innerHTML = '';
         
-        // Restaurar la opción por defecto
         if (defaultOption) {
           selector.appendChild(defaultOption);
         } else {
-          // Si no había opción por defecto, crear una
           const option = document.createElement('option');
           option.value = "";
           option.textContent = "Seleccione un rol";
@@ -380,8 +376,6 @@ const loadRoles = async () => {
           selector.appendChild(option);
         }
         
-        // Añadir los roles desde la base de datos
-        // Solo incluir roles activos
         const activeRoles = roles.filter(role => role.status === "active");
         
         activeRoles.forEach(role => {
@@ -406,12 +400,12 @@ const loadRoles = async () => {
 
 // ===== FUNCIONES DE API =====
 
-// Función interna para cargar usuarios sin mostrar indicador de carga
+// Función interna para cargar usuarios - CORREGIDO
 const loadUsersInternal = async () => {
   try {
     const token = localStorage.getItem("token");
     if (!token) {
-      showError("Token no encontrado. Inicie sesión nuevamente.");
+      showError("Inicie sesión nuevamente.");
       return;
     }
     
@@ -459,7 +453,7 @@ const listUsers = async () => {
   try {
     const token = localStorage.getItem("token");
     if (!token) {
-      showError("Token no encontrado. Inicie sesión nuevamente.");
+      showError("Inicie sesión nuevamente.");
       return;
     }
     
@@ -511,7 +505,7 @@ const listUsers = async () => {
 const registerUser = async () => {
   const token = localStorage.getItem("token");
   if (!token) {
-    showError("Token no encontrado. Inicie sesión nuevamente.");
+    showError("Inicie sesión nuevamente.");
     return;
   }
 
@@ -561,14 +555,8 @@ const registerUser = async () => {
           registeredUser.role.displayName = getDisplayNameForRole(registeredUser.role.name);
         }
       }
-      
-      Swal.fire({
-        icon: 'success',
-        title: 'Éxito',
-        text: `Usuario registrado correctamente.`,
-        showConfirmButton: true,
-      });
 
+      showSuccess('El usuario ha sido registrado');
       closeModal('registerModal');
       document.getElementById("userForm").reset();
       loadUsersInternal();
@@ -580,9 +568,15 @@ const registerUser = async () => {
   }
 };
 
-// Llenar formulario de edición con datos del usuario
+// Llenar formulario de edición con validación del usuario actual
 const fillEditForm = async (id) => {
   const token = localStorage.getItem("token");
+
+  // VALIDACIÓN: Verificar si es el usuario actual
+  if (id === getCurrentUserId()) {
+    showInfo('No puedes editar tu propia información de usuario desde esta sección. Para cambiar tus datos personales, ve a tu perfil de usuario.');
+    return;
+  }
 
   try {
     await loadRoles();
@@ -621,7 +615,6 @@ const fillEditForm = async (id) => {
           if (typeof user.role === 'object' && user.role.name) {
             const option = document.createElement('option');
             option.value = roleId;
-            // Usar displayName si está disponible, sino usar el nombre original
             option.textContent = user.role.displayName || getDisplayNameForRole(user.role.name) || user.role.name;
             roleSelect.appendChild(option);
             roleSelect.value = roleId;
@@ -642,7 +635,7 @@ const fillEditForm = async (id) => {
 const updateUser = async () => {
   const token = localStorage.getItem("token");
   if (!token) {
-    showError("Token no encontrado. Inicie sesión nuevamente.");
+    showError("Inicie sesión nuevamente.");
     return;
   }
   
@@ -709,12 +702,7 @@ const updateUser = async () => {
         }
       }
       
-      Swal.fire({
-        icon: 'success',
-        title: 'Éxito',
-        text: `Usuario actualizado correctamente.`,
-        showConfirmButton: true,
-      });
+      showSuccess('El usuario ha sido actualizado');
       closeModal("editModal");
       document.getElementById("editForm").reset();
       loadUsersInternal();
@@ -730,19 +718,22 @@ const updateUser = async () => {
   }
 };
 
-// Actualizar solo el estado de un usuario
+// Actualizar estado de usuario con validación
 const updateUserStatus = async (id, status) => {
   const token = localStorage.getItem("token");
   if (!token) {
-    showError("Token no encontrado. Inicie sesión nuevamente.");
+    showError("Inicie sesión nuevamente.");
     return;
   }
   
   if (id === getCurrentUserId() && status === 'inactive') {
-    showError("No puedes desactivar tu propia cuenta");
-    // Restaurar el switch a posición activa
-    const checkbox = document.querySelector(`tr[data-userid="${id}"] input[type="checkbox"]`);
-    if (checkbox) checkbox.checked = true;
+    showInfo('No puedes desactivar tu propia cuenta mientras te encuetres activo en el sistema.');
+    
+    setTimeout(() => {
+      const switchElement = document.querySelector(`input[type="checkbox"][onchange*="${id}"]`);
+      if (switchElement) switchElement.checked = true;
+    }, 100);
+    
     return;
   }
   
@@ -764,12 +755,7 @@ const updateUserStatus = async (id, status) => {
     }
     
     if (res.ok) {
-      Swal.fire({
-        icon: 'success',
-        title: 'Éxito',
-        text: `Usuario ${status === 'active' ? 'activado' : 'desactivado'} correctamente.`,
-        showConfirmButton: true,
-      });
+      showSuccess(`El usuario ha sido ${status === 'active' ? 'activado' : 'desactivado'}`);
       loadUsersInternal();
     } else {
       let errorMsg = data.message || `Error al ${status === 'active' ? 'activar' : 'desactivar'} el usuario (${res.status})`;
@@ -785,12 +771,13 @@ const updateUserStatus = async (id, status) => {
   }
 };
 
-// Eliminar usuario
+// Eliminar usuario con validación
 const deleteUser = async (id) => {
   const token = localStorage.getItem("token");
 
+  // VALIDACIÓN: Verificar si es el usuario actual
   if (id === getCurrentUserId()) {
-    showError("No puedes eliminar tu propia cuenta");
+    showInfo('No puedes eliminar tu propia cuenta.');
     return;
   }
 
@@ -814,12 +801,7 @@ const deleteUser = async (id) => {
     const data = await res.json();
 
     if (res.ok) {
-      Swal.fire({
-        icon: 'success',
-        title: 'Éxito',
-        text: `Usuario eliminado correctamente.`,
-        showConfirmButton: true,
-      });
+       showSuccess('El usuario ha sido eliminado');
       loadUsersInternal();
     } else {
       showError(data.message || "No se pudo eliminar el usuario");
@@ -842,46 +824,8 @@ const searchUser = () => {
   renderUsersTable(currentPage);
 };
 
-// Mostrar indicador de carga
-function showLoadingIndicator() {
-  const loader = document.getElementById("loadingIndicator");
-  if (loader) {
-    loader.style.display = "flex";
-  }
-}
-
-// Ocultar indicador de carga
 function hideLoadingIndicator() {
-  const loader = document.getElementById("loadingIndicator");
-  if (loader) {
-    loader.style.display = "none";
-  }
-}
-
-// Mostrar mensaje de error
-function showError(message) {
-  Swal.fire({
-    icon: 'error',
-    title: 'Error',
-    text: message,
-    showConfirmButton: true,
-  });
-}
-
-// Mostrar confirmación
-function showConfirm({ title, text, confirmText, cancelText }) {
-  return Swal.fire({
-    title: title,
-    text: text,
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonColor: '#3085d6',
-    cancelButtonColor: '#d33',
-    confirmButtonText: confirmText,
-    cancelButtonText: cancelText
-  }).then((result) => {
-    return result.isConfirmed;
-  });
+  Swal.close();
 }
 
 // ===== EVENTOS =====
@@ -894,7 +838,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   try {
     await loadRoles();
   } catch (error) {
-    // Manejo silencioso del error
   }
   
   // Luego cargar los usuarios

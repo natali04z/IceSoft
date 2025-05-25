@@ -202,7 +202,7 @@ const loadCategoriesInternal = async () => {
   try {
     const token = localStorage.getItem("token");
     if (!token) {
-      showError("Sesión expirada. Por favor, inicie sesión nuevamente.");
+      showError("Inicie sesión nuevamente.");
       return;
     }
     
@@ -226,11 +226,10 @@ const loadCategoriesInternal = async () => {
       currentPage = 1;
       renderCategoriesTable(currentPage);
     } else {
-      showError(data.message || "No se pudieron cargar las categorías. Intente nuevamente.");
+      showError(data.message || "No se pudo listar las categorías.");
     }
   } catch (err) {
-    console.error("Error al listar categorías:", err);
-    showError("Error de conexión al cargar las categorías. Verifique su conexión a internet.");
+    showError("Error al listar las categorias.");
   }
 };
 
@@ -240,7 +239,7 @@ const listCategories = async () => {
     
     const token = localStorage.getItem("token");
     if (!token) {
-      showError("Sesión expirada. Por favor, inicie sesión nuevamente.");
+      showError("Inicie sesión nuevamente.");
       return;
     }
  
@@ -268,12 +267,11 @@ const listCategories = async () => {
       currentPage = 1;
       renderCategoriesTable(currentPage);
     } else {
-      showError(data.message || "No se pudieron cargar las categorías. Intente nuevamente.");
+      showError(data.message || "No se pudo listar las categorías.");
     }
   } catch (err) {
     hideLoadingIndicator();
-    console.error("Error al listar categorías:", err);
-    showError("Error de conexión al cargar las categorías. Verifique su conexión a internet.");
+    showError("Error al listar las categorías.");
   }
 };
 
@@ -281,7 +279,7 @@ const listCategories = async () => {
 const registerCategory = async () => {
   const token = localStorage.getItem("token");
   if (!token) {
-    showError("Sesión expirada. Por favor, inicie sesión nuevamente.");
+    showError("Inicie sesión nuevamente.");
     return;
   }
   
@@ -319,11 +317,10 @@ const registerCategory = async () => {
       
       loadCategoriesInternal();
     } else {
-      showError(data.message || "No se pudo registrar la categoría. Intente nuevamente.");
+      showError(data.message || "No se pudo registrar la categoría.");
     }
   } catch (err) {
-    console.error("Error al registrar categoría:", err);
-    showError("Error de conexión al registrar la categoría. Verifique su conexión a internet.");
+    showError("Error al registrar la categoría.");
   }
 };
 
@@ -331,7 +328,7 @@ const registerCategory = async () => {
 const fillEditForm = async (id) => {
   const token = localStorage.getItem("token");
   if (!token) {
-    showError("Sesión expirada. Por favor, inicie sesión nuevamente.");
+    showError("Inicie sesión nuevamente.");
     return;
   }
 
@@ -346,7 +343,7 @@ const fillEditForm = async (id) => {
 
     if (!res.ok) {
       const data = await res.json();
-      showError(data.message || "No se pudo cargar la información de la categoría.");
+      showError(data.message || "Error al cargar los datos de la categoría.");
       return;
     }
 
@@ -365,8 +362,7 @@ const fillEditForm = async (id) => {
 
     openModal('editModal');
   } catch (err) {
-    console.error("Error al cargar la categoría:", err);
-    showError("Error de conexión al cargar la información de la categoría.");
+    showError("Error al cargar categoría.");
   }
 };
 
@@ -374,7 +370,7 @@ const fillEditForm = async (id) => {
 const updateCategory = async () => {
   const token = localStorage.getItem("token");
   if (!token) {
-    showError("Sesión expirada. Por favor, inicie sesión nuevamente.");
+    showError("Inicie sesión nuevamente.");
     return;
   }
 
@@ -421,11 +417,10 @@ const updateCategory = async () => {
       
       loadCategoriesInternal();
     } else {
-      showError(data.message || "No se pudo actualizar la categoría. Intente nuevamente.");
+      showError(data.message || "No se pudo actualizar la categoría.");
     }
   } catch (err) {
-    console.error("Error al actualizar categoría:", err);
-    showError("Error de conexión al actualizar la categoría. Verifique su conexión a internet.");
+    showError("Error al actualizar la categoría.");
   }
 };
 
@@ -433,7 +428,7 @@ const updateCategory = async () => {
 const updateCategoryStatus = async (id, status) => {
   const token = localStorage.getItem("token");
   if (!token) {
-    showError("Sesión expirada. Por favor, inicie sesión nuevamente.");
+    showError("Inicie sesión nuevamente.");
     return;
   }
   
@@ -457,13 +452,13 @@ const updateCategoryStatus = async (id, status) => {
     
     if (res.ok) {
       showSuccess(`La categoría ha sido ${status === 'active' ? 'activada' : 'desactivada'}`);
-      
+  
       loadCategoriesInternal();
     } else {
       let errorMsg = data.message || `No se pudo ${status === 'active' ? 'activar' : 'desactivar'} la categoría.`;
       
       if (res.status === 400 && data.message && data.message.includes('active products associated')) {
-        showValidation('No se puede desactivar la categoría porque tiene productos activos asociados. Desactive o reasigne estos productos primero.');
+        showInfo('No se puede desactivar la categoría porque tiene productos activos asociados.');
       } else {
         if (data.error) {
           errorMsg += ` ${data.error}`;
@@ -478,8 +473,7 @@ const updateCategoryStatus = async (id, status) => {
       loadCategoriesInternal();
     }
   } catch (err) {
-    console.error("Error al actualizar estado:", err);
-    showError("Error de conexión al cambiar el estado de la categoría. Verifique su conexión a internet.");
+    showError("Error al actualizar estado de la categoría.");
     loadCategoriesInternal();
   }
 };
@@ -487,10 +481,6 @@ const updateCategoryStatus = async (id, status) => {
 // Eliminar categoría
 const deleteCategory = async (id) => {
   const token = localStorage.getItem("token");
-  if (!token) {
-    showError("Sesión expirada. Por favor, inicie sesión nuevamente.");
-    return;
-  }
   
   // Confirmar antes de eliminar
   const confirmed = await showConfirm({ 
@@ -516,11 +506,10 @@ const deleteCategory = async (id) => {
       showSuccess('La categoría ha sido eliminada');
       loadCategoriesInternal();
     } else {
-      showError(data.message || "No se pudo eliminar la categoría. Intente nuevamente.");
+      showError(data.message || "No se pudo eliminar la categoría.");
     }
   } catch (err) {
-    console.error("Error al eliminar categoría:", err);
-    showError("Error de conexión al eliminar la categoría. Verifique su conexión a internet.");
+    showError("Error al eliminar la categoría.");
   }
 };
 

@@ -276,7 +276,7 @@ const loadPermissionsInternal = async () => {
   try {
     const token = localStorage.getItem("token");
     if (!token) {
-      showError("Token no encontrado. Inicie sesión nuevamente.", "error");
+      showError("Inicie sesión nuevamente.");
       return;
     }
     
@@ -297,21 +297,20 @@ const loadPermissionsInternal = async () => {
       currentPage = 1;
       renderPermissionsTable(currentPage);
     } else {
-      showAlert(data.message || "Error al listar permisos.", "error");
+      showError(data.message || "No se pudo listar los permisos.");
     }
   } catch (err) {
-    console.error("Error al listar permisos:", err);
-    showError("Error al listar permisos: " + (err.message || err), "error");
+    showError("Error al listar los permisos");
   }
 };
 
-// Listar permisos con indicador de carga (solo para carga inicial)
+// Listar permisos con indicador de carga
 const listPermissions = async () => {
   try {
     
     const token = localStorage.getItem("token");
     if (!token) {
-      showError("Token no encontrado. Inicie sesión nuevamente.", "error");
+      showError("Inicie sesión nuevamente.");
       return;
     }
  
@@ -340,8 +339,7 @@ const listPermissions = async () => {
     }
   } catch (err) {
     hideLoadingIndicator();
-    console.error("Error al listar permisos:", err);
-    showAlert("Error al listar permisos: " + (err.message || err), "error");
+    showAlert("Error al listar los permisos");
   }
 };
 
@@ -349,11 +347,11 @@ const listPermissions = async () => {
 const registerPermission = async () => {
   const token = localStorage.getItem("token");
   if (!token) {
-    showAlert("Token no encontrado. Inicie sesión nuevamente.", "error");
+    showAlert("Inicie sesión nuevamente.");
     return;
   }
   
-  // Validar campos
+  // Validar campos"
   const nameValid = validateField("name", "El nombre es obligatorio.");
   const codeValid = validateField("code", "El código es obligatorio.");
   
@@ -379,12 +377,7 @@ const registerPermission = async () => {
     const data = await res.json();
     
     if (res.status === 201 || res.ok) {
-      Swal.fire({
-        icon: 'success',
-        title: 'Éxito',
-        text: `Permiso registrado correctamente.`,
-        showConfirmButton: true,
-      });
+      showSuccess('El permiso ha sido registrado');
       closeModal('registerModal');
       
       const permissionForm = document.getElementById("permissionForm");
@@ -397,11 +390,10 @@ const registerPermission = async () => {
       
       loadPermissionsInternal();
     } else {
-      showErrort(data.message || "Error al registrar permiso.", "error");
+      showErrort(data.message || "No se pudo registrar el permiso.");
     }
   } catch (err) {
-    console.error("Error al registrar permiso:", err);
-    showError("Error al registrar permiso: " + (err.message || err), "error");
+    showError("Error al registrar el permiso");
   }
 };
 
@@ -409,7 +401,7 @@ const registerPermission = async () => {
 const fillEditForm = async (id) => {
   const token = localStorage.getItem("token");
   if (!token) {
-    showError("Token no encontrado. Inicie sesión nuevamente.", "error");
+    showError("Inicie sesión nuevamente.");
     return;
   }
 
@@ -424,13 +416,12 @@ const fillEditForm = async (id) => {
 
     if (!res.ok) {
       const data = await res.json();
-      showError(data.message || "Error al cargar los datos del permiso.", "error");
+      showError(data.message || "Error al cargar los datos del permiso.");
       return;
     }
 
     const permission = await res.json();
 
-    // Limpiar mensajes de validación
     clearValidationErrors('editForm');
 
     const editIdElement = document.getElementById("editId");
@@ -447,8 +438,7 @@ const fillEditForm = async (id) => {
 
     openModal('editModal');
   } catch (err) {
-    console.error("Error al cargar el permiso:", err);
-   showError(`Ocurrió un error: ${err.message || err}`, "error");
+   showError("Error al cargar el permiso.");
   }
 };
 
@@ -456,7 +446,7 @@ const fillEditForm = async (id) => {
 const updatePermission = async () => {
   const token = localStorage.getItem("token");
   if (!token) {
-    showError("Token no encontrado. Inicie sesión nuevamente.", "error");
+    showError("Inicie sesión nuevamente.");
     return;
   }
 
@@ -487,12 +477,7 @@ const updatePermission = async () => {
     const data = await res.json();
  
     if (res.ok) {
-       Swal.fire({
-        icon: 'success',
-        title: 'Éxito',
-        text: `Permiso actualizado correctamente.`,
-        showConfirmButton: true,
-      });
+      showSuccess('El permiso ha sido actualizado');
       closeModal('editModal');
       
       const editForm = document.getElementById("editForm");
@@ -505,11 +490,10 @@ const updatePermission = async () => {
       
       loadPermissionsInternal();
     } else {
-      showError(data.message || "Error al actualizar el permiso.", "error");
+      showError(data.message ||"No se pudo actualizar el permiso.");
     }
   } catch (err) {
-    console.error("Error al actualizar permiso:", err);
-    showError(`Ocurrió un error: ${err.message || err}`, "error");
+    showError("Error al actualizar el permiso");
   }
 };
 
@@ -517,7 +501,7 @@ const updatePermission = async () => {
 const updatePermissionStatus = async (id, status) => {
   const token = localStorage.getItem("token");
   if (!token) {
-    showError("Token no encontrado. Inicie sesión nuevamente.", "error");
+    showError("Inicie sesión nuevamente.");
     return;
   }
   
@@ -540,12 +524,7 @@ const updatePermissionStatus = async (id, status) => {
     }
     
     if (res.ok) {
-      Swal.fire({
-        icon: 'success',
-        title: 'Éxito',
-        text: `Usuario ${status === 'active' ? 'activado' : 'desactivado'} correctamente.`,
-        showConfirmButton: true,
-      });
+       showSuccess(`El permiso ha sido ${status === 'active' ? 'activado' : 'desactivado'}`);
       
       loadPermissionsInternal();
     } else {
@@ -560,8 +539,7 @@ const updatePermissionStatus = async (id, status) => {
       loadPermissionsInternal();
     }
   } catch (err) {
-    console.error("Error al actualizar estado:", err);
-    showError(`Ocurrió un error de red: ${err.message || err}`, "error");
+    showError("Error al actualizar estado del permiso");
     loadPermissionsInternal();
   }
 };
@@ -570,7 +548,7 @@ const updatePermissionStatus = async (id, status) => {
 const deletePermission = async (id) => {
   const token = localStorage.getItem("token");
   if (!token) {
-    showError("Token no encontrado. Inicie sesión nuevamente.", "error");
+    showError("Inicie sesión nuevamente.");
     return;
   }
 
@@ -594,19 +572,13 @@ const deletePermission = async (id) => {
     const data = await res.json();
     
     if (res.ok) {
-      Swal.fire({
-        icon: 'success',
-        title: 'Éxito',
-        text: `Permiso eliminado correctamente.`,
-        showConfirmButton: true,
-      });
+      showSuccess('El permiso ha sido eliminado');
       loadPermissionsInternal();
     } else {
-      showAlert(data.message || "No se pudo eliminar el permiso", "error");
+      showAlert(data.message || "No se pudo eliminar el permiso");
     }
   } catch (err) {
-    console.error("Error al eliminar permiso:", err);
-    showError("Error al eliminar permiso: " + (err.message || err), "error");
+    showError("Error al eliminar el permiso");
   }
 };
 
