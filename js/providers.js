@@ -160,7 +160,7 @@ function getUserPermissions() {
     const user = JSON.parse(userInfo);
     return user.permissions || ['update_providers', 'delete_providers', 'update_status_providers'];
   } catch (error) {
-    return ['update_providers', 'delete_providers', 'update_status_providers']; // Permisos por defecto si hay error
+    return ['update_providers', 'delete_providers', 'update_status_providers'];
   }
 }
 
@@ -192,14 +192,12 @@ function closeModal(modalId) {
 const renderProvidersTable = (page = 1) => {
   const tbody = document.getElementById("providerTableBody");
   
-  // Verificar si el elemento tbody existe
   if (!tbody) {
     return;
   }
   
   tbody.innerHTML = "";
 
-  // Verificar si hay proveedores
   if (!allProviders || allProviders.length === 0) {
     tbody.innerHTML = `<tr><td colspan="8" class="text-center">No hay proveedores disponibles</td></tr>`;
     return;
@@ -250,7 +248,6 @@ const renderProvidersTable = (page = 1) => {
 
 // Renderizar controles de paginación
 const renderPaginationControls = () => {
-  // Verificar si hay proveedores para paginar
   if (!allProviders || allProviders.length === 0) {
     return;
   }
@@ -258,8 +255,7 @@ const renderPaginationControls = () => {
   const totalPages = Math.ceil(allProviders.length / rowsPerPage);
   const container = document.querySelector(".page-numbers");
   const info = document.querySelector(".pagination .page-info:nth-child(2)");
-  
-  // Verificar si los elementos existen
+
   if (!container || !info) {
     return;
   }
@@ -303,12 +299,12 @@ const changePage = (page) => {
   renderProvidersTable(currentPage);
 };
 
-// Cargar proveedores internamente (sin indicador de carga)
+// Cargar proveedores internamente
 const loadProvidersInternal = async () => {
   try {
     const token = localStorage.getItem("token");
     if (!token) {
-      showError("Token no encontrado. Inicie sesión nuevamente.");
+      showError("Inicie sesión nuevamente.");
       return;
     }
     
@@ -328,23 +324,22 @@ const loadProvidersInternal = async () => {
       currentPage = 1;
       renderProvidersTable(currentPage);
     } else {
-      showError(data.message || "Error al listar proveedores.");
+      showError(data.message || "No se pudo listar los proveedores.");
     }
   } catch (err) {
-    showError("Error al listar proveedores: " + (err.message || err));
+    showError("Error al listar los proveedores.");
   }
 };
 
-// Listar proveedores desde el backend (con indicador de carga)
+// Listar proveedores desde el backend
 const listProviders = async () => {
   try {
     const token = localStorage.getItem("token");
     if (!token) {
-      showError("Token no encontrado. Inicie sesión nuevamente.");
+      showError("Inicie sesión nuevamente.");
       return;
     }
-    
-    // Solo usar los indicadores de carga en la función principal de listado
+
     showLoadingIndicator();
 
     const res = await fetch(API_PROVIDERS, {
@@ -356,8 +351,7 @@ const listProviders = async () => {
     });
     
     const data = await res.json();
-    
-    // Ocultar indicador de carga
+
     hideLoadingIndicator();
 
     if (res.ok) {
@@ -366,12 +360,11 @@ const listProviders = async () => {
       currentPage = 1;
       renderProvidersTable(currentPage);
     } else {
-      showError(data.message || "Error al listar proveedores.");
+      showError(data.message || "No se pudo listar los proveedores.");
     }
   } catch (err) {
-    // Ocultar indicador de carga en caso de error
     hideLoadingIndicator();
-    showError("Error al listar proveedores: " + (err.message || err));
+    showError("Error al listar los proveedores.");
   }
 };
 
@@ -379,23 +372,20 @@ const listProviders = async () => {
 const registerProvider = async () => {
   const token = localStorage.getItem("token");
   if (!token) {
-    showError("Token no encontrado. Inicie sesión nuevamente.");
+    showError("Inicie sesión nuevamente.");
     return;
   }
-  
-  // Validar campos usando las nuevas funciones
+
   const nitValid = validateNIT("nit");
   const companyValid = validateCompany("company");
   const nameValid = validateField("name", "El nombre del contacto es obligatorio.");
   const phoneValid = validatePhone("contact_phone");
   const emailValid = validateEmail("email");
 
-  // Si algún campo no es válido, detener el proceso
   if (!nitValid || !companyValid || !nameValid || !phoneValid || !emailValid) {
     return;
   }
   
-  // Verificar que los elementos existen antes de obtener sus valores
   const nitElement = document.getElementById("nit");
   const companyElement = document.getElementById("company");
   const nameElement = document.getElementById("name");
@@ -412,22 +402,6 @@ const registerProvider = async () => {
   const name = nameElement.value.trim();
   const contact_phone = contactPhoneElement.value.trim();
   const email = emailElement.value.trim();
-
-  const confirmed = await showConfirm({
-    title: "¿Confirmas registrar este proveedor?",
-    text: "Se creará un nuevo proveedor con los datos proporcionados.",
-    confirmText: "Registrar",
-    cancelText: "Cancelar"
-  });
-
-  if (!confirmed) {
-    Swal.fire({
-      icon: 'info',
-      title: 'Operación cancelada',
-      text: 'No se ha registrado ningún proveedor',
-    });
-    return;
-  }
 
   try {
     const res = await fetch(API_PROVIDERS, {
@@ -448,76 +422,29 @@ const registerProvider = async () => {
     const data = await res.json();
     
     if (res.status === 201 || res.ok) {
-      Swal.fire({
-        icon: 'success',
-        title: 'Éxito',
-        text: `Proveedor registrado correctamente.`,
-        showConfirmButton: true,
-      });
+      showSuccess('El proveedor ha sido registrado');
       closeModal('registerModal');
-      
-      // Verificar que el formulario existe antes de resetearlo
+
       const providerForm = document.getElementById("providerForm");
       if (providerForm) {
         providerForm.reset();
       }
-      
-      // Usar loadProvidersInternal en lugar de listProviders para actualizar sin indicador de carga
+ 
       loadProvidersInternal();
     } else {
-      showError(data.message || "Error al registrar proveedor.");
+      showError(data.message || "No se pudo registrar el proveedor.");
     }
   } catch (err) {
-    showError("Error al registrar proveedor: " + (err.message || err));
+    showError("Error al registrar el proveedor.");
   }
 };
 
-// Actualizar status del proveedor
-const updateProviderStatus = async (id, status) => {
-  try {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      alert("Token no encontrado. Inicie sesión nuevamente.");
-      return;
-    }
-    
-    const res = await fetch(`${API_PROVIDERS}/${id}/status`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({ status })
-    });
-    
-    if (res.ok) {
-      Swal.fire({
-        icon: 'success',
-        title: 'Éxito',
-        text: `Proveedor ${status === 'active' ? 'activado' : 'desactivado'} correctamente.`,
-        showConfirmButton: true,
-      });
-
-      // Usar loadProvidersInternal en lugar de listProviders para actualizar sin indicador de carga
-      loadProvidersInternal();
-    } else {
-      const data = await res.json();
-      showError(data.message || `Error al cambiar estado (${res.status})`);
-      // Usar loadProvidersInternal en lugar de listProviders para actualizar sin indicador de carga
-      loadProvidersInternal();
-    }
-  } catch (err) {
-    showError(`Error de red: ${err.message || err}`);
-    // Usar loadProvidersInternal en lugar de listProviders para actualizar sin indicador de carga
-    loadProvidersInternal();
-  }
-};
 
 // Llenar formulario de edición
 const fillEditForm = async (id) => {
   const token = localStorage.getItem("token");
   if (!token) {
-    showError("Token no encontrado. Inicie sesión nuevamente.");
+    showError("Inicie sesión nuevamente.");
     return;
   }
 
@@ -537,7 +464,6 @@ const fillEditForm = async (id) => {
       return;
     }
 
-    // Verificar que los elementos existen antes de asignarles valores
     const editIdElement = document.getElementById("editId");
     const editNitElement = document.getElementById("editNit");
     const editCompanyElement = document.getElementById("editCompany");
@@ -551,10 +477,8 @@ const fillEditForm = async (id) => {
       return;
     }
 
-    // Limpiar mensajes de validación
     clearValidationErrors('editForm');
 
-    // Llenar los campos del formulario de edición
     editIdElement.value = data._id;
     editNitElement.value = data.nit || "";
     editCompanyElement.value = data.company || "";
@@ -564,7 +488,7 @@ const fillEditForm = async (id) => {
 
     openModal("editModal");
   } catch (err) {
-    showError(`Ocurrió un error: ${err.message || err}`);
+    showError("Error al cargar el proveedor.");
   }
 };
 
@@ -572,23 +496,20 @@ const fillEditForm = async (id) => {
 const updateProvider = async () => {
   const token = localStorage.getItem("token");
   if (!token) {
-    showError("Token no encontrado. Inicie sesión nuevamente.");
+    showError("Inicie sesión nuevamente.");
     return;
   }
 
-  // Validar campos usando las nuevas funciones
   const nitValid = validateNIT("editNit");
   const companyValid = validateCompany("editCompany");
   const nameValid = validateField("editName", "El nombre del contacto es obligatorio.");
   const phoneValid = validatePhone("editContactPhone");
   const emailValid = validateEmail("editEmail");
 
-  // Si algún campo no es válido, detener el proceso
   if (!nitValid || !companyValid || !nameValid || !phoneValid || !emailValid) {
     return;
   }
 
-  // Verificar que los elementos existen antes de obtener sus valores
   const editIdElement = document.getElementById("editId");
   const editNitElement = document.getElementById("editNit");
   const editCompanyElement = document.getElementById("editCompany");
@@ -628,12 +549,7 @@ try {
   const data = await res.json();
 
   if (res.ok) {
-    Swal.fire({
-      icon: 'success',
-      title: 'Éxito',
-      text: `Proveedor actualizado correctamente.`,
-      showConfirmButton: true,
-    });
+    showSuccess('El proveedor ha sido actualizado');
     closeModal("editModal");
     
     const editForm = document.getElementById("editForm");
@@ -643,18 +559,51 @@ try {
 
     loadProvidersInternal();
   } else {
-    showError(data.message || "Error al actualizar el proveedor.");
+    showError(data.message || "No se pudo actualizar el proveedor.");
   }
 } catch (err) {
-  showError(`Ocurrió un error: ${err.message || err}`);
+  showError("Error al actualizar el proveedor.");
 }
+};
+
+// Actualizar status del proveedor
+const updateProviderStatus = async (id, status) => {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("Inicie sesión nuevamente.");
+      return;
+    }
+    
+    const res = await fetch(`${API_PROVIDERS}/${id}/status`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ status })
+    });
+    
+    if (res.ok) {
+      showSuccess(`El proveedor ha sido ${status === 'active' ? 'activado' : 'desactivado'}`);
+      
+      loadProvidersInternal();
+    } else {
+      const data = await res.json();
+      showError(data.message || "No se pudo actualizar el estado del proveedor.");
+      loadProvidersInternal();
+    }
+  } catch (err) {
+    showError("Error al actualizar estado del proveedor");
+    loadProvidersInternal();
+  }
 };
 
 // Eliminar proveedor 
 const deleteProvider = async (id) => {
 const token = localStorage.getItem("token");
 if (!token) {
-  showError("Token no encontrado. Inicie sesión nuevamente.");
+  showError("Inicie sesión nuevamente.");
   return;
 }
 
@@ -678,19 +627,13 @@ try {
   const data = await res.json();
   
   if (res.ok) {
-    Swal.fire({
-      icon: 'success',
-      title: 'Éxito',
-      text: `Proveedor eliminado correctamente.`,
-      showConfirmButton: true,
-    });
-
+    showSuccess('El proveedor ha sido eliminado');
     loadProvidersInternal();
   } else {
     showError(data.message || "No se pudo eliminar el proveedor");
   }
 } catch (err) {
-  showError("Error al eliminar proveedor: " + (err.message || err));
+  showError("Error al eliminar proveedor");
 }
 };
 
@@ -721,14 +664,10 @@ currentPage = 1;
 renderProvidersTable(currentPage);
 };
 
-// Desactivar validación nativa del navegador en los formularios
 function disableNativeBrowserValidation() {
-// Desactivar validación del formulario de registro
 const providerForm = document.getElementById("providerForm");
 if (providerForm) {
   providerForm.setAttribute("novalidate", "");
-  
-  // Quitar atributos 'required' y 'pattern' de los campos
   const inputs = providerForm.querySelectorAll("input");
   inputs.forEach(input => {
     input.removeAttribute("required");
@@ -741,8 +680,7 @@ if (providerForm) {
 const editForm = document.getElementById("editForm");
 if (editForm) {
   editForm.setAttribute("novalidate", "");
-  
-  // Quitar atributos 'required' y 'pattern' de los campos
+
   const inputs = editForm.querySelectorAll("input");
   inputs.forEach(input => {
     input.removeAttribute("required");
@@ -754,13 +692,9 @@ if (editForm) {
 
 // Eventos al cargar el DOM
 document.addEventListener("DOMContentLoaded", () => {
-// Desactivar validación nativa del navegador
 disableNativeBrowserValidation();
 
-// Iniciar carga de datos con la función que muestra el indicador de carga
 listProviders();
-
-// Configurar validación para campos numéricos
 setupNumericValidation();
 
 // Configurar botones y eventos
@@ -784,7 +718,6 @@ if (searchInput) {
   searchInput.addEventListener("keyup", searchProvider);
 }
 
-// Agregar validación para campos individuales en tiempo real en el formulario de registro
 const nit = document.getElementById("nit");
 if (nit) {
   nit.addEventListener("blur", () => validateNIT("nit"));
@@ -810,7 +743,6 @@ if (email) {
   email.addEventListener("blur", () => validateEmail("email"));
 }
 
-// Agregar validación para campos individuales en tiempo real en el formulario de edición
 const editNit = document.getElementById("editNit");
 if (editNit) {
   editNit.addEventListener("blur", () => validateNIT("editNit"));

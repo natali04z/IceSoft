@@ -131,7 +131,7 @@
         </div>
       </section>
   
-    <!-- Modal de Registro de Producto -->
+<!-- Modal de Registro de Producto -->
     <div id="registerModal" class="modal">
       <div class="modal-content">
         <div class="modal-header">
@@ -140,32 +140,36 @@
         </div>
         <div class="modal-body">
           <form id="productForm" novalidate>
-            <!-- Campo Nombre a ancho completo -->
+            <label for="name">Nombre</label>
             <div class="form-field" style="margin-bottom: 15px;">
-              <input type="text" class="field-element" id="name" placeholder="Nombre">
+              <input type="text" class="field-element" id="name">
               <div class="error-message" id="name-error">El campo es obligatorio.</div>
             </div>
             
             <!-- Los demás campos en filas -->
             <div class="form-row">
               <div class="form-field">
+                <label for="category">Categorías</label>
                 <select class="field-element" id="category">
                   <option value="" disabled selected hidden>Seleccionar categoría</option>
                 </select>
                 <div class="error-message" id="category-error">Debe seleccionar una categoría.</div>
               </div>
               <div class="form-field">
-                <input type="number" class="field-element" id="price" placeholder="Precio">
+                <label for="price">Precio</label>
+                <input type="number" class="field-element" id="price">
                 <div class="error-message" id="price-error">El precio es obligatorio.</div>
               </div>
             </div>
             <div class="form-row">
               <div class="form-field">
-                <input type="text" class="field-element date-input" id="batchDate" placeholder="Fecha de Lote" onfocus="this.type='date'; this.placeholder=''" onblur="if(!this.value) {this.type='text'; this.placeholder='Fecha de Lote'}">
+                <label for="batchDate">Fecha de Lote</label>
+                 <input type="date" class="field-element date-input" id="batchDate">
                 <div class="error-message" id="batchDate-error">La fecha de lote es obligatoria.</div>
               </div>
               <div class="form-field">
-                <input type="text" class="field-element date-input" id="expirationDate" placeholder="Fecha de Expiración" onfocus="this.type='date'; this.placeholder=''" onblur="if(!this.value) {this.type='text'; this.placeholder='Fecha de Expiración'}">
+                <label for="expirationDate">Fecha de Expiración</label>
+                <input type="date" class="field-element date-input" id="expirationDate">
                 <div class="error-message" id="expirationDate-error">La fecha de expiración es obligatoria.</div>
               </div>
             </div>
@@ -187,43 +191,37 @@
         <div class="modal-body">
           <form id="editForm" novalidate>
             <input type="hidden" id="editId">
-            
-            <!-- Campo Nombre a ancho completo -->
+            <label for="editName">Nombre</label>
             <div class="form-field" style="margin-bottom: 15px;">
-              <input type="text" class="field-element" id="editName" placeholder="Nombre">
+              <input type="text" class="field-element" id="editName">
               <div class="error-message" id="editName-error">El campo es obligatorio.</div>
             </div>
             
             <!-- Los demás campos en filas -->
             <div class="form-row">
               <div class="form-field">
+                <label for="editCategory">Categorías</label>
                 <select class="field-element" id="editCategory">
                   <option value="" disabled selected hidden>Seleccionar categoría</option>
                 </select>
                 <div class="error-message" id="editCategory-error">Debe seleccionar una categoría.</div>
               </div>
               <div class="form-field">
-                <input type="number" class="field-element" id="editPrice" placeholder="Precio">
+                <label for="editPrice">Precio</label>
+                <input type="number" class="field-element" id="editPrice">
                 <div class="error-message" id="editPrice-error">El precio es obligatorio.</div>
               </div>
             </div>
             <div class="form-row">
               <div class="form-field">
-                <input type="number" class="field-element" id="editStock" placeholder="Stock">
-                <div class="error-message" id="editStock-error">El stock es obligatorio.</div>
-              </div>
-              <div class="form-field">
-                <input type="text" class="field-element date-input" id="editBatchDate" placeholder="Fecha de Lote" onfocus="this.type='date'; this.placeholder=''" onblur="if(!this.value) {this.type='text'; this.placeholder='Fecha de Lote'}">
+                <label for="editBatchDate">Fecha de Lote</label>
+                <input type="date" class="field-element date-input" id="editBatchDate">
                 <div class="error-message" id="editBatchDate-error">La fecha de lote es obligatoria.</div>
               </div>
-            </div>
-            <div class="form-row">
               <div class="form-field">
-                <input type="text" class="field-element date-input" id="editExpirationDate" placeholder="Fecha de Expiración" onfocus="this.type='date'; this.placeholder=''" onblur="if(!this.value) {this.type='text'; this.placeholder='Fecha de Expiración'}">
+                <label for="editExpirationDate">Fecha de Expiración</label>
+                <input type="date" class="field-element date-input" id="editExpirationDate">
                 <div class="error-message" id="editExpirationDate-error">La fecha de expiración es obligatoria.</div>
-              </div>
-              <div class="form-field">
-                <!-- Campo vacío para mantener el balance del diseño -->
               </div>
             </div>
             <div class="controls-container">

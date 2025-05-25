@@ -4,7 +4,6 @@ let originalCustomers = [];
 let currentPage = 1;
 const rowsPerPage = 10;
 
-
 function openModal(modalId) {
   document.getElementById(modalId).style.display = "flex";
   // Resetear mensajes de error al abrir el modal
@@ -114,6 +113,23 @@ function clearValidationErrors(formId) {
   });
 }
 
+// Función para mostrar alertas más específicas
+function showAlert({ type = 'info', title, message, icon = 'info' }) {
+  // Si tienes SweetAlert2 o similar
+  if (typeof Swal !== 'undefined') {
+    Swal.fire({
+      icon: icon,
+      title: title,
+      text: message,
+      confirmButtonText: 'Entendido',
+      confirmButtonColor: '#3085d6'
+    });
+  } else {
+    // Fallback con alert nativo
+    alert(`${title}\n\n${message}`);
+  }
+}
+
 const renderCustomersTable = (page = 1) => {
   const tbody = document.getElementById("customerTableBody");
   tbody.innerHTML = "";
@@ -123,28 +139,34 @@ const renderCustomersTable = (page = 1) => {
   const customersToShow = allCustomers.slice(start, end);
 
   customersToShow.forEach(customer => {
+    // Agregar clase CSS para cliente predeterminado
+    const isDefaultClass = customer.isDefault ? 'customer-default' : '';
+    const defaultBadge = customer.isDefault ? '<span class="default-badge">Predeterminado</span>' : '';
+    
     tbody.innerHTML += `
-      <tr>
-        <td>${customer.name}</td>
+      <tr class="${isDefaultClass}">
+        <td>${customer.name} ${defaultBadge}</td>
         <td>${customer.lastname}</td>
-        <td>${customer.email}</td>
         <td>${customer.phone}</td>
+        <td>${customer.email}</td>
         <td>${customer.createdAt || formatDateForDisplay(customer.createdAt)}</td>
         <td>
           <label class="switch">
             <input type="checkbox" ${customer.status === "active" ? "checked" : ""} 
-              onchange="updateCustomerStatus('${customer.id || customer._id}', this.checked ? 'active' : 'inactive')" 
-              ${customer.isDefault ? "disabled" : ""}>
+              onchange="updateCustomerStatus('${customer.id}', this.checked ? 'active' : 'inactive')">
             <span class="slider round"></span>
           </label>
         </td>
         <td>
           <div class="action-buttons">
-            <button onclick="fillEditForm('${customer.id || customer._id}')" class="icon-button edit-button" title="Editar">
+            <button onclick="fillEditForm('${customer.id}')" 
+              class="icon-button edit-button" 
+              title="Editar cliente">
               <i class="material-icons">edit</i>
             </button>
-            <button onclick="deleteCustomer('${customer.id || customer._id}')" class="icon-button delete-button" title="Eliminar"
-              ${customer.isDefault ? "disabled" : ""}>
+            <button onclick="deleteCustomer('${customer.id}')" 
+              class="icon-button delete-button" 
+              title="Eliminar cliente">
               <i class="material-icons">delete</i>
             </button>
           </div>
@@ -200,7 +222,7 @@ const loadCustomersInternal = async () => {
   try {
     const token = localStorage.getItem("token");
     if (!token) {
-      showError("Token no encontrado. Inicie sesión nuevamente.");
+      showError("Inicie sesión nuevamente.");
       return;
     }
     
@@ -220,10 +242,9 @@ const loadCustomersInternal = async () => {
       currentPage = 1;
       renderCustomersTable(currentPage);
     } else {
-      showError(data.message || "Error al listar clientes.");
+      showError("No se pudieron listar los clientes.");
     }
   } catch (err) {
-    console.error("Error al listar clientes:", err);
     showError("Error al listar clientes");
   }
 };
@@ -232,7 +253,7 @@ const listCustomers = async () => {
   try {
     const token = localStorage.getItem("token");
     if (!token) {
-      showError("Token no encontrado. Inicie sesión nuevamente.");
+      showError("Inicie sesión nuevamente.");
       return;
     }
     
@@ -256,11 +277,10 @@ const listCustomers = async () => {
       currentPage = 1;
       renderCustomersTable(currentPage);
     } else {
-      showError(data.message || "Error al listar clientes.");
+      showError("No se pudieron listar los clientes.");
     }
   } catch (err) {
     hideLoadingIndicator();
-    console.error("Error al listar clientes:", err);
     showError("Error al listar clientes");
   }
 };
@@ -268,7 +288,7 @@ const listCustomers = async () => {
 const registerCustomer = async () => {
   const token = localStorage.getItem("token");
   if (!token) {
-    showError("Token no encontrado. Inicie sesión nuevamente.");
+    showError("Inicie sesión nuevamente.");
     return;
   }
   
@@ -288,23 +308,6 @@ const registerCustomer = async () => {
   const email = document.getElementById("email").value.trim();
   const phone = document.getElementById("phone").value.trim();
 
-  const confirmed = await showConfirm({
-    title: "¿Confirmas registrar este cliente?",
-    text: "Se creará un nuevo cliente con los datos proporcionados.",
-    confirmText: "Registrar",
-    cancelText: "Cancelar"
-  });
-
-  if (!confirmed) {
-    Swal.fire({
-      icon: 'info',
-      title: 'Operación cancelada',
-      text: 'No se ha registrado ningún cliente',
-    });
-    closeModal('registerModal');
-    return;
-  }
-
   try {
     const res = await fetch(API_CUSTOMERS, {
       method: "POST",
@@ -319,23 +322,16 @@ const registerCustomer = async () => {
         phone
       })
     });
-    const data = await res.json();
     if (res.status === 201 || res.ok) {
-      Swal.fire({
-        icon: 'success',
-        title: 'Éxito',
-        text: `Cliente registrado correctamente.`,
-        showConfirmButton: true,
-      });
+      showSuccess('El cliente ha sido registrado');
       closeModal('registerModal');
       document.getElementById("customerForm").reset();
       loadCustomersInternal();
     } else {
-      showError(data.message || "Error al registrar cliente.");
+      showError("No se pudo registrar el cliente.");
     }
   } catch (err) {
-    console.error("Error al registrar cliente:", err);
-    showError("Error al registrar cliente");
+    showError("Error al registrar cliente.");
   }
 };
 
@@ -352,13 +348,18 @@ const fillEditForm = async (id) => {
     });
 
     if (!res.ok) {
-      const data = await res.json();
-      showError(data.message || "Error al cargar los datos del cliente.");
+      showError("Error al cargar los datos del cliente.");
       return;
     }
 
     const customer = await res.json();
-    document.getElementById("editId").value = customer.id || customer._id;
+    
+    if (customer.isDefault) {
+      showInfo('Este es el cliente predeterminado del sistema. No puede ser editado ya que es necesario para el funcionamiento interno de la aplicación.',);
+      return;
+    }
+
+    document.getElementById("editId").value = customer.id;
     document.getElementById("editName").value = customer.name || "";
     document.getElementById("editLastname").value = customer.lastname || "";
     document.getElementById("editEmail").value = customer.email || "";
@@ -375,30 +376,26 @@ const fillEditForm = async (id) => {
 
     openModal("editModal");
   } catch (err) {
-    console.error("Error al cargar el cliente:", err);
-    showError(`Ocurrió un error: ${err.message || err}`);
+    showError("Error al cargar el cliente.");
   }
 };
 
 const updateCustomer = async (event) => {
-  // Si hay un evento, evitar el comportamiento predeterminado del formulario
   if (event) {
     event.preventDefault();
   }
   
   const token = localStorage.getItem("token");
   if (!token) {
-    showError("Token no encontrado. Inicie sesión nuevamente.");
+    showError("Inicie sesión nuevamente.");
     return;
   }
 
-  // Validar campos usando las nuevas funciones
   const nameValid = validateField("editName", "El nombre es obligatorio.");
   const lastnameValid = validateField("editLastname", "El apellido es obligatorio.");
   const emailValid = validateEmail("editEmail");
   const phoneValid = validatePhone("editPhone");
 
-  // Si algún campo no es válido, detener el proceso
   if (!nameValid || !lastnameValid || !emailValid || !phoneValid) {
     return;
   }
@@ -426,47 +423,37 @@ const updateCustomer = async (event) => {
 
     const contentType = res.headers.get("content-type");
     if (contentType && contentType.indexOf("application/json") !== -1) {
-      const data = await res.json();
       if (res.ok) {
-        Swal.fire({
-          icon: 'success',
-          title: 'Éxito',
-          text: `Cliente actualizado correctamente.`,
-          showConfirmButton: true,
-        });
+        showSuccess('El cliente ha sido actualizado');
         closeModal("editModal");
         document.getElementById("editForm").reset();
         loadCustomersInternal();
       } else {
-        showError(data.message || "Error al actualizar el cliente.");
+        showError("No se pudo actualizar el cliente.");
       }
-    } else {
-      const text = await res.text();
-      console.error("Respuesta no JSON:", text);
-      showError("Error del servidor: No se recibió una respuesta JSON válida");
-    }
+    } 
   } catch (err) {
-    console.error("Error al actualizar cliente:", err);
-    showError(`Ocurrió un error: ${err.message || err}`);
+    showError("Error al actualizar cliente");
   }
 };
 
 const updateCustomerStatus = async (id, newStatus) => {
   const token = localStorage.getItem("token");
   if (!token) {
-    showError("Token no encontrado. Inicie sesión nuevamente.");
+    showError("Inicie sesión nuevamente.");
     return;
   }
   
-  const customer = allCustomers.find(c => (c.id === id || c._id === id));
-  if (customer && customer.isDefault && newStatus === 'inactive') {
-    showError("El cliente predeterminado no puede ser desactivado.");
-    
+const customer = allCustomers.find(c => c.id === id);
+if (customer && customer.isDefault && newStatus === 'inactive') {
+  showInfo( 'Este cliente predeterminado no puede ser desactivado ya que es utilizado internamente por el sistema para operaciones críticas.');
+  setTimeout(() => {
     const switchElement = document.querySelector(`input[type="checkbox"][onchange*="${id}"]`);
     if (switchElement) switchElement.checked = true;
-    
-    return;
-  }
+  }, 100);
+  
+  return;
+}
 
   try {
     const res = await fetch(`${API_CUSTOMERS}/${id}/status`, {
@@ -480,33 +467,18 @@ const updateCustomerStatus = async (id, newStatus) => {
 
     const contentType = res.headers.get("content-type");
     if (contentType && contentType.indexOf("application/json") !== -1) {
-      const data = await res.json();
       if (res.ok) {
-        Swal.fire({
-          icon: 'success',
-          title: 'Éxito',
-          text: `Cliente ${newStatus === 'active' ? 'activado' : 'desactivado'} correctamente.`,
-          showConfirmButton: true,
-        });
+        showSuccess(`El cliente ha sido ${newStatus === 'active' ? 'activado' : 'desactivado'}`);
         loadCustomersInternal();
       } else {
-        showError(data.message || "Error al actualizar el estado del cliente.");
+        showError("No se pudo actualizar el estado del cliente.");
         
         const switchElement = document.querySelector(`input[type="checkbox"][onchange*="${id}"]`);
         if (switchElement) switchElement.checked = newStatus !== 'active';
       }
-    } else {
-      const text = await res.text();
-      console.error("Respuesta no JSON:", text);
-      showError("Error del servidor: No se recibió una respuesta JSON válida");
-      
-      const switchElement = document.querySelector(`input[type="checkbox"][onchange*="${id}"]`);
-      if (switchElement) switchElement.checked = newStatus !== 'active';
-    }
+    } 
   } catch (err) {
-    console.error("Error al actualizar estado del cliente:", err);
-    showError(`Ocurrió un error: ${err.message || err}`);
-    
+    showError("Error al actualizar estado del cliente");
     const switchElement = document.querySelector(`input[type="checkbox"][onchange*="${id}"]`);
     if (switchElement) switchElement.checked = newStatus !== 'active';
   }
@@ -514,18 +486,23 @@ const updateCustomerStatus = async (id, newStatus) => {
 
 const deleteCustomer = async (id) => {
   const token = localStorage.getItem("token");
-  
-  const customer = allCustomers.find(c => (c.id === id || c._id === id));
+  if (!token) {
+    showError("Inicie sesión nuevamente.");
+    return;
+  }
+    
+  const customer = allCustomers.find(c => c.id === id);
   if (customer && customer.isDefault) {
-    showError("El cliente predeterminado no puede ser eliminado.");
+    showInfo('El cliente predeterminado no puede ser eliminado del sistema. ',);
     return;
   }
   
-  const confirmed = await showConfirm({
-    title: "¿Estás seguro de eliminar este cliente?",
-    text: "Esta acción no se puede deshacer.",
-    confirmText: "Eliminar",
-    cancelText: "Cancelar"
+  // Confirmar antes de eliminar
+  const confirmed = await showConfirm({ 
+    title: "¿Estás seguro de eliminar este cliente?", 
+    text: "Esta acción no se puede deshacer.", 
+    confirmText: "Eliminar", 
+    cancelText: "Cancelar" 
   });
   
   if (!confirmed) return;
@@ -540,25 +517,14 @@ const deleteCustomer = async (id) => {
     
     const contentType = res.headers.get("content-type");
     if (contentType && contentType.indexOf("application/json") !== -1) {
-      const data = await res.json();
       if (res.ok) {
-        Swal.fire({
-          icon: 'success',
-          title: 'Éxito',
-          text: `Cliente eliminado correctamente.`,
-          showConfirmButton: true,
-        });
+        showSuccess('El cliente ha sido eliminado');
         loadCustomersInternal();
       } else {
-        showError(data.message || "No se pudo eliminar el cliente");
+        showError("No se pudo eliminar el cliente");
       }
-    } else {
-      const text = await res.text();
-      console.error("Respuesta no JSON:", text);
-      showError("Error del servidor: No se recibió una respuesta JSON válida");
-    }
+    } 
   } catch (err) {
-    console.error("Error al eliminar cliente:", err);
     showError("Error al eliminar cliente");
   }
 };
@@ -578,12 +544,9 @@ const searchCustomer = () => {
 
 // Desactivar validación nativa del navegador en los formularios
 function disableNativeBrowserValidation() {
-  // Desactivar validación del formulario de registro
   const customerForm = document.getElementById("customerForm");
   if (customerForm) {
     customerForm.setAttribute("novalidate", "");
-    
-    // Quitar atributos 'required' y 'pattern' de los campos
     const inputs = customerForm.querySelectorAll("input");
     inputs.forEach(input => {
       input.removeAttribute("required");
@@ -591,12 +554,10 @@ function disableNativeBrowserValidation() {
     });
   }
   
-  // Desactivar validación del formulario de edición
   const editForm = document.getElementById("editForm");
   if (editForm) {
     editForm.setAttribute("novalidate", "");
     
-    // Quitar atributos 'required' y 'pattern' de los campos
     const inputs = editForm.querySelectorAll("input");
     inputs.forEach(input => {
       input.removeAttribute("required");

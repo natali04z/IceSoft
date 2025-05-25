@@ -327,7 +327,7 @@ const loadCategories = async () => {
   try {
     const token = localStorage.getItem("token");
     if (!token) {
-      showError("Token no encontrado. Inicie sesión nuevamente.");
+      showError("Inicie sesión nuevamente");
       return;
     }
     const res = await fetch(API_CATEGORIES, {
@@ -356,10 +356,10 @@ const loadCategories = async () => {
         editCategorySelect.innerHTML += option;
       });
     } else {
-      showError(data.message || "Error al cargar categorías.");
+      showError(data.message || "No se pudo listar los productos.");
     }
   } catch (err) {
-    showError("Error al cargar categorías.");
+    showError("Error al listar los productos.");
   }
 };
 
@@ -367,7 +367,7 @@ const loadProductsInternal = async () => {
   try {
     const token = localStorage.getItem("token");
     if (!token) {
-      showError("Token no encontrado. Inicie sesión nuevamente.");
+      showError("Inicie sesión nuevamente.");
       return;
     }
     
@@ -404,10 +404,10 @@ const loadProductsInternal = async () => {
       
       renderProductsTable(currentPage);
     } else {
-      showError(data.message || "Error al listar productos.");
+      showError(data.message || "No se pudo listar los productos.");
     }
   } catch (err) {
-    showError("Error al listar productos: " + (err.message || err));
+    showError("Error al listar los productos");
   }
 };
 
@@ -416,7 +416,7 @@ const listProducts = async () => {
   try {
     const token = localStorage.getItem("token");
     if (!token) {
-      showError("Token no encontrado. Inicie sesión nuevamente.");
+      showError("Inicie sesión nuevamente.");
       return;
     }
     
@@ -457,11 +457,11 @@ const listProducts = async () => {
       
       renderProductsTable(currentPage);
     } else {
-      showError(data.message || "Error al listar productos.");
+      showError(data.message || "No se pudo listar los productos.");
     }
   } catch (err) {
     hideLoadingIndicator();
-    showError("Error al listar productos: " + (err.message || err));
+    showError("Error al listar los productos");
   }
 };
 
@@ -469,7 +469,7 @@ const listProducts = async () => {
 const registerProduct = async () => {
   const token = localStorage.getItem("token");
   if (!token) {
-    showError("Token no encontrado. Inicie sesión nuevamente.");
+    showError("Inicie sesión nuevamente.");
     return;
   }
   
@@ -512,26 +512,25 @@ const registerProduct = async () => {
     });
     const data = await res.json();
     if (res.status === 201 || res.ok) {
-      Swal.fire({
-        icon: 'success',
-        title: 'Éxito',
-        text: `Producto registrado correctamente.`,
-        showConfirmButton: true,
-      });
+      showSuccess('El producto ha sido registrado');
       closeModal('registerModal');
       document.getElementById("productForm").reset();
-      loadProductsInternal(); // Cambiado por la versión sin indicador de carga
+      loadProductsInternal();
     } else {
-      showError(data.message || "Error al registrar producto.");
+      showError(data.message || "No se pudo registrar el producto.");
     }
   } catch (err) {
-    showError("Error al registrar producto");
+    showError("Error al registrar el producto");
   }
 };
 
 // Llenar formulario de edición de producto
 const fillEditForm = async (id) => {
   const token = localStorage.getItem("token");
+  if (!token) {
+    showError("Inicie sesión nuevamente.");
+    return;
+  }
 
   try {
     clearValidationErrors('editForm');
@@ -555,7 +554,6 @@ const fillEditForm = async (id) => {
     document.getElementById("editName").value = product.name || "";
     document.getElementById("editCategory").value = product.category?._id || "";
     document.getElementById("editPrice").value = product.price || "";
-    document.getElementById("editStock").value = product.stock || "";
     
     const editStatusElement = document.getElementById("editStatus");
     if (editStatusElement) {
@@ -574,7 +572,7 @@ const fillEditForm = async (id) => {
 
     openModal("editModal");
   } catch (err) {
-    showError(`Ocurrió un error: ${err.message || err}`);
+    showError("Error al cargar el producto.");
   }
 };
 
@@ -582,19 +580,18 @@ const fillEditForm = async (id) => {
 const updateProduct = async () => {
   const token = localStorage.getItem("token");
   if (!token) {
-    showError("Token no encontrado. Inicie sesión nuevamente.");
+    showError("Inicie sesión nuevamente");
     return;
   }
 
   const nameValid = validateField("editName", "El nombre es obligatorio.");
   const categoryValid = validateCategory("editCategory");
   const priceValid = validatePrice("editPrice");
-  const stockValid = validateStock("editStock");
   const batchDateValid = validateDate("editBatchDate");
   const expirationDateValid = validateDate("editExpirationDate");
   const dateRangeValid = validateDateRange("editBatchDate", "editExpirationDate");
 
-  if (!nameValid || !categoryValid || !priceValid || !stockValid || !batchDateValid || !expirationDateValid || !dateRangeValid) {
+  if (!nameValid || !categoryValid || !priceValid || !batchDateValid || !expirationDateValid || !dateRangeValid) {
     return;
   }
 
@@ -602,7 +599,6 @@ const updateProduct = async () => {
   const name = document.getElementById("editName").value.trim();
   const category = document.getElementById("editCategory").value;
   const price = parseFloat(document.getElementById("editPrice").value);
-  const stock = parseInt(document.getElementById("editStock").value);
 
   const editStatusElement = document.getElementById("editStatus");
   const status = editStatusElement ? (editStatusElement.checked ? "active" : "inactive") : "active";
@@ -620,8 +616,7 @@ const updateProduct = async () => {
       body: JSON.stringify({ 
         name, 
         category, 
-        price, 
-        stock,
+        price,
         status,
         batchDate,
         expirationDate
@@ -630,20 +625,15 @@ const updateProduct = async () => {
 
     const data = await res.json();
     if (res.ok) {
-      Swal.fire({
-        icon: 'success',
-        title: 'Éxito',
-        text: `Producto actualizado correctamente.`,
-        showConfirmButton: true,
-      });
+      showSuccess('El producto ha sido actualizado');
       closeModal("editModal");
       document.getElementById("editForm").reset();
-      loadProductsInternal(); // Cambiado por la versión sin indicador de carga
+      loadProductsInternal();
     } else {
-      showError(data.message || "Error al actualizar el producto.");
+      showError(data.message || "No se pudo actualizar el producto.");
     }
   } catch (err) {
-    showError(`Ocurrió un error: ${err.message || err}`);
+    showError("Error al actualizar el producto.");
   }
 };
 
@@ -651,9 +641,11 @@ const updateProduct = async () => {
 const updateProductStatus = async (id, status) => {
   const token = localStorage.getItem("token");
   if (!token) {
-    showError("Token no encontrado. Inicie sesión nuevamente.");
+    showError("Inicie sesión nuevamente.");
     return;
   }
+
+  const switchElement = document.querySelector(`tr[data-productid="${id}"] input[type="checkbox"]`);
   
   try {
     const res = await fetch(`${API_PRODUCTS}/${id}`, {
@@ -673,14 +665,22 @@ const updateProductStatus = async (id, status) => {
     }
     
     if (res.ok) {
-      Swal.fire({
-        icon: 'success',
-        title: 'Éxito',
-        text: `Producto ${status === 'active' ? 'activado' : 'desactivado'} correctamente.`,
-        showConfirmButton: true,
-      });
+      showSuccess(`El producto ha sido ${status === 'active' ? 'activado' : 'desactivado'}`);
+
+      if (switchElement) {
+        switchElement.checked = status === 'active';
+      }
+
+      const productIndex = allProducts.findIndex(p => p._id === id);
+      if (productIndex !== -1) {
+        allProducts[productIndex].status = status;
+      }
       
-      loadProductsInternal(); // Cambiado por la versión sin indicador de carga
+      const originalIndex = originalProducts.findIndex(p => p._id === id);
+      if (originalIndex !== -1) {
+        originalProducts[originalIndex].status = status;
+      }
+      
     } else {
       let errorMsg = data.message || `Error al ${status === 'active' ? 'activar' : 'desactivar'} el producto (${res.status})`;
       if (data.error) {
@@ -688,11 +688,16 @@ const updateProductStatus = async (id, status) => {
       }
       showError(errorMsg);
 
-      loadProductsInternal(); // Cambiado por la versión sin indicador de carga
+      if (switchElement) {
+        switchElement.checked = status !== 'active';
+      }
     }
   } catch (err) {
-    showError(`Ocurrió un error de red: ${err.message || err}`);
-    loadProductsInternal(); // Cambiado por la versión sin indicador de carga
+    showError("Error al actualizar estado del producto");
+
+    if (switchElement) {
+      switchElement.checked = status !== 'active';
+    }
   }
 };
 
@@ -712,11 +717,7 @@ const checkProductStatus = async (productId) => {
     
     if (res.ok) {
       if (data.status === "inactive") {
-        Swal.fire({
-          icon: 'warning',
-          title: 'Producto inactivo',
-          text: 'Este producto está desactivado y no puede ser utilizado.'
-        });
+        showValidation('Este producto está desactivado y no puede ser utilizado.')
         return false;
       }
       return true;
@@ -733,6 +734,7 @@ const checkProductStatus = async (productId) => {
 // Eliminar producto
 const deleteProduct = async (id) => {
   const token = localStorage.getItem("token");
+
   const confirmed = await showConfirm({
     title: "¿Estás seguro de eliminar este producto?",
     text: "Esta acción no se puede deshacer.",
@@ -752,18 +754,13 @@ const deleteProduct = async (id) => {
     
     const data = await res.json();
     if (res.ok) {
-      Swal.fire({
-        icon: 'success',
-        title: 'Éxito',
-        text: `Producto eliminado correctamente.`,
-        showConfirmButton: true,
-      });
-      loadProductsInternal(); // Cambiado por la versión sin indicador de carga
+      showSuccess('El producto ha sido eliminado');
+      loadProductsInternal();
     } else {
       showError(data.message || "No se pudo eliminar el producto");
     }
   } catch (err) {
-    showError("Error al eliminar producto");
+    showError("Error al eliminar el producto");
   }
 };
 
@@ -788,7 +785,7 @@ document.addEventListener("DOMContentLoaded", () => {
   
   // Iniciar carga de datos
   try {
-    listProducts(); // Usa el indicador de carga para la carga inicial
+    listProducts();
     loadCategories();
   } catch (err) {
     console.error("Error al inicializar:", err);
@@ -832,7 +829,6 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("editName").addEventListener("blur", () => validateField("editName", "El nombre es obligatorio."));
   document.getElementById("editCategory").addEventListener("change", () => validateCategory("editCategory"));
   document.getElementById("editPrice").addEventListener("blur", () => validatePrice("editPrice"));
-  document.getElementById("editStock").addEventListener("blur", () => validateStock("editStock"));
   document.getElementById("editBatchDate").addEventListener("change", () => {
     validateDate("editBatchDate");
     validateDateRange("editBatchDate", "editExpirationDate");

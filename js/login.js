@@ -2,7 +2,15 @@
 const API_URL = "https://backend-yy4o.onrender.com/api";
 const API_LOGIN = `${API_URL}/auth/login`;
 
-// Función para validar un campo y mostrar el error
+// Debug: Interceptar todas las llamadas a Swal.fire para identificar el origen
+const originalSwalFire = Swal.fire;
+Swal.fire = function(...args) {
+    console.log('Swal.fire llamado desde:', new Error().stack);
+    console.log('Argumentos:', args);
+    return originalSwalFire.apply(this, args);
+};
+
+// Validar campo y mostrar error
 function validateField(fieldId, errorMessage) {
     const field = document.getElementById(fieldId);
     const errorElement = document.getElementById(`${fieldId}-error`);
@@ -19,7 +27,7 @@ function validateField(fieldId, errorMessage) {
     }
 }
 
-// Función para validar correo electrónico
+// Validar correo electrónico
 function validateEmail(fieldId) {
     const field = document.getElementById(fieldId);
     const errorElement = document.getElementById(`${fieldId}-error`);
@@ -42,7 +50,7 @@ function validateEmail(fieldId) {
     }
 }
 
-// Función para validar contraseña
+// Validar contraseña
 function validatePassword(fieldId) {
     const field = document.getElementById(fieldId);
     const errorElement = document.getElementById(`${fieldId}-error`);
@@ -64,6 +72,9 @@ function clearValidationErrors(formId) {
     const form = document.getElementById(formId);
     if (!form) return;
     
+    // Cerrar cualquier alerta de SweetAlert
+    Swal.close();
+    
     const errorElements = form.querySelectorAll('.error-message');
     const inputElements = form.querySelectorAll('.field-element');
     
@@ -76,38 +87,145 @@ function clearValidationErrors(formId) {
         element.classList.remove("input-error");
     });
     
-    // Ocultar mensaje de credenciales incorrectas si existe
+    // Limpiar TODOS los posibles mensajes de error
     const credentialsError = document.getElementById('credentials-error');
     if (credentialsError) {
         credentialsError.style.display = "none";
+        credentialsError.textContent = "";
     }
+    
+    // Buscar y limpiar cualquier otro mensaje de error que pueda existir
+    const allErrorMessages = document.querySelectorAll('.error-message, .alert-danger, .text-danger, .credentials-error-message');
+    allErrorMessages.forEach(element => {
+        element.style.display = "none";
+        element.textContent = "";
+    });
 }
 
 // Mostrar mensaje de error de credenciales
 function showCredentialsError(message) {
-    // Verificar si ya existe el elemento
     let credentialsError = document.getElementById('credentials-error');
-    // Si no existe, crearlo
     if (!credentialsError) {
         credentialsError = document.createElement('div');
         credentialsError.id = 'credentials-error';
         credentialsError.className = 'error-message credentials-error-message';
         const form = document.getElementById('loginForm');
         const actionsDiv = form.querySelector('.recovery-actions');
-        // Insertar antes del botón
         form.insertBefore(credentialsError, actionsDiv);
     }
-    // Actualizar mensaje y mostrar
     credentialsError.textContent = message || "Credenciales incorrectas. Por favor, verifique su correo electrónico y contraseña.";
     credentialsError.style.display = "block";
 }
 
-// Desactivar la validación nativa del navegador
+// Función para manejar diferentes tipos de errores del backend
+function handleLoginError(status, backendMessage) {
+
+    clearAllErrors();
+
+    switch (status) {
+        case 400:
+            showError("Por favor, complete todos los campos requeridos.");
+            break;
+        case 401:
+            showError("Credenciales incorrectas. Por favor, verifique su correo electrónico y contraseña.");
+            break;
+        case 403:
+            if (backendMessage && backendMessage.includes("inactive") && backendMessage.includes("account")) {
+                showInfo("Su cuenta está inactiva. Por favor, contacte al administrador para activar su cuenta.");
+            } else if (backendMessage && backendMessage.includes("no role assigned")) {
+                showError("Su cuenta no tiene un rol asignado. Por favor, contacte al administrador para asignar un rol.");
+            } else if (backendMessage && backendMessage.includes("role") && backendMessage.includes("inactive")) {
+                showError("Su rol está actualmente inactivo. Por favor, contacte al administrador para activar su rol.");
+            } else {
+                showInfo("Acceso denegado. Por favor, contacte al administrador.");
+            }
+            break;
+        case 500:
+            showError("Error interno del servidor. Por favor, intente más tarde.");
+            break;
+        default:
+            showError("Ha ocurrido un error inesperado. Por favor, intente nuevamente.");
+    }
+}
+
+// Función adicional para limpiar TODOS los errores posibles
+function clearAllErrors() {
+    Swal.close();
+    
+    const credentialsError = document.getElementById('credentials-error');
+    if (credentialsError) {
+        credentialsError.style.display = "none";
+        credentialsError.textContent = "";
+        credentialsError.innerHTML = "";
+    }
+    
+    const errorSelectors = [
+        '.error-message',
+        '.alert-danger', 
+        '.text-danger',
+        '.credentials-error-message',
+        '.text-red-500',
+        '.text-error',
+        '.error-text',
+        '.field-error',
+        '.form-error',
+        '[class*="error"]',
+        '[style*="color: red"]',
+        '[style*="color:red"]'
+    ];
+    
+    errorSelectors.forEach(selector => {
+        try {
+            const elements = document.querySelectorAll(selector);
+            elements.forEach(element => {
+                const text = element.textContent.toLowerCase();
+                if (text.includes('inactive') || 
+                    text.includes('administrator') ||
+                    text.includes('credentials') ||
+                    text.includes('invalid') ||
+                    text.includes('error') ||
+                    text.includes('contact')) {
+                    element.style.display = "none";
+                    element.textContent = "";
+                    element.innerHTML = "";
+                    element.remove();
+                }
+            });
+        } catch (e) {
+        }
+    });
+    
+    const walker = document.createTreeWalker(
+        document.body,
+        NodeFilter.SHOW_TEXT,
+        null,
+        false
+    );
+    
+    const textNodes = [];
+    let node;
+    while (node = walker.nextNode()) {
+        const text = node.textContent.toLowerCase();
+        if (text.includes('your account is inactive') || 
+            text.includes('please contact an administrator')) {
+            textNodes.push(node);
+        }
+    }
+    
+    // Remover nodos de texto problemáticos
+    textNodes.forEach(textNode => {
+        if (textNode.parentElement) {
+            textNode.parentElement.style.display = "none";
+            textNode.textContent = "";
+        }
+    });
+}
+
+// Desactivar validación nativa del navegador
 function disableNativeBrowserValidation() {
     const forms = document.querySelectorAll('form');
     forms.forEach(form => {
         form.setAttribute("novalidate", "");
-        // Eliminar los atributos 'required' y 'pattern' de los campos
         const inputs = form.querySelectorAll("input");
         inputs.forEach(input => {
             input.removeAttribute("required");
@@ -116,31 +234,30 @@ function disableNativeBrowserValidation() {
     });
 }
 
-// Función para mostrar errores con SweetAlert2
-function showError(message) {
-    Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: message || 'Ha ocurrido un error',
-        confirmButtonColor: '#2e3b52'
-    });
+// Mostrar indicador de carga
+function showLoading(show = true) {
+    const submitButton = document.querySelector('#loginForm button[type="submit"]');
+    if (submitButton) {
+        if (show) {
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Iniciando sesión...';
+        } else {
+            submitButton.disabled = false;
+            submitButton.innerHTML = 'Iniciar Sesión';
+        }
+    }
 }
 
-// Inicialización cuando el DOM está cargado
 document.addEventListener('DOMContentLoaded', () => {
-    // Desactivar validación nativa del navegador
     disableNativeBrowserValidation();
     
     const form = document.getElementById('loginForm');
-    // Verificar si el formulario existe
     if (form) {
-        // Agregar validación en tiempo real para los campos
         const emailField = document.getElementById('email');
         const passwordField = document.getElementById('password');
         
         if (emailField) {
             emailField.addEventListener('blur', () => validateEmail('email'));
-            // Limpiar mensaje de error de credenciales al cambiar el correo electrónico
             emailField.addEventListener('input', () => {
                 const credentialsError = document.getElementById('credentials-error');
                 if (credentialsError) credentialsError.style.display = "none";
@@ -149,7 +266,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (passwordField) {
             passwordField.addEventListener('blur', () => validatePassword('password'));
-            // Limpiar mensaje de error de credenciales al cambiar la contraseña
             passwordField.addEventListener('input', () => {
                 const credentialsError = document.getElementById('credentials-error');
                 if (credentialsError) credentialsError.style.display = "none";
@@ -158,31 +274,21 @@ document.addEventListener('DOMContentLoaded', () => {
         
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
+            e.stopPropagation();
+            clearValidationErrors('loginForm');
             
-            // Validar campos
             const emailValid = validateEmail('email');
             const passwordValid = validatePassword('password');
             
-            // Si algún campo no es válido, detener el proceso
             if (!emailValid || !passwordValid) {
                 return;
             }
             
             const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value.trim();
+            showLoading(true);
             
             try {
-                // Mostrar indicador de carga
-                Swal.fire({
-                    title: 'Procesando',
-                    text: 'Verificando credenciales...',
-                    allowOutsideClick: false,
-                    showConfirmButton: false,
-                    didOpen: () => {
-                        Swal.showLoading();
-                    }
-                });
-                
                 const response = await fetch(API_LOGIN, {
                     method: 'POST',
                     headers: {
@@ -196,59 +302,47 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 const result = await response.json();
                 
-                // Procesar respuesta
                 if (response.ok) {
-                    await Swal.fire({
-                        icon: 'success',
-                        title: '¡Bienvenido!',
-                        text: 'Inicio de sesión exitoso',
-                        timer: 1500,
-                        showConfirmButton: false
-                    });
-                    
-                    // Guardar token y redireccionar
                     localStorage.setItem('token', result.token);
-                    window.location.href = "home.html";
-                } else {
-                    // Mostrar error con SweetAlert2
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: result.message || "Credenciales inválidas",
-                        confirmButtonColor: '#2e3b52'
-                    });
                     
-                    // Mostrar mensaje de error en el formulario
-                    showCredentialsError(result.message || "Credenciales incorrectas. Por favor, verifique su correo electrónico y contraseña.");
+                    if (result.user) {
+                        localStorage.setItem('user', JSON.stringify(result.user));
+                    }
+                    
+                    window.location.href = "home.html";
+                    
+                } else {
+                    e.stopImmediatePropagation();
+                    
+                    handleLoginError(response.status, result.message);
+                    
+                    return false;
                 }
+                
             } catch (error) {
                 console.error("Error al iniciar sesión:", error);
+                e.stopImmediatePropagation();
+                if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+                    showError('No se pudo conectar con el servidor. Verifique su conexión a internet.');
+                } else {
+                    showError('Error de conexión. Por favor, intente nuevamente.');
+                }
                 
-                // Mostrar error con SweetAlert2
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error de conexión',
-                    text: 'No se pudo conectar con el servidor',
-                    confirmButtonColor: '#2e3b52'
-                });
-                
-                // Mostrar mensaje de error en el formulario
-                showCredentialsError("Error de conexión. No se pudo conectar con el servidor.");
+                return false;
+            } finally {
+                showLoading(false);
             }
-        });
+        }, { once: false, capture: true });
     } else {
         console.error("Formulario de inicio de sesión no encontrado");
     }
 
-    // Asegurar que la función showRecoveryForm está disponible globalmente
+    // Funciones globales para el manejo de formularios
     if (typeof window.showRecoveryForm !== 'function') {
-        console.warn("La función showRecoveryForm no está definida, estableciéndola ahora");
         window.showRecoveryForm = function() {
-            // Limpiar errores de validación al cambiar de formulario
             clearValidationErrors('loginForm');
             document.getElementById('loginContainer').style.display = 'none';
             document.getElementById('recoveryForm').style.display = 'block';
-            // Asegurarse de que solo se muestra el paso de email
             document.getElementById('step-email').classList.add('active');
             document.getElementById('step-password').classList.remove('active');
             document.getElementById('step-success').classList.remove('active');
@@ -259,11 +353,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // Asegurar que la función showLoginForm está disponible globalmente
     if (typeof window.showLoginForm !== 'function') {
-        console.warn("La función showLoginForm no está definida, estableciéndola ahora");
         window.showLoginForm = function() {
-            // Limpiar errores de validación al cambiar de formulario
             clearValidationErrors('step-email');
             clearValidationErrors('step-password');
             document.getElementById('recoveryForm').style.display = 'none';
