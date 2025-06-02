@@ -1,4 +1,4 @@
-// ===== MÓDULO DE EXPORTACIONES PARA COMPRAS - VERSIÓN COMPLETA MEJORADA =====
+// ===== MÓDULO DE EXPORTACIONES PARA VENTAS - VERSIÓN COMPLETA MEJORADA =====
 
 // Función para cargar las librerías necesarias
 function loadExportLibraries() {
@@ -50,22 +50,24 @@ function loadExportLibraries() {
   });
 }
 
-// Función para obtener datos de compras con filtros
-function getFilteredPurchasesData(searchTerm = '', dateFrom = '', dateTo = '', providerFilter = '', statusFilter = '') {
-  let filteredPurchases = [...originalPurchases];
+// Función para obtener datos de ventas con filtros
+function getFilteredSalesData(searchTerm = '', dateFrom = '', dateTo = '', customerFilter = '', statusFilter = '') {
+  let filteredSales = [...originalSales];
 
   // Filtro por término de búsqueda
   if (searchTerm) {
     const term = searchTerm.toLowerCase().trim();
-    filteredPurchases = filteredPurchases.filter(p => {
-      const providerMatch = 
-        (p.provider?.company && p.provider.company.toLowerCase().includes(term)) ||
-        (p.proveedor?.company && p.proveedor.company.toLowerCase().includes(term)) ||
-        (typeof p.provider === 'string' && providerIdToNameMap[p.provider] && providerIdToNameMap[p.provider].toLowerCase().includes(term)) ||
-        (typeof p.proveedor === 'string' && providerIdToNameMap[p.proveedor] && providerIdToNameMap[p.proveedor].toLowerCase().includes(term));
+    filteredSales = filteredSales.filter(s => {
+      const customerMatch = 
+        (s.customer?.name && s.customer.name.toLowerCase().includes(term)) ||
+        (s.customer?.lastname && s.customer.lastname.toLowerCase().includes(term)) ||
+        (s.cliente?.name && s.cliente.name.toLowerCase().includes(term)) ||
+        (s.cliente?.lastname && s.cliente.lastname.toLowerCase().includes(term)) ||
+        (typeof s.customer === 'string' && customerIdToNameMap[s.customer] && customerIdToNameMap[s.customer].toLowerCase().includes(term)) ||
+        (typeof s.cliente === 'string' && customerIdToNameMap[s.cliente] && customerIdToNameMap[s.cliente].toLowerCase().includes(term));
       
       const productsMatch = 
-        (p.products && Array.isArray(p.products) && p.products.some(item => {
+        (s.products && Array.isArray(s.products) && s.products.some(item => {
           if (item.product?.name) {
             return item.product.name.toLowerCase().includes(term);
           } else if (productIdToNameMap[item.product]) {
@@ -73,7 +75,7 @@ function getFilteredPurchasesData(searchTerm = '', dateFrom = '', dateTo = '', p
           }
           return false;
         })) ||
-        (p.productos && Array.isArray(p.productos) && p.productos.some(item => {
+        (s.productos && Array.isArray(s.productos) && s.productos.some(item => {
           if (item.producto?.name) {
             return item.producto.name.toLowerCase().includes(term);
           } else if (productIdToNameMap[item.producto]) {
@@ -82,76 +84,76 @@ function getFilteredPurchasesData(searchTerm = '', dateFrom = '', dateTo = '', p
           return false;
         }));
       
-      return providerMatch || productsMatch || (p.id && p.id.toLowerCase().includes(term));
+      return customerMatch || productsMatch || (s.id && s.id.toLowerCase().includes(term));
     });
   }
 
   // Filtro por rango de fechas
   if (dateFrom || dateTo) {
-    filteredPurchases = filteredPurchases.filter(p => {
-      const purchaseDate = new Date(p.purchase_date || p.fecha_compra || p.purchaseDate);
-      if (isNaN(purchaseDate.getTime())) return false;
+    filteredSales = filteredSales.filter(s => {
+      const salesDate = new Date(s.sales_date || s.fecha_venta || s.salesDate);
+      if (isNaN(salesDate.getTime())) return false;
       
-      if (dateFrom && purchaseDate < new Date(dateFrom)) return false;
-      if (dateTo && purchaseDate > new Date(dateTo)) return false;
+      if (dateFrom && salesDate < new Date(dateFrom)) return false;
+      if (dateTo && salesDate > new Date(dateTo)) return false;
       
       return true;
     });
   }
 
-  // Filtro por proveedor
-  if (providerFilter) {
-    filteredPurchases = filteredPurchases.filter(p => {
-      const providerId = p.provider?._id || p.provider || p.proveedor?._id || p.proveedor;
-      return providerId === providerFilter;
+  // Filtro por cliente
+  if (customerFilter) {
+    filteredSales = filteredSales.filter(s => {
+      const customerId = s.customer?._id || s.customer || s.cliente?._id || s.cliente;
+      return customerId === customerFilter;
     });
   }
 
   // Filtro por estado
   if (statusFilter) {
-    filteredPurchases = filteredPurchases.filter(p => {
-      const status = p.status || p.estado || 'active';
+    filteredSales = filteredSales.filter(s => {
+      const status = s.status || s.estado || 'processing';
       return status === statusFilter;
     });
   }
 
-  return filteredPurchases;
+  return filteredSales;
 }
 
 // Función para preparar datos para exportación
-function prepareExportData(purchases) {
-  return purchases.map((purchase, index) => {
-    const purchaseId = purchase._id || "";
-    const displayId = purchase.id || purchaseId || `Pu${String(index + 1).padStart(2, '0')}`;
+function prepareExportData(sales) {
+  return sales.map((sale, index) => {
+    const saleId = sale._id || "";
+    const displayId = sale.id || saleId || `Sa${String(index + 1).padStart(2, '0')}`;
     
-    let providerName = "Sin Proveedor";
-    if (purchase.provider) {
-      if (typeof purchase.provider === 'object' && purchase.provider.company) {
-        providerName = purchase.provider.company;
+    let customerName = "Sin Cliente";
+    if (sale.customer) {
+      if (typeof sale.customer === 'object' && sale.customer.name) {
+        customerName = `${sale.customer.name} ${sale.customer.lastname || ''}`.trim();
       } else {
-        providerName = getProviderNameById(purchase.provider);
+        customerName = getCustomerNameById(sale.customer);
       }
-    } else if (purchase.proveedor) {
-      if (typeof purchase.proveedor === 'object' && purchase.proveedor.company) {
-        providerName = purchase.proveedor.company;
+    } else if (sale.cliente) {
+      if (typeof sale.cliente === 'object' && sale.cliente.name) {
+        customerName = `${sale.cliente.name} ${sale.cliente.lastname || ''}`.trim();
       } else {
-        providerName = getProviderNameById(purchase.proveedor);
+        customerName = getCustomerNameById(sale.cliente);
       }
     }
     
-    const purchaseDate = purchase.purchase_date || purchase.fecha_compra || purchase.purchaseDate;
-    const status = purchase.status || purchase.estado || "active";
-    const total = purchase.total || 0;
+    const salesDate = sale.sales_date || sale.fecha_venta || sale.salesDate;
+    const status = sale.status || sale.estado || "processing";
+    const total = sale.total || 0;
     
     // Obtener productos
     let products = [];
-    if (purchase.products && Array.isArray(purchase.products)) {
-      products = purchase.products;
-    } else if (purchase.productos && Array.isArray(purchase.productos)) {
-      products = purchase.productos.map(item => ({
+    if (sale.products && Array.isArray(sale.products)) {
+      products = sale.products;
+    } else if (sale.productos && Array.isArray(sale.productos)) {
+      products = sale.productos.map(item => ({
         product: item.producto,
         quantity: item.cantidad,
-        purchase_price: item.precio_compra,
+        sale_price: item.precio_venta,
         total: item.total
       }));
     }
@@ -168,25 +170,26 @@ function prepareExportData(purchases) {
     // Lista detallada para Excel
     const productsDetailedList = products.map(item => {
       const productName = item.product?.name || getProductNameById(item.product?._id || item.product);
-      return `${productName} - Cant: ${item.quantity} - Precio: ${formatCurrency(item.purchase_price)} - Total: ${formatCurrency(item.total)}`;
+      return `${productName} - Cant: ${item.quantity} - Precio: ${formatCurrency(item.sale_price)} - Total: ${formatCurrency(item.total)}`;
     }).join(' | ');
     
     const statusTranslation = {
-      'active': 'Activa',
-      'inactive': 'Inactiva'
+      'processing': 'Procesando',
+      'completed': 'Completada',
+      'cancelled': 'Cancelada'
     };
     
     return {
       id: displayId,
-      proveedor: providerName,
-      fecha: formatDate(purchaseDate),
+      cliente: customerName,
+      fecha: formatDate(salesDate),
       productos: productsList,
       cantidad: totalQuantity,
       productosDetallados: productsDetailedList,
       total: total,
       totalFormatted: formatCurrency(total),
       estado: statusTranslation[status] || status,
-      rawDate: purchaseDate,
+      rawDate: salesDate,
       productCount: products.length,
       productItems: products
     };
@@ -223,15 +226,15 @@ async function exportToPDF(filters = {}) {
     doc.setFont('helvetica');
     
     // Obtener datos filtrados
-    const filteredPurchases = getFilteredPurchasesData(
+    const filteredSales = getFilteredSalesData(
       filters.searchTerm,
       filters.dateFrom,
       filters.dateTo,
-      filters.providerFilter,
+      filters.customerFilter,
       filters.statusFilter
     );
     
-    const exportData = prepareExportData(filteredPurchases);
+    const exportData = prepareExportData(filteredSales);
     
     // Configuración del documento
     const pageWidth = doc.internal.pageSize.width;
@@ -253,7 +256,7 @@ async function exportToPDF(filters = {}) {
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
-    doc.text('REPORTE DE COMPRAS', 30, 20);
+    doc.text('REPORTE DE VENTAS', 30, 20);
     yPosition = 45;
     doc.setTextColor(0, 0, 0);
 
@@ -268,7 +271,7 @@ async function exportToPDF(filters = {}) {
     doc.setTextColor(0, 0, 0);
     
     // Filtros aplicados
-    if (filters.searchTerm || filters.dateFrom || filters.dateTo || filters.providerFilter || filters.statusFilter) {
+    if (filters.searchTerm || filters.dateFrom || filters.dateTo || filters.customerFilter || filters.statusFilter) {
       doc.setFont('helvetica', 'bold');
       doc.text('FILTROS APLICADOS:', margin, yPosition);
       yPosition += 10;
@@ -283,15 +286,16 @@ async function exportToPDF(filters = {}) {
         doc.text(`• Rango de fechas: ${dateRange}`, margin + 5, yPosition);
         yPosition += 8;
       }
-      if (filters.providerFilter) {
-        const providerName = getProviderNameById(filters.providerFilter) || 'Proveedor no encontrado';
-        doc.text(`• Proveedor: ${providerName}`, margin + 5, yPosition);
+      if (filters.customerFilter) {
+        const customerName = getCustomerNameById(filters.customerFilter) || 'Cliente no encontrado';
+        doc.text(`• Cliente: ${customerName}`, margin + 5, yPosition);
         yPosition += 8;
       }
       if (filters.statusFilter) {
         const statusNames = {
-          'active': 'Activa', 
-          'inactive': 'Inactiva'
+          'processing': 'Procesando', 
+          'completed': 'Completada',
+          'cancelled': 'Cancelada'
         };
         doc.text(`• Estado: ${statusNames[filters.statusFilter] || filters.statusFilter}`, margin + 5, yPosition);
         yPosition += 8;
@@ -301,8 +305,9 @@ async function exportToPDF(filters = {}) {
     
     // Resumen estadístico
     const totalAmount = exportData.reduce((sum, item) => sum + (item.total || 0), 0);
-    const activeCount = exportData.filter(item => item.estado === 'Activa').length;
-    const inactiveCount = exportData.filter(item => item.estado === 'Inactiva').length;
+    const completedCount = exportData.filter(item => item.estado === 'Completada').length;
+    const cancelledCount = exportData.filter(item => item.estado === 'Cancelada').length;
+    const processingCount = exportData.filter(item => item.estado === 'Procesando').length;
     
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
@@ -311,35 +316,37 @@ async function exportToPDF(filters = {}) {
     
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Compras activas: ${activeCount}`, margin, yPosition);
+    doc.text(`Ventas procesando: ${processingCount}`, margin, yPosition);
     yPosition += 8;
-    doc.text(`Compras inactivas: ${inactiveCount}`, margin, yPosition);
+    doc.text(`Ventas completadas: ${completedCount}`, margin, yPosition);
+    yPosition += 8;
+    doc.text(`Ventas canceladas: ${cancelledCount}`, margin, yPosition);
     yPosition += 8;
     doc.text(`Total general: ${formatCurrency(totalAmount)}`, margin, yPosition);
     yPosition += 25;
     
-    // TABLA PRINCIPAL DE COMPRAS
+    // TABLA PRINCIPAL DE VENTAS
     if (exportData.length > 0) {
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
-      doc.text('DETALLE DE COMPRAS', margin, yPosition);
+      doc.text('DETALLE DE VENTAS', margin, yPosition);
       yPosition += 15;
       
       // Preparar datos para la tabla
-      const tableData = exportData.map((purchase) => [
-        purchase.id || '',
-        purchase.proveedor || '',
-        purchase.fecha || '',
-        purchase.productos || '',
-        purchase.cantidad || 0,
-        purchase.totalFormatted || '',
-        purchase.estado || ''
+      const tableData = exportData.map((sale) => [
+        sale.id || '',
+        sale.cliente || '',
+        sale.fecha || '',
+        sale.productos || '',
+        sale.cantidad || 0,
+        sale.totalFormatted || '',
+        sale.estado || ''
       ]);
       
-      // Configurar tabla con autoTable
+      // Configurar tabla con autoTable - COLUMNAS OPTIMIZADAS
       doc.autoTable({
         startY: yPosition,
-        head: [['ID', 'Proveedor', 'Fecha', 'Productos', 'Cantidad', 'Total', 'Estado']],
+        head: [['ID', 'Cliente', 'Fecha', 'Productos', 'Cantidad', 'Total', 'Estado']],
         body: tableData,
         theme: 'striped',
         styles: {
@@ -392,7 +399,7 @@ async function exportToPDF(filters = {}) {
             valign: 'middle'
           },
           6: { 
-            cellWidth: 20, 
+            cellWidth: 25, 
             halign: 'center',
             valign: 'middle'
           }
@@ -413,8 +420,8 @@ async function exportToPDF(filters = {}) {
           }
         },
         margin: { 
-          left: (pageWidth - 175) / 2,
-          right: (pageWidth - 175) / 2
+          left: (pageWidth - 180) / 2,
+          right: (pageWidth - 180) / 2
         }
       });
       
@@ -422,7 +429,7 @@ async function exportToPDF(filters = {}) {
     } else {
       doc.setFont('helvetica', 'italic');
       doc.setFontSize(12);
-      const noDataText = 'No se encontraron compras con los filtros aplicados.';
+      const noDataText = 'No se encontraron ventas con los filtros aplicados.';
       const textWidth = doc.getTextWidth(noDataText);
       doc.text(noDataText, (pageWidth - textWidth) / 2, yPosition);
     }
@@ -455,7 +462,7 @@ async function exportToPDF(filters = {}) {
     }
     
     // GUARDAR ARCHIVO
-    const fileName = `Compras_${new Date().toISOString().split('T')[0]}_${Date.now()}.pdf`;
+    const fileName = `Ventas_${new Date().toISOString().split('T')[0]}_${Date.now()}.pdf`;
     doc.save(fileName);
     
     hideLoadingIndicator();
@@ -475,15 +482,15 @@ async function exportToExcel(filters = {}) {
     await loadExportLibraries();
     
     // Obtener datos filtrados
-    const filteredPurchases = getFilteredPurchasesData(
+    const filteredSales = getFilteredSalesData(
       filters.searchTerm,
       filters.dateFrom,
       filters.dateTo,
-      filters.providerFilter,
+      filters.customerFilter,
       filters.statusFilter
     );
     
-    const exportData = prepareExportData(filteredPurchases);
+    const exportData = prepareExportData(filteredSales);
     
     // Crear nuevo workbook
     const wb = XLSX.utils.book_new();
@@ -495,7 +502,7 @@ async function exportToExcel(filters = {}) {
     const summaryData = [];
     
     // ENCABEZADO PRINCIPAL
-    summaryData.push(['REPORTE DE COMPRAS - ICESOFT', '', '', '']);
+    summaryData.push(['REPORTE DE VENTAS - ICESOFT', '', '', '']);
     summaryData.push(['RESUMEN EJECUTIVO', '', '', '']);
     summaryData.push(['', '', '', '']);
     
@@ -516,13 +523,14 @@ async function exportToExcel(filters = {}) {
       const dateRange = `${filters.dateFrom || 'Sin límite'} - ${filters.dateTo || 'Sin límite'}`;
       summaryData.push(['Rango de fechas:', dateRange, '', '']);
     }
-    if (filters.providerFilter) {
-      summaryData.push(['Proveedor:', getProviderNameById(filters.providerFilter), '', '']);
+    if (filters.customerFilter) {
+      summaryData.push(['Cliente:', getCustomerNameById(filters.customerFilter), '', '']);
     }
     if (filters.statusFilter) {
       const statusNames = {
-        'active': 'Activa',
-        'inactive': 'Inactiva'
+        'processing': 'Procesando',
+        'completed': 'Completada',
+        'cancelled': 'Cancelada'
       };
       summaryData.push(['Estado:', statusNames[filters.statusFilter] || filters.statusFilter, '', '']);
     }
@@ -534,20 +542,22 @@ async function exportToExcel(filters = {}) {
     
     summaryData.push(['RESUMEN FINANCIERO', '', '', '']);
     summaryData.push(['Total General:', '', formatCurrency(totalAmount), '']);
-    summaryData.push(['Promedio por Compra:', '', formatCurrency(avgAmount), '']);
+    summaryData.push(['Promedio por Venta:', '', formatCurrency(avgAmount), '']);
     summaryData.push(['', '', '', '']);
     
     // ESTADÍSTICAS POR ESTADO
-    const activeCount = exportData.filter(item => item.estado === 'Activa').length;
-    const inactiveCount = exportData.filter(item => item.estado === 'Inactiva').length;
-    const activeRate = ((activeCount / exportData.length) * 100).toFixed(1);
+    const completedCount = exportData.filter(item => item.estado === 'Completada').length;
+    const cancelledCount = exportData.filter(item => item.estado === 'Cancelada').length;
+    const processingCount = exportData.filter(item => item.estado === 'Procesando').length;
+    const completionRate = ((completedCount / exportData.length) * 100).toFixed(1);
     
     summaryData.push(['ESTADÍSTICAS POR ESTADO', '', '', '']);
     summaryData.push(['Estado', 'Cantidad', 'Porcentaje', '']);
-    summaryData.push(['Activas', activeCount, `${((activeCount / exportData.length) * 100).toFixed(1)}%`, '']);
-    summaryData.push(['Inactivas', inactiveCount, `${((inactiveCount / exportData.length) * 100).toFixed(1)}%`, '']);
+    summaryData.push(['Procesando', processingCount, `${((processingCount / exportData.length) * 100).toFixed(1)}%`, '']);
+    summaryData.push(['Completadas', completedCount, `${((completedCount / exportData.length) * 100).toFixed(1)}%`, '']);
+    summaryData.push(['Canceladas', cancelledCount, `${((cancelledCount / exportData.length) * 100).toFixed(1)}%`, '']);
     summaryData.push(['', '', '', '']);
-    summaryData.push(['TASA DE ACTIVIDAD:', '', `${activeRate}%`, '']);
+    summaryData.push(['TASA DE ÉXITO:', '', `${completionRate}%`, '']);
     
     // Crear hoja de resumen
     const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
@@ -573,25 +583,25 @@ async function exportToExcel(filters = {}) {
     
     // ===== HOJA 2: DATOS PRINCIPALES CON FORMATO PROFESIONAL =====
     if (exportData.length > 0) {
-      const detailData = exportData.map((purchase, index) => ({
-        'ID': purchase.id,
-        'Proveedor': purchase.proveedor,
-        'Fecha': purchase.fecha,
-        'Productos': purchase.productosDetallados,
-        'Items': purchase.productCount,
-        'Cantidad': purchase.cantidad,
-        'Total': purchase.total,
-        'Estado': purchase.estado,
-        'Observaciones': purchase.estado === 'Activa' ? 'Compra vigente' : 
-                        purchase.estado === 'Inactiva' ? 'Requiere revisión' : 'En proceso'
+      const detailData = exportData.map((sale, index) => ({
+        'ID': sale.id,
+        'Cliente': sale.cliente,
+        'Fecha': sale.fecha,
+        'Productos': sale.productosDetallados,
+        'Items': sale.productCount,
+        'Cantidad': sale.cantidad,
+        'Total': sale.total,
+        'Estado': sale.estado,
+        'Observaciones': sale.estado === 'Completada' ? 'Finalizada exitosamente' : 
+                        sale.estado === 'Cancelada' ? 'Requiere análisis' : 'En proceso'
       }));
       
       const detailWs = XLSX.utils.json_to_sheet(detailData);
       
-      // Configurar ancho de columnas optimizado
+      // Configurar ancho de columnas optimizado - COLUMNAS AJUSTADAS
       detailWs['!cols'] = [
         { width: 12 }, // ID
-        { width: 25 }, // Proveedor
+        { width: 25 }, // Cliente
         { width: 12 }, // Fecha
         { width: 40 }, // Productos
         { width: 8 },  // Items
@@ -604,84 +614,90 @@ async function exportToExcel(filters = {}) {
       XLSX.utils.book_append_sheet(wb, detailWs, 'Datos Principales');
     }
     
-    // ===== HOJA 3: ANÁLISIS POR PROVEEDOR CON GRÁFICOS VISUALES =====
+    // ===== HOJA 3: ANÁLISIS POR CLIENTE CON GRÁFICOS VISUALES =====
     if (exportData.length > 0) {
-      const providerStats = {};
+      const customerStats = {};
       
-      exportData.forEach(purchase => {
-        const provider = purchase.proveedor;
-        if (!providerStats[provider]) {
-          providerStats[provider] = {
-            totalCompras: 0,
+      exportData.forEach(sale => {
+        const customer = sale.cliente;
+        if (!customerStats[customer]) {
+          customerStats[customer] = {
+            totalVentas: 0,
             montoTotal: 0,
-            comprasActivas: 0,
-            comprasInactivas: 0,
+            ventasCompletadas: 0,
+            ventasCanceladas: 0,
+            ventasProcesando: 0,
             productos: new Set()
           };
         }
         
-        providerStats[provider].totalCompras++;
-        providerStats[provider].montoTotal += purchase.total;
+        customerStats[customer].totalVentas++;
+        customerStats[customer].montoTotal += sale.total;
         
-        if (purchase.productItems && Array.isArray(purchase.productItems)) {
-          purchase.productItems.forEach(product => {
+        if (sale.productItems && Array.isArray(sale.productItems)) {
+          sale.productItems.forEach(product => {
             const productName = product.product?.name || getProductNameById(product.product?._id || product.product);
-            providerStats[provider].productos.add(productName);
+            customerStats[customer].productos.add(productName);
           });
         }
         
-        switch(purchase.estado) {
-          case 'Activa':
-            providerStats[provider].comprasActivas++;
+        switch(sale.estado) {
+          case 'Completada':
+            customerStats[customer].ventasCompletadas++;
             break;
-          case 'Inactiva':
-            providerStats[provider].comprasInactivas++;
+          case 'Cancelada':
+            customerStats[customer].ventasCanceladas++;
+            break;
+          case 'Procesando':
+            customerStats[customer].ventasProcesando++;
             break;
         }
       });
       
       const totalAmount = exportData.reduce((sum, item) => sum + item.total, 0);
       
-      const providerAnalysis = Object.entries(providerStats).map(([provider, stats]) => {
-        const activeRate = ((stats.comprasActivas / stats.totalCompras) * 100).toFixed(1);
+      const customerAnalysis = Object.entries(customerStats).map(([customer, stats]) => {
+        const successRate = ((stats.ventasCompletadas / stats.totalVentas) * 100).toFixed(1);
         const participation = ((stats.montoTotal / totalAmount) * 100).toFixed(1);
         
         return {
-          'Proveedor': provider,
-          'Total Compras': stats.totalCompras,
+          'Cliente': customer,
+          'Total Ventas': stats.totalVentas,
           'Monto Total': stats.montoTotal,
-          'Activas': stats.comprasActivas,
-          'Inactivas': stats.comprasInactivas,
-          'Promedio/Compra': Math.round(stats.montoTotal / stats.totalCompras),
+          'Completadas': stats.ventasCompletadas,
+          'Canceladas': stats.ventasCanceladas,
+          'Procesando': stats.ventasProcesando,
+          'Promedio/Venta': Math.round(stats.montoTotal / stats.totalVentas),
           'Productos Únicos': stats.productos.size,
           '% Participación': `${participation}%`,
-          'Tasa Actividad': `${activeRate}%`,
-          'Calificación': activeRate >= 80 ? 'EXCELENTE' : 
-                           activeRate >= 60 ? 'BUENO' : 
-                           activeRate >= 40 ? 'REGULAR' : 'MEJORAR'
+          'Tasa Éxito': `${successRate}%`,
+          'Calificación': successRate >= 80 ? 'EXCELENTE' : 
+                           successRate >= 60 ? 'BUENO' : 
+                           successRate >= 40 ? 'REGULAR' : 'MEJORAR'
         };
       });
       
       // Ordenar por monto total descendente
-      providerAnalysis.sort((a, b) => b['Monto Total'] - a['Monto Total']);
+      customerAnalysis.sort((a, b) => b['Monto Total'] - a['Monto Total']);
       
-      const providerWs = XLSX.utils.json_to_sheet(providerAnalysis);
+      const customerWs = XLSX.utils.json_to_sheet(customerAnalysis);
       
       // Configurar anchos de columna
-      providerWs['!cols'] = [
-        { width: 25 }, // Proveedor
-        { width: 12 }, // Total Compras
+      customerWs['!cols'] = [
+        { width: 25 }, // Cliente
+        { width: 12 }, // Total Ventas
         { width: 15 }, // Monto Total
-        { width: 12 }, // Activas
-        { width: 12 }, // Inactivas
+        { width: 12 }, // Completadas
+        { width: 12 }, // Canceladas
+        { width: 12 }, // Procesando
         { width: 15 }, // Promedio
         { width: 15 }, // Productos Únicos
         { width: 15 }, // Participación
-        { width: 12 }, // Tasa Actividad
+        { width: 12 }, // Tasa Éxito
         { width: 15 }  // Calificación
       ];
       
-      XLSX.utils.book_append_sheet(wb, providerWs, 'Análisis Proveedores');
+      XLSX.utils.book_append_sheet(wb, customerWs, 'Análisis Clientes');
     }
     
     // ===== HOJA 4: DASHBOARD DE TENDENCIAS =====
@@ -693,45 +709,45 @@ async function exportToExcel(filters = {}) {
       
       // Agregar análisis mensual
       const monthlyStats = {};
-      exportData.forEach(purchase => {
-        const date = new Date(purchase.rawDate);
+      exportData.forEach(sale => {
+        const date = new Date(sale.rawDate);
         const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
         const monthName = date.toLocaleDateString('es-ES', { year: 'numeric', month: 'long' });
         
         if (!monthlyStats[monthKey]) {
           monthlyStats[monthKey] = {
             name: monthName,
-            compras: 0,
+            ventas: 0,
             total: 0,
-            activas: 0,
-            inactivas: 0
+            completadas: 0,
+            canceladas: 0
           };
         }
         
-        monthlyStats[monthKey].compras++;
-        monthlyStats[monthKey].total += purchase.total;
-        if (purchase.estado === 'Activa') monthlyStats[monthKey].activas++;
-        if (purchase.estado === 'Inactiva') monthlyStats[monthKey].inactivas++;
+        monthlyStats[monthKey].ventas++;
+        monthlyStats[monthKey].total += sale.total;
+        if (sale.estado === 'Completada') monthlyStats[monthKey].completadas++;
+        if (sale.estado === 'Cancelada') monthlyStats[monthKey].canceladas++;
       });
       
       // Encabezados de la tabla
-      dashboardData.push(['Período', 'Compras', 'Total', 'Activas', 'Inactivas', 'Tasa Actividad', 'Rendimiento']);
+      dashboardData.push(['Período', 'Ventas', 'Total', 'Completadas', 'Canceladas', 'Tasa Éxito', 'Rendimiento']);
       
       const trendsData = Object.entries(monthlyStats)
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([month, stats]) => {
-          const activeRate = ((stats.activas / stats.compras) * 100).toFixed(1);
-          const performance = stats.compras > 10 ? 'ALTO' : 
-                            stats.compras > 5 ? 'MEDIO' : 
+          const successRate = ((stats.completadas / stats.ventas) * 100).toFixed(1);
+          const performance = stats.ventas > 10 ? 'ALTO' : 
+                            stats.ventas > 5 ? 'MEDIO' : 
                             'BAJO';
           
           return [
             stats.name,
-            stats.compras,
+            stats.ventas,
             stats.total,
-            stats.activas,
-            stats.inactivas,
-            `${activeRate}%`,
+            stats.completadas,
+            stats.canceladas,
+            `${successRate}%`,
             performance
           ];
         });
@@ -743,13 +759,13 @@ async function exportToExcel(filters = {}) {
       dashboardData.push(['', '', '', '', '', '', '']);
       dashboardData.push(['RESUMEN GENERAL', '', '', '', '', '', '']);
       
-      const totalCompras = trendsData.reduce((sum, row) => sum + row[1], 0);
+      const totalVentas = trendsData.reduce((sum, row) => sum + row[1], 0);
       const totalMonto = trendsData.reduce((sum, row) => sum + row[2], 0);
-      const totalActivas = trendsData.reduce((sum, row) => sum + row[3], 0);
-      const promedioMensual = Math.round(totalCompras / trendsData.length);
+      const totalCompletadas = trendsData.reduce((sum, row) => sum + row[3], 0);
+      const promedioMensual = Math.round(totalVentas / trendsData.length);
       
       dashboardData.push(['Total Períodos Analizados:', trendsData.length, '', '', '', '', '']);
-      dashboardData.push(['Promedio Compras/Mes:', promedioMensual, '', '', '', '', '']);
+      dashboardData.push(['Promedio Ventas/Mes:', promedioMensual, '', '', '', '', '']);
       dashboardData.push(['Mejor Período:', trendsData.sort((a,b) => b[1] - a[1])[0][0], '', '', '', '', '']);
       
       const trendsWs = XLSX.utils.aoa_to_sheet(dashboardData);
@@ -757,11 +773,11 @@ async function exportToExcel(filters = {}) {
       // Configurar anchos
       trendsWs['!cols'] = [
         { width: 20 }, // Período
-        { width: 10 }, // Compras
+        { width: 10 }, // Ventas
         { width: 15 }, // Total
-        { width: 12 }, // Activas
-        { width: 12 }, // Inactivas
-        { width: 12 }, // Tasa Actividad
+        { width: 12 }, // Completadas
+        { width: 12 }, // Canceladas
+        { width: 12 }, // Tasa Éxito
         { width: 15 }  // Rendimiento
       ];
       
@@ -775,7 +791,7 @@ async function exportToExcel(filters = {}) {
     
     // ===== GUARDAR ARCHIVO CON NOMBRE DESCRIPTIVO =====
     const timestamp = new Date().toISOString().slice(0,16).replace(/[-:]/g, '').replace('T', '_');
-    const fileName = `Compras_Reporte_Ejecutivo_${timestamp}.xlsx`;
+    const fileName = `Ventas_Reporte_Ejecutivo_${timestamp}.xlsx`;
     
     XLSX.writeFile(wb, fileName);
     
@@ -795,7 +811,7 @@ function showExportModal() {
     <div id="exportModal" class="custom-modal">
       <div class="custom-modal-content">
         <div class="custom-modal-header">
-          <h3 style="margin: 0; font-family: 'Poppins', Arial, sans-serif; font-size: 24px; font-weight: 600;">Exportar compras</h3>
+          <h3 style="margin: 0; font-family: 'Poppins', Arial, sans-serif; font-size: 24px; font-weight: 600;">Exportar ventas</h3>
           <button class="modal-close" onclick="closeExportModal()">&times;</button>
         </div>
         
@@ -803,11 +819,11 @@ function showExportModal() {
           <div class="export-filters">
             <div class="filters-grid">           
               <div class="field-group">
-                <label for="exportProviderFilter">
-                  Proveedor:
+                <label for="exportCustomerFilter">
+                  Cliente:
                 </label>
-                <select id="exportProviderFilter" class="field-element modern-select">
-                  <option value="">Todos los proveedores</option>
+                <select id="exportCustomerFilter" class="field-element modern-select">
+                  <option value="">Todos los clientes</option>
                 </select>
               </div>
             </div>
@@ -833,8 +849,9 @@ function showExportModal() {
                 </label>
                 <select id="exportStatusFilter" class="field-element modern-select">
                   <option value="">Todos los estados</option>
-                  <option value="active">Activa</option>
-                  <option value="inactive">Inactiva</option>
+                  <option value="processing">Procesando</option>
+                  <option value="completed">Completada</option>
+                  <option value="cancelled">Cancelada</option>
                 </select>
               </div>
             </div>
@@ -873,19 +890,19 @@ function showExportModal() {
   
   document.body.insertAdjacentHTML('beforeend', modalHtml);
   
-  // Cargar proveedores en el select
-  const providerSelect = document.getElementById('exportProviderFilter');
-  if (providerSelect && providerIdToNameMap) {
-    Object.entries(providerIdToNameMap).forEach(([id, name]) => {
+  // Cargar clientes en el select
+  const customerSelect = document.getElementById('exportCustomerFilter');
+  if (customerSelect && customerIdToNameMap) {
+    Object.entries(customerIdToNameMap).forEach(([id, name]) => {
       const option = document.createElement('option');
       option.value = id;
       option.textContent = name;
-      providerSelect.appendChild(option);
+      customerSelect.appendChild(option);
     });
   }
   
   // Agregar event listeners para actualizar el preview
-  const filterInputs = ['exportSearchTerm', 'exportDateFrom', 'exportDateTo', 'exportProviderFilter', 'exportStatusFilter'];
+  const filterInputs = ['exportSearchTerm', 'exportDateFrom', 'exportDateTo', 'exportCustomerFilter', 'exportStatusFilter'];
   filterInputs.forEach(inputId => {
     const input = document.getElementById(inputId);
     if (input) {
@@ -900,37 +917,38 @@ function showExportModal() {
 
 function updateExportPreview() {
   const filters = getExportFilters();
-  const filteredPurchases = getFilteredPurchasesData(
+  const filteredSales = getFilteredSalesData(
     filters.searchTerm,
     filters.dateFrom,
     filters.dateTo,
-    filters.providerFilter,
+    filters.customerFilter,
     filters.statusFilter
   );
   
   const previewText = document.getElementById('exportPreviewText');
   if (previewText) {
-    const total = filteredPurchases.reduce((sum, p) => sum + (p.total || 0), 0);
-    const activeCount = filteredPurchases.filter(p => (p.status || p.estado || 'active') === 'active').length;
-    const inactiveCount = filteredPurchases.filter(p => (p.status || p.estado || 'active') === 'inactive').length;
+    const total = filteredSales.reduce((sum, s) => sum + (s.total || 0), 0);
+    const completedCount = filteredSales.filter(s => (s.status || s.estado || 'processing') === 'completed').length;
+    const processingCount = filteredSales.filter(s => (s.status || s.estado || 'processing') === 'processing').length;
+    const cancelledCount = filteredSales.filter(s => (s.status || s.estado || 'processing') === 'cancelled').length;
     
     previewText.innerHTML = `
       <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; text-align: center;">
         <div>
-          <div style="font-size: 24px; font-weight: bold;">${filteredPurchases.length}</div>
-          <div style="font-size: 12px; opacity: 0.8;">Compras encontradas</div>
+          <div style="font-size: 24px; font-weight: bold;">${filteredSales.length}</div>
+          <div style="font-size: 12px; opacity: 0.8;">Ventas encontradas</div>
         </div>
         <div>
           <div style="font-size: 24px; font-weight: bold;">${formatCurrency(total)}</div>
           <div style="font-size: 12px; opacity: 0.8;">Total general</div>
         </div>
         <div>
-          <div style="font-size: 20px; font-weight: bold;">${activeCount}</div>
-          <div style="font-size: 12px; opacity: 0.8;">Compras activas</div>
+          <div style="font-size: 20px; font-weight: bold;">${completedCount}</div>
+          <div style="font-size: 12px; opacity: 0.8;">Completadas</div>
         </div>
         <div>
-          <div style="font-size: 20px; font-weight: bold;">${inactiveCount}</div>
-          <div style="font-size: 12px; opacity: 0.8;">Compras inactivas</div>
+          <div style="font-size: 20px; font-weight: bold;">${cancelledCount}</div>
+          <div style="font-size: 12px; opacity: 0.8;">Canceladas</div>
         </div>
       </div>
     `;
@@ -942,7 +960,7 @@ function getExportFilters() {
     searchTerm: document.getElementById('exportSearchTerm')?.value || '',
     dateFrom: document.getElementById('exportDateFrom')?.value || '',
     dateTo: document.getElementById('exportDateTo')?.value || '',
-    providerFilter: document.getElementById('exportProviderFilter')?.value || '',
+    customerFilter: document.getElementById('exportCustomerFilter')?.value || '',
     statusFilter: document.getElementById('exportStatusFilter')?.value || ''
   };
 }

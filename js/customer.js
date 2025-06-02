@@ -1,40 +1,73 @@
 const API_CUSTOMERS = "https://backend-yy4o.onrender.com/api/customers";
+
+// Variables globales para clientes y paginación
 let allCustomers = [];
 let originalCustomers = [];
 let currentPage = 1;
 const rowsPerPage = 10;
 
-function openModal(modalId) {
-  document.getElementById(modalId).style.display = "flex";
-  // Resetear mensajes de error al abrir el modal
-  if (modalId === 'registerModal') {
-    clearValidationErrors('customerForm');
-    document.getElementById("customerForm").reset();
-  } else if (modalId === 'editModal') {
-    clearValidationErrors('editForm');
+// ===== FUNCIONES HELPER PARA FECHAS =====
+
+/**
+ * Convierte una fecha a formato YYYY-MM-DD respetando la zona horaria local
+ * @param {Date|string} date - Fecha a convertir
+ * @returns {string} Fecha en formato YYYY-MM-DD
+ */
+function formatLocalDate(date = new Date()) {
+  const dateObj = date instanceof Date ? date : new Date(date);
+  
+  const year = dateObj.getFullYear();
+  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const day = String(dateObj.getDate()).padStart(2, '0');
+  
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Obtiene la fecha actual en formato YYYY-MM-DD (zona local)
+ * @returns {string} Fecha actual en formato YYYY-MM-DD
+ */
+function getTodayLocal() {
+  return formatLocalDate(new Date());
+}
+
+/**
+ * Formatea fecha para mostrar al usuario (DD/MM/YYYY)
+ * @param {Date|string} date - Fecha a formatear
+ * @returns {string} Fecha formateada para mostrar
+ */
+function formatDateForDisplay(date) {
+  if (!date) return "Fecha no disponible";
+  
+  try {
+    // Si viene en formato YYYY-MM-DD, parsearlo correctamente
+    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      const [year, month, day] = date.split('-').map(Number);
+      const dateObj = new Date(year, month - 1, day);
+      return dateObj.toLocaleDateString('es-CO'); // Formato DD/MM/YYYY
+    }
+    
+    const dateObj = date instanceof Date ? date : new Date(date);
+    return dateObj.toLocaleDateString('es-CO'); // Formato DD/MM/YYYY
+  } catch (e) {
+    return date.toString();
   }
 }
 
-function closeModal(modalId) {
-  document.getElementById(modalId).style.display = "none";
+/**
+ * Convierte fecha de string YYYY-MM-DD a objeto Date (zona local)
+ * @param {string} dateString - Fecha en formato YYYY-MM-DD
+ * @returns {Date} Objeto Date en zona local
+ */
+function parseLocalDate(dateString) {
+  if (!dateString) return new Date();
+  
+  // Dividir la fecha para evitar problemas de zona horaria
+  const [year, month, day] = dateString.split('-').map(Number);
+  return new Date(year, month - 1, day); // month - 1 porque los meses van de 0-11
 }
 
-function formatDateForDisplay(dateString) {
-  if (!dateString) return "N/A";
-  
-  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateString)) {
-    return dateString;
-  }
-  
-  const date = new Date(dateString);
-  if (isNaN(date.getTime())) return dateString;
-  
-  const day = date.getDate().toString().padStart(2, '0');
-  const month = (date.getMonth() + 1).toString().padStart(2, '0');
-  const year = date.getFullYear();
-  
-  return `${day}/${month}/${year}`;
-}
+// ===== FUNCIONES DE VALIDACIÓN =====
 
 // Función para validar un campo y mostrar error
 function validateField(fieldId, errorMessage) {
@@ -60,7 +93,7 @@ function validateEmail(fieldId) {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   
   if (!field.value.trim()) {
-    errorElement.textContent = "El campo es obligatorio.";
+    errorElement.textContent = "El correo es obligatorio.";
     errorElement.style.display = "block";
     field.classList.add("input-error");
     return false;
@@ -76,18 +109,23 @@ function validateEmail(fieldId) {
   }
 }
 
-// Función para validar teléfono
+// Función para validar teléfono - ACTUALIZADA
 function validatePhone(fieldId) {
   const field = document.getElementById(fieldId);
   const errorElement = document.getElementById(`${fieldId}-error`);
   
   if (!field.value.trim()) {
-    errorElement.textContent = "El campo es obligatorio.";
+    errorElement.textContent = "El teléfono es obligatorio.";
     errorElement.style.display = "block";
     field.classList.add("input-error");
     return false;
   } else if (!/^\d+$/.test(field.value.trim())) {
-    errorElement.textContent = "El número de teléfono debe contener solo dígitos.";
+    errorElement.textContent = "El teléfono debe contener solo dígitos.";
+    errorElement.style.display = "block";
+    field.classList.add("input-error");
+    return false;
+  } else if (field.value.trim().length < 10) {
+    errorElement.textContent = "El teléfono debe tener al menos 10 dígitos.";
     errorElement.style.display = "block";
     field.classList.add("input-error");
     return false;
@@ -101,6 +139,8 @@ function validatePhone(fieldId) {
 // Limpiar mensajes de error
 function clearValidationErrors(formId) {
   const form = document.getElementById(formId);
+  if (!form) return;
+  
   const errorElements = form.querySelectorAll('.error-message');
   const inputElements = form.querySelectorAll('.field-element');
   
@@ -113,9 +153,95 @@ function clearValidationErrors(formId) {
   });
 }
 
+// Función para establecer validación de campos numéricos - ACTUALIZADA
+function setupPhoneNumberValidation() {
+  const phoneInputs = document.querySelectorAll('#phone, #editPhone');
+  
+  // Validación para teléfonos (solo números)
+  phoneInputs.forEach(input => {
+    input.addEventListener('keypress', function(e) {
+      if (!/^\d$/.test(e.key) && !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key)) {
+        e.preventDefault();
+      }
+    });
+    
+    input.addEventListener('input', function() {
+      this.value = this.value.replace(/\D/g, '');
+    });
+  });
+}
+
+// Desactivar validación nativa del navegador en los formularios
+function disableNativeBrowserValidation() {
+  const customerForm = document.getElementById("customerForm");
+  if (customerForm) {
+    customerForm.setAttribute("novalidate", "");
+    const inputs = customerForm.querySelectorAll("input");
+    inputs.forEach(input => {
+      input.removeAttribute("required");
+      input.removeAttribute("pattern");
+      input.removeAttribute("minlength");
+    });
+  }
+  
+  const editForm = document.getElementById("editForm");
+  if (editForm) {
+    editForm.setAttribute("novalidate", "");
+    
+    const inputs = editForm.querySelectorAll("input");
+    inputs.forEach(input => {
+      input.removeAttribute("required");
+      input.removeAttribute("pattern");
+      input.removeAttribute("minlength");
+    });
+  }
+}
+
+// ===== FUNCIONES DE UTILIDAD =====
+
+function getUserPermissions() {
+  try {
+    const userInfo = localStorage.getItem('userInfo');
+    if (!userInfo) return ['edit_customers', 'delete_customers'];
+    
+    const user = JSON.parse(userInfo);
+    return user.permissions || ['edit_customers', 'delete_customers'];
+  } catch (error) {
+    return ['edit_customers', 'delete_customers'];
+  }
+}
+
+function openModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (!modal) return;
+  
+  modal.style.display = "flex";
+  
+  if (modalId === 'registerModal') {
+    clearValidationErrors('customerForm');
+    
+    const customerForm = document.getElementById("customerForm");
+    if (customerForm) {
+      customerForm.reset();
+    }
+  } else if (modalId === 'editModal') {
+    clearValidationErrors('editForm');
+  }
+}
+
+function closeModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (!modal) return;
+  
+  modal.style.display = "none";
+}
+
+function hideLoadingIndicator() {
+  Swal.close();
+}
+
 // Función para mostrar alertas más específicas
 function showAlert({ type = 'info', title, message, icon = 'info' }) {
-  // Si tienes SweetAlert2 o similar
   if (typeof Swal !== 'undefined') {
     Swal.fire({
       icon: icon,
@@ -125,63 +251,113 @@ function showAlert({ type = 'info', title, message, icon = 'info' }) {
       confirmButtonColor: '#3085d6'
     });
   } else {
-    // Fallback con alert nativo
     alert(`${title}\n\n${message}`);
   }
 }
 
+// ===== FUNCIONES DE FORMATEO =====
+
+// ✅ NUEVA IMPLEMENTACIÓN - usando la función helper para DD/MM/YYYY
+const formatDate = (dateString) => {
+  return formatDateForDisplay(dateString);
+};
+
+// ===== FUNCIONES DE RENDERIZADO (Estructura mejorada) =====
+
 const renderCustomersTable = (page = 1) => {
   const tbody = document.getElementById("customerTableBody");
+  
+  if (!tbody) {
+    return;
+  }
+  
   tbody.innerHTML = "";
+
+  if (!allCustomers || allCustomers.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" class="text-center">
+          No hay clientes disponibles
+        </td>
+      </tr>
+    `;
+    renderPaginationControls();
+    return;
+  }
 
   const start = (page - 1) * rowsPerPage;
   const end = start + rowsPerPage;
   const customersToShow = allCustomers.slice(start, end);
 
-  customersToShow.forEach(customer => {
-    // Agregar clase CSS para cliente predeterminado
-    const isDefaultClass = customer.isDefault ? 'customer-default' : '';
-    const defaultBadge = customer.isDefault ? '<span class="default-badge">Predeterminado</span>' : '';
-    
-    tbody.innerHTML += `
-      <tr class="${isDefaultClass}">
-        <td>${customer.name} ${defaultBadge}</td>
-        <td>${customer.lastname}</td>
-        <td>${customer.phone}</td>
-        <td>${customer.email}</td>
-        <td>${customer.createdAt || formatDateForDisplay(customer.createdAt)}</td>
-        <td>
-          <label class="switch">
-            <input type="checkbox" ${customer.status === "active" ? "checked" : ""} 
-              onchange="updateCustomerStatus('${customer.id}', this.checked ? 'active' : 'inactive')">
-            <span class="slider round"></span>
-          </label>
-        </td>
-        <td>
-          <div class="action-buttons">
-            <button onclick="fillEditForm('${customer.id}')" 
-              class="icon-button edit-button" 
-              title="Editar cliente">
-              <i class="material-icons">edit</i>
-            </button>
-            <button onclick="deleteCustomer('${customer.id}')" 
-              class="icon-button delete-button" 
-              title="Eliminar cliente">
-              <i class="material-icons">delete</i>
-            </button>
-          </div>
-        </td>
-      </tr>
-    `;
-  });
+  const userPermissions = getUserPermissions();
+  const canEditCustomers = userPermissions.includes("edit_customers");
+  
+  let tableContent = '';
 
+  customersToShow.forEach((customer, index) => {
+    try {
+      const customerId = customer.id || customer._id || "";
+      const displayId = customer.id || customerId || `Cu${String(index + 1).padStart(2, '0')}`;
+      
+      // Agregar clase CSS para cliente predeterminado
+      const isDefaultClass = customer.isDefault ? 'customer-default' : '';
+      const defaultBadge = customer.isDefault ? '<span class="default-badge">Predeterminado</span>' : '';
+      const status = customer.status || "active";
+      
+      // ✅ NUEVA IMPLEMENTACIÓN - usando la función helper para formatear fecha
+      const createdDate = formatDate(customer.createdAt);
+      
+      tableContent += `
+        <tr data-customerid="${customerId}" data-index="${index}" class="${isDefaultClass}">
+          <td class="id-column">${customer.name || ''} ${defaultBadge}</td>
+          <td>${customer.lastname || ''}</td>
+          <td>${customer.phone || ''}</td>
+          <td>${customer.email || ''}</td>
+          <td>${createdDate}</td>
+          <td>
+            <label class="switch">
+              <input type="checkbox" ${status === "active" ? "checked" : ""} 
+                ${canEditCustomers && !customer.isDefault ? `onchange="updateCustomerStatus('${customerId}', this.checked ? 'active' : 'inactive')"` : 'disabled'}>
+              <span class="slider round"></span>
+            </label>
+          </td>
+          <td>
+            <div class="action-buttons">
+              <button onclick="fillEditForm('${customerId}')" class="icon-button edit-button" title="Editar cliente" ${canEditCustomers && !customer.isDefault ? '' : 'disabled'}>
+                <i class="material-icons">edit</i>
+              </button>
+              <button onclick="deleteCustomer('${customerId}')" class="icon-button delete-button" title="Eliminar cliente" ${userPermissions.includes("delete_customers") && !customer.isDefault ? '' : 'disabled'}>
+                <i class="material-icons">delete</i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    } catch (error) {
+      tableContent += `
+        <tr>
+          <td colspan="7" class="text-center text-danger">
+            Error al renderizar este cliente: ${error.message}
+          </td>
+        </tr>
+      `;
+    }
+  });
+  
+  tbody.innerHTML = tableContent;
   renderPaginationControls();
 };
 
 const renderPaginationControls = () => {
+  if (!allCustomers || allCustomers.length === 0) {
+    return;
+  }
+  
   const totalPages = Math.ceil(allCustomers.length / rowsPerPage);
   const container = document.querySelector(".page-numbers");
-  const info = document.querySelector(".pagination .page-info:nth-child(2)");
+  const info = document.querySelector(".pagination .page-info");
+  
+  if (!container) return;
 
   container.innerHTML = "";
 
@@ -204,19 +380,23 @@ const renderPaginationControls = () => {
   const nextBtn = document.createElement("button");
   nextBtn.classList.add("page-nav");
   nextBtn.innerText = "→";
-  nextBtn.disabled = currentPage === totalPages;
+  nextBtn.disabled = currentPage === totalPages || totalPages === 0;
   nextBtn.onclick = () => changePage(currentPage + 1);
   container.appendChild(nextBtn);
 
-  const startItem = (currentPage - 1) * rowsPerPage + 1;
-  const endItem = Math.min(startItem + rowsPerPage - 1, allCustomers.length);
-  info.innerHTML = `${startItem}-${endItem} de ${allCustomers.length}`;
+  if (info) {
+    const startItem = allCustomers.length > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0;
+    const endItem = Math.min(startItem + rowsPerPage - 1, allCustomers.length);
+    info.innerHTML = `${startItem}-${endItem} de ${allCustomers.length}`;
+  }
 };
 
 const changePage = (page) => {
   currentPage = page;
   renderCustomersTable(currentPage);
 };
+
+// ===== FUNCIONES DE CARGA DE DATOS =====
 
 const loadCustomersInternal = async () => {
   try {
@@ -234,15 +414,82 @@ const loadCustomersInternal = async () => {
       }
     });
     
-    const data = await res.json();
+    if (!res.ok) {
+      const data = await res.json();
+      showError(data.message || "No se pudo listar los clientes.");
+      return;
+    }
     
-    if (res.ok) {
-      originalCustomers = Array.isArray(data) ? data : [];
-      allCustomers = [...originalCustomers];
-      currentPage = 1;
-      renderCustomersTable(currentPage);
+    let data;
+    try {
+      data = await res.json();
+    } catch (error) {
+      showError("Error al listar los clientes.");
+      return;
+    }
+    
+    let customers = [];
+    
+    // Manejar diferentes estructuras de respuesta
+    if (data && data.success && data.data) {
+      customers = data.data;
+    } else if (data && typeof data === 'object' && data.customers) {
+      customers = data.customers;
+    } else if (Array.isArray(data)) {
+      customers = data;
+    } else if (data && typeof data === 'object') {
+      const arrayProps = Object.keys(data).filter(key => Array.isArray(data[key]));
+      if (arrayProps.length > 0) {
+        customers = data[arrayProps[0]];
+      } else {
+        customers = [];
+      }
     } else {
-      showError("No se pudieron listar los clientes.");
+      customers = [];
+    }
+    
+    if (!Array.isArray(customers)) {
+      customers = [];
+    }
+    
+    // ✅ NUEVA IMPLEMENTACIÓN - procesamiento de fechas mejorado
+    customers = customers.map(customer => {
+      let adaptedCustomer = {...customer};
+      
+      if (!adaptedCustomer || typeof adaptedCustomer !== 'object') {
+        return {};
+      }
+      
+      // Normalizar campos de fecha
+      if (adaptedCustomer.created_at === undefined && adaptedCustomer.createdAt !== undefined) {
+        adaptedCustomer.created_at = adaptedCustomer.createdAt;
+      } else if (adaptedCustomer.createdAt === undefined && adaptedCustomer.created_at !== undefined) {
+        adaptedCustomer.createdAt = adaptedCustomer.created_at;
+      }
+      
+      // Asegurar que tiene un estado por defecto
+      if (adaptedCustomer.status === undefined) {
+        adaptedCustomer.status = "active";
+      }
+      
+      return adaptedCustomer;
+    }).filter(customer => customer && typeof customer === 'object' && Object.keys(customer).length > 0);
+    
+    originalCustomers = customers;
+    allCustomers = [...originalCustomers];
+    currentPage = 1;
+    
+    renderCustomersTable(currentPage);
+    
+    const tbody = document.getElementById("customerTableBody");
+    if (tbody && (!tbody.children.length || tbody.innerHTML.trim() === '')) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" class="text-center">
+            No se encontraron clientes. Puede que necesite agregar un nuevo cliente o revisar su conexión.
+          </td>
+        </tr>
+      `;
     }
   } catch (err) {
     showError("Error al listar clientes");
@@ -267,23 +514,93 @@ const listCustomers = async () => {
       }
     });
     
-    const data = await res.json();
-    
     hideLoadingIndicator();
     
-    if (res.ok) {
-      originalCustomers = Array.isArray(data) ? data : [];
-      allCustomers = [...originalCustomers];
-      currentPage = 1;
-      renderCustomersTable(currentPage);
+    if (!res.ok) {
+      const data = await res.json();
+      showError(data.message || "No se pudo listar los clientes.");
+      return;
+    }
+    
+    let data;
+    try {
+      data = await res.json();
+    } catch (error) {
+      hideLoadingIndicator();
+      showError("Error al listar los clientes.");
+      return;
+    }
+    
+    let customers = [];
+    
+    // Manejar diferentes estructuras de respuesta
+    if (data && data.success && data.data) {
+      customers = data.data;
+    } else if (data && typeof data === 'object' && data.customers) {
+      customers = data.customers;
+    } else if (Array.isArray(data)) {
+      customers = data;
+    } else if (data && typeof data === 'object') {
+      const arrayProps = Object.keys(data).filter(key => Array.isArray(data[key]));
+      if (arrayProps.length > 0) {
+        customers = data[arrayProps[0]];
+      } else {
+        customers = [];
+      }
     } else {
-      showError("No se pudieron listar los clientes.");
+      customers = [];
+    }
+    
+    if (!Array.isArray(customers)) {
+      customers = [];
+    }
+    
+    // ✅ NUEVA IMPLEMENTACIÓN - procesamiento de fechas mejorado
+    customers = customers.map(customer => {
+      let adaptedCustomer = {...customer};
+      
+      if (!adaptedCustomer || typeof adaptedCustomer !== 'object') {
+        return {};
+      }
+      
+      // Normalizar campos de fecha
+      if (adaptedCustomer.created_at === undefined && adaptedCustomer.createdAt !== undefined) {
+        adaptedCustomer.created_at = adaptedCustomer.createdAt;
+      } else if (adaptedCustomer.createdAt === undefined && adaptedCustomer.created_at !== undefined) {
+        adaptedCustomer.createdAt = adaptedCustomer.created_at;
+      }
+      
+      // Asegurar que tiene un estado por defecto
+      if (adaptedCustomer.status === undefined) {
+        adaptedCustomer.status = "active";
+      }
+      
+      return adaptedCustomer;
+    }).filter(customer => customer && typeof customer === 'object' && Object.keys(customer).length > 0);
+    
+    originalCustomers = customers;
+    allCustomers = [...originalCustomers];
+    currentPage = 1;
+    
+    renderCustomersTable(currentPage);
+    
+    const tbody = document.getElementById("customerTableBody");
+    if (tbody && (!tbody.children.length || tbody.innerHTML.trim() === '')) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" class="text-center">
+            No se encontraron clientes. Puede que necesite agregar un nuevo cliente o revisar su conexión.
+          </td>
+        </tr>
+      `;
     }
   } catch (err) {
     hideLoadingIndicator();
     showError("Error al listar clientes");
   }
 };
+
+// ===== FUNCIONES DE OPERACIONES CRUD =====
 
 const registerCustomer = async () => {
   const token = localStorage.getItem("token");
@@ -292,13 +609,11 @@ const registerCustomer = async () => {
     return;
   }
   
-  // Validar campos usando las nuevas funciones
   const nameValid = validateField("name", "El nombre es obligatorio.");
   const lastnameValid = validateField("lastname", "El apellido es obligatorio.");
   const emailValid = validateEmail("email");
   const phoneValid = validatePhone("phone");
 
-  // Si algún campo no es válido, detener el proceso
   if (!nameValid || !lastnameValid || !emailValid || !phoneValid) {
     return;
   }
@@ -322,13 +637,21 @@ const registerCustomer = async () => {
         phone
       })
     });
+    
+    const data = await res.json();
+    
     if (res.status === 201 || res.ok) {
       showSuccess('El cliente ha sido registrado');
       closeModal('registerModal');
-      document.getElementById("customerForm").reset();
+      
+      const customerForm = document.getElementById("customerForm");
+      if (customerForm) {
+        customerForm.reset();
+      }
+      
       loadCustomersInternal();
     } else {
-      showError("No se pudo registrar el cliente.");
+      showError(data.message || "No se pudo registrar el cliente.");
     }
   } catch (err) {
     showError("Error al registrar cliente.");
@@ -337,8 +660,14 @@ const registerCustomer = async () => {
 
 const fillEditForm = async (id) => {
   const token = localStorage.getItem("token");
+  if (!token) {
+    showError("Inicie sesión nuevamente.");
+    return;
+  }
 
   try {
+    clearValidationErrors('editForm');
+    
     const res = await fetch(`${API_CUSTOMERS}/${id}`, {
       method: "GET",
       headers: {
@@ -348,18 +677,20 @@ const fillEditForm = async (id) => {
     });
 
     if (!res.ok) {
-      showError("Error al cargar los datos del cliente.");
+      const data = await res.json();
+      showError(data.message || "Error al cargar los datos del cliente.");
       return;
     }
 
-    const customer = await res.json();
+    const data = await res.json();
+    const customer = data.data || data;
     
     if (customer.isDefault) {
-      showInfo('Este es el cliente predeterminado del sistema. No puede ser editado ya que es necesario para el funcionamiento interno de la aplicación.',);
+      showInfo('Este es el cliente predeterminado del sistema. No puede ser editado ya que es necesario para el funcionamiento interno de la aplicación.');
       return;
     }
 
-    document.getElementById("editId").value = customer.id;
+    document.getElementById("editId").value = customer.id || customer._id;
     document.getElementById("editName").value = customer.name || "";
     document.getElementById("editLastname").value = customer.lastname || "";
     document.getElementById("editEmail").value = customer.email || "";
@@ -421,17 +752,21 @@ const updateCustomer = async (event) => {
       }),
     });
 
-    const contentType = res.headers.get("content-type");
-    if (contentType && contentType.indexOf("application/json") !== -1) {
-      if (res.ok) {
-        showSuccess('El cliente ha sido actualizado');
-        closeModal("editModal");
-        document.getElementById("editForm").reset();
-        loadCustomersInternal();
-      } else {
-        showError("No se pudo actualizar el cliente.");
+    const data = await res.json();
+
+    if (res.ok) {
+      showSuccess('El cliente ha sido actualizado');
+      closeModal("editModal");
+      
+      const editForm = document.getElementById("editForm");
+      if (editForm) {
+        editForm.reset();
       }
-    } 
+      
+      loadCustomersInternal();
+    } else {
+      showError(data.message || "No se pudo actualizar el cliente.");
+    }
   } catch (err) {
     showError("Error al actualizar cliente");
   }
@@ -444,16 +779,18 @@ const updateCustomerStatus = async (id, newStatus) => {
     return;
   }
   
-const customer = allCustomers.find(c => c.id === id);
-if (customer && customer.isDefault && newStatus === 'inactive') {
-  showInfo( 'Este cliente predeterminado no puede ser desactivado ya que es utilizado internamente por el sistema para operaciones críticas.');
-  setTimeout(() => {
-    const switchElement = document.querySelector(`input[type="checkbox"][onchange*="${id}"]`);
-    if (switchElement) switchElement.checked = true;
-  }, 100);
-  
-  return;
-}
+  const customer = allCustomers.find(c => (c.id || c._id) === id);
+  if (customer && customer.isDefault && newStatus === 'inactive') {
+    showInfo('Este cliente predeterminado no puede ser desactivado ya que es utilizado internamente por el sistema para operaciones críticas.');
+    setTimeout(() => {
+      const switchElement = document.querySelector(`tr[data-customerid="${id}"] input[type="checkbox"]`);
+      if (switchElement) switchElement.checked = true;
+    }, 100);
+    
+    return;
+  }
+
+  const switchElement = document.querySelector(`tr[data-customerid="${id}"] input[type="checkbox"]`);
 
   try {
     const res = await fetch(`${API_CUSTOMERS}/${id}/status`, {
@@ -465,22 +802,48 @@ if (customer && customer.isDefault && newStatus === 'inactive') {
       body: JSON.stringify({ status: newStatus }),
     });
 
-    const contentType = res.headers.get("content-type");
-    if (contentType && contentType.indexOf("application/json") !== -1) {
-      if (res.ok) {
-        showSuccess(`El cliente ha sido ${newStatus === 'active' ? 'activado' : 'desactivado'}`);
-        loadCustomersInternal();
-      } else {
-        showError("No se pudo actualizar el estado del cliente.");
-        
-        const switchElement = document.querySelector(`input[type="checkbox"][onchange*="${id}"]`);
-        if (switchElement) switchElement.checked = newStatus !== 'active';
+    let data;
+    try {
+      data = await res.json();
+    } catch (jsonError) {
+      data = { message: "Error en formato de respuesta" };
+    }
+
+    if (res.ok) {
+      showSuccess(`El cliente ha sido ${newStatus === 'active' ? 'activado' : 'desactivado'}`);
+      
+      if (switchElement) {
+        switchElement.checked = newStatus === 'active';
       }
-    } 
+      
+      // Actualizar el estado en los arrays de clientes
+      const customerIndex = allCustomers.findIndex(c => (c.id || c._id) === id);
+      if (customerIndex !== -1) {
+        allCustomers[customerIndex].status = newStatus;
+      }
+      
+      const originalIndex = originalCustomers.findIndex(c => (c.id || c._id) === id);
+      if (originalIndex !== -1) {
+        originalCustomers[originalIndex].status = newStatus;
+      }
+      
+    } else {
+      let errorMsg = data.message || `Error al ${newStatus === 'active' ? 'activar' : 'desactivar'} el cliente (${res.status})`;
+      if (data.error) {
+        errorMsg += `: ${data.error}`;
+      }
+      showError(errorMsg);
+      
+      if (switchElement) {
+        switchElement.checked = newStatus !== 'active';
+      }
+    }
   } catch (err) {
     showError("Error al actualizar estado del cliente");
-    const switchElement = document.querySelector(`input[type="checkbox"][onchange*="${id}"]`);
-    if (switchElement) switchElement.checked = newStatus !== 'active';
+    
+    if (switchElement) {
+      switchElement.checked = newStatus !== 'active';
+    }
   }
 };
 
@@ -491,13 +854,12 @@ const deleteCustomer = async (id) => {
     return;
   }
     
-  const customer = allCustomers.find(c => c.id === id);
+  const customer = allCustomers.find(c => (c.id || c._id) === id);
   if (customer && customer.isDefault) {
-    showInfo('El cliente predeterminado no puede ser eliminado del sistema. ',);
+    showInfo('El cliente predeterminado no puede ser eliminado del sistema.');
     return;
   }
   
-  // Confirmar antes de eliminar
   const confirmed = await showConfirm({ 
     title: "¿Estás seguro de eliminar este cliente?", 
     text: "Esta acción no se puede deshacer.", 
@@ -515,77 +877,112 @@ const deleteCustomer = async (id) => {
       }
     });
     
-    const contentType = res.headers.get("content-type");
-    if (contentType && contentType.indexOf("application/json") !== -1) {
-      if (res.ok) {
-        showSuccess('El cliente ha sido eliminado');
-        loadCustomersInternal();
-      } else {
-        showError("No se pudo eliminar el cliente");
-      }
-    } 
+    const data = await res.json();
+    
+    if (res.ok) {
+      showSuccess('El cliente ha sido eliminado');
+      loadCustomersInternal();
+    } else {
+      showError(data.message || "No se pudo eliminar el cliente");
+    }
   } catch (err) {
     showError("Error al eliminar cliente");
   }
 };
 
 const searchCustomer = () => {
-  const term = document.getElementById("searchInput").value.toLowerCase().trim();
-  allCustomers = term
-    ? originalCustomers.filter(c => 
-        c.name.toLowerCase().includes(term) || 
-        c.lastname.toLowerCase().includes(term) || 
-        c.email.toLowerCase().includes(term) ||
-        c.phone.toLowerCase().includes(term))
-    : [...originalCustomers];
+  const searchInput = document.getElementById("searchInput");
+  if (!searchInput) return;
+  
+  const term = searchInput.value.toLowerCase().trim();
+  
+  if (!originalCustomers) return;
+  
+  if (!term) {
+    allCustomers = [...originalCustomers];
+  } else {
+    allCustomers = originalCustomers.filter(c => {
+      const nameMatch = c.name && c.name.toLowerCase().includes(term);
+      const lastnameMatch = c.lastname && c.lastname.toLowerCase().includes(term);
+      const emailMatch = c.email && c.email.toLowerCase().includes(term);
+      const phoneMatch = c.phone && c.phone.toLowerCase().includes(term);
+      const idMatch = (c.id || c._id) && (c.id || c._id).toLowerCase().includes(term);
+      
+      return nameMatch || lastnameMatch || emailMatch || phoneMatch || idMatch;
+    });
+  }
+  
   currentPage = 1;
   renderCustomersTable(currentPage);
 };
 
-// Desactivar validación nativa del navegador en los formularios
-function disableNativeBrowserValidation() {
-  const customerForm = document.getElementById("customerForm");
-  if (customerForm) {
-    customerForm.setAttribute("novalidate", "");
-    const inputs = customerForm.querySelectorAll("input");
-    inputs.forEach(input => {
-      input.removeAttribute("required");
-      input.removeAttribute("pattern");
-    });
-  }
-  
-  const editForm = document.getElementById("editForm");
-  if (editForm) {
-    editForm.setAttribute("novalidate", "");
-    
-    const inputs = editForm.querySelectorAll("input");
-    inputs.forEach(input => {
-      input.removeAttribute("required");
-      input.removeAttribute("pattern");
-    });
-  }
-}
+// ===== FUNCIONES DE UTILIDAD ADICIONALES =====
 
-document.addEventListener("DOMContentLoaded", () => {
-  // Desactivar validación nativa del navegador
+const checkAuth = () => {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    Swal.fire({
+      icon: 'error',
+      title: 'No autorizado',
+      text: 'Debe iniciar sesión para acceder a esta página',
+      confirmButtonText: 'Ir a login'
+    }).then(() => {
+      window.location.href = 'index.html';
+    });
+    return false;
+  }
+  return true;
+};
+
+// ===== FUNCIONES DE INICIALIZACIÓN =====
+
+function initializeValidationEvents() {
   disableNativeBrowserValidation();
+  setupPhoneNumberValidation();
   
-  listCustomers();
-  document.getElementById("mobileAddButton").onclick = () => openModal('registerModal');
-  document.getElementById("registerButton").onclick = registerCustomer;
-  document.getElementById("searchInput").addEventListener("keyup", searchCustomer);
-
-  // Agregar validación para campos individuales en tiempo real
-  document.getElementById("name").addEventListener("blur", () => validateField("name"));
-  document.getElementById("lastname").addEventListener("blur", () => validateField("lastname"));
-  document.getElementById("email").addEventListener("blur", () => validateEmail("email"));
-  document.getElementById("phone").addEventListener("blur", () => validatePhone("phone"));
-
-  document.getElementById("editName").addEventListener("blur", () => validateField("editName"));
-  document.getElementById("editLastname").addEventListener("blur", () => validateField("editLastname"));
-  document.getElementById("editEmail").addEventListener("blur", () => validateEmail("editEmail"));
-  document.getElementById("editPhone").addEventListener("blur", () => validatePhone("editPhone"));
-
+  // Validación en tiempo real - Formulario de registro
+  const nameField = document.getElementById("name");
+  if (nameField) {
+    nameField.addEventListener("blur", () => validateField("name", "El nombre es obligatorio."));
+  }
+  
+  const lastnameField = document.getElementById("lastname");
+  if (lastnameField) {
+    lastnameField.addEventListener("blur", () => validateField("lastname", "El apellido es obligatorio."));
+  }
+  
+  const emailField = document.getElementById("email");
+  if (emailField) {
+    emailField.addEventListener("blur", () => validateEmail("email"));
+  }
+  
+  const phoneField = document.getElementById("phone");
+  if (phoneField) {
+    phoneField.addEventListener("blur", () => validatePhone("phone"));
+  }
+  
+  // Validación en tiempo real - Formulario de edición
+  const editNameField = document.getElementById("editName");
+  if (editNameField) {
+    editNameField.addEventListener("blur", () => validateField("editName", "El nombre es obligatorio."));
+  }
+  
+  const editLastnameField = document.getElementById("editLastname");
+  if (editLastnameField) {
+    editLastnameField.addEventListener("blur", () => validateField("editLastname", "El apellido es obligatorio."));
+  }
+  
+  const editEmailField = document.getElementById("editEmail");
+  if (editEmailField) {
+    editEmailField.addEventListener("blur", () => validateEmail("editEmail"));
+  }
+  
+  const editPhoneField = document.getElementById("editPhone");
+  if (editPhoneField) {
+    editPhoneField.addEventListener("blur", () => validatePhone("editPhone"));
+  }
+  
+  // Configurar formularios
   const editForm = document.getElementById("editForm");
   if (editForm) {
     editForm.addEventListener("submit", async (event) => {
@@ -593,19 +990,71 @@ document.addEventListener("DOMContentLoaded", () => {
       await updateCustomer(event);
     });
   }
+}
+
+function initializeListPage() {
+  const customerTableBody = document.getElementById("customerTableBody");
+  if (!customerTableBody) {
+    return;
+  }
   
-  // Asignar el controlador de eventos al botón de actualización
+  try {
+    listCustomers();
+  } catch (err) {
+    showError("Error al inicializar la página");
+  }
+  
+  // Configurar botones y eventos
+  const mobileAddButton = document.getElementById("mobileAddButton");
+  if (mobileAddButton) {
+    mobileAddButton.onclick = () => openModal('registerModal');
+  }
+  
+  const addUserButton = document.getElementById("addUserButton");
+  if (addUserButton) {
+    addUserButton.onclick = () => openModal('registerModal');
+  }
+  
+  const registerButton = document.getElementById("registerButton");
+  if (registerButton) {
+    registerButton.onclick = registerCustomer;
+  }
+  
   const updateButton = document.getElementById("updateButton");
   if (updateButton) {
     updateButton.addEventListener("click", async () => {
       await updateCustomer();
     });
   }
+  
+  const searchInput = document.getElementById("searchInput");
+  if (searchInput) {
+    searchInput.addEventListener("keyup", searchCustomer);
+  }
+}
+
+// ===== EVENTOS AL CARGAR EL DOM =====
+
+document.addEventListener("DOMContentLoaded", () => {
+  if (!checkAuth()) return;
+  
+  initializeValidationEvents();
+  initializeListPage();
 });
 
+// ===== FUNCIONES GLOBALES =====
+
+window.validateField = validateField;
+window.validateEmail = validateEmail;
+window.validatePhone = validatePhone;
+window.clearValidationErrors = clearValidationErrors;
+window.disableNativeBrowserValidation = disableNativeBrowserValidation;
 window.fillEditForm = fillEditForm;
 window.deleteCustomer = deleteCustomer;
 window.updateCustomerStatus = updateCustomerStatus;
 window.openModal = openModal;
 window.closeModal = closeModal;
 window.searchCustomer = searchCustomer;
+window.updateCustomer = updateCustomer;
+window.hideLoadingIndicator = hideLoadingIndicator;
+window.changePage = changePage;

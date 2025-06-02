@@ -106,6 +106,44 @@ function showLoadingStep() {
   }
 }
 
+// ===== FUNCIONES DE VALIDACIÓN =====
+
+// Función de validación de contraseña actualizada (6-12 caracteres)
+const validatePasswordForReset = (fieldId) => {
+  const password = document.getElementById(fieldId).value.trim();
+  
+  if (!password) {
+    showError("La contraseña es obligatoria.");
+    return false;
+  }
+  
+  // Validación de longitud entre 6 y 12 caracteres (igual que el backend)
+  if (password.length < 6 || password.length > 12) {
+    showError("La contraseña debe tener entre 6 y 12 caracteres.");
+    return false;
+  }
+  
+  return true;
+};
+
+// Función para validar que las contraseñas coincidan
+const validatePasswordMatch = (passwordId, confirmPasswordId) => {
+  const password = document.getElementById(passwordId).value.trim();
+  const confirmPassword = document.getElementById(confirmPasswordId).value.trim();
+  
+  if (!confirmPassword) {
+    showError("Confirma tu contraseña.");
+    return false;
+  }
+  
+  if (password !== confirmPassword) {
+    showError("Las contraseñas no coinciden.");
+    return false;
+  }
+  
+  return true;
+};
+
 // ===== FUNCIONES DE API =====
 
 // Verificación de email con API
@@ -126,28 +164,12 @@ async function verifyEmail(email) {
     
     clearTimeout(timeoutId);
     
-    try {
-      const data = await response.json();
-      return { status: response.status, data };
-    } catch (jsonError) {
-      return { 
-        status: response.status, 
-        data: { 
-          message: response.status === 200 
-            ? "Correo verificado, pero hubo un error al leer la respuesta" 
-            : "No se pudo procesar la respuesta del servidor" 
-        } 
-      };
-    }
+    const data = await response.json();
+    return { status: response.status, data };
+    
   } catch (error) {
     console.error("Error al verificar correo:", error);
-    return { 
-      status: 200, 
-      data: { 
-        message: "Correo verificado (simulado)", 
-        simulated: true 
-      } 
-    };
+    throw error;
   }
 }
 
@@ -169,28 +191,12 @@ async function resetPassword(email, newPassword) {
     
     clearTimeout(timeoutId);
     
-    try {
-      const data = await response.json();
-      return { status: response.status, data };
-    } catch (jsonError) {
-      return { 
-        status: response.status, 
-        data: { 
-          message: response.status === 200 
-            ? "Contraseña actualizada, pero hubo un error al leer la respuesta" 
-            : "No se pudo procesar la respuesta del servidor" 
-        } 
-      };
-    }
+    const data = await response.json();
+    return { status: response.status, data };
+    
   } catch (error) {
     console.error("Error al restablecer contraseña:", error);
-    return { 
-      status: 200, 
-      data: { 
-        message: "Contraseña actualizada (simulado)", 
-        simulated: true 
-      } 
-    };
+    throw error;
   }
 }
 
@@ -216,27 +222,21 @@ async function verifyUserEmail() {
       // Ocultar indicador de carga
       hideLoadingIndicator();
       
-      if (verifyResult.simulated || verifyResult.status === 200) {
+      if (verifyResult.status === 200) {
         const passwordStep = document.getElementById('step-password');
         if (passwordStep) {
           passwordStep.setAttribute('data-email', email);
         }
         
         showPasswordStep();
+      } else if (verifyResult.status === 404) {
+        showError('El correo no está registrado en nuestro sistema');
       } else {
-        // Mostrar error con SweetAlert
-        showError(verifyResult.data?.message || 'El correo no está registrado en nuestro sistema');
+        showError(verifyResult.data?.message || 'Error al verificar el correo');
       }
     } catch (error) {
-      // Ocultar indicador de carga
       hideLoadingIndicator();
-      
-      const passwordStep = document.getElementById('step-password');
-      if (passwordStep) {
-        passwordStep.setAttribute('data-email', email);
-      }
-      
-      showPasswordStep();
+      showError('Error de conexión. Por favor, verifica tu conexión a internet e inténtalo de nuevo.');
     }
     
   } catch (error) {
@@ -251,8 +251,8 @@ async function verifyUserEmail() {
 // Función principal de cambio de contraseña
 async function changePassword() {
   try {
-    // Validar contraseñas usando las funciones de validación
-    const passwordValid = validatePassword('newPassword', 6);
+    // Validar contraseñas usando las funciones de validación actualizadas
+    const passwordValid = validatePasswordForReset('newPassword');
     const confirmValid = validatePasswordMatch('newPassword', 'confirmPassword');
     
     // Si algún campo no es válido, detener el proceso
@@ -283,23 +283,21 @@ async function changePassword() {
       // Ocultar indicador de carga
       hideLoadingIndicator();
       
-      if (resetResult.simulated || resetResult.status === 200) {
+      if (resetResult.status === 200) {
         // Mostrar mensaje de éxito
-        showSuccess('¡Contraseña actualizada!');
+        showSuccess('¡Contraseña actualizada exitosamente!');
         // Mostrar paso de éxito
         showSuccessStep();
+      } else if (resetResult.status === 400) {
+        showError(resetResult.data?.message || 'Los datos proporcionados no son válidos');
+      } else if (resetResult.status === 404) {
+        showError('Usuario no encontrado');
       } else {
-        // Mostrar error
         showError(resetResult.data?.message || 'No se pudo actualizar la contraseña. Inténtalo de nuevo más tarde.');
       }
     } catch (error) {
-      // Ocultar indicador de carga
       hideLoadingIndicator();
-      
-      // Mostrar mensaje de éxito (simulado en caso de error)
-      showSuccess('¡Contraseña actualizada!');
-      // Mostrar paso de éxito
-      showSuccessStep();
+      showError('Error de conexión. Por favor, verifica tu conexión a internet e inténtalo de nuevo.');
     }
     
   } catch (error) {
@@ -330,7 +328,7 @@ function initializeApp() {
     
     const newPassword = document.getElementById('newPassword');
     if (newPassword) {
-      newPassword.addEventListener("blur", () => validatePassword('newPassword', 6));
+      newPassword.addEventListener("blur", () => validatePasswordForReset('newPassword'));
       // Validar también la confirmación cuando cambia la contraseña
       newPassword.addEventListener("input", () => {
         const confirmField = document.getElementById('confirmPassword');

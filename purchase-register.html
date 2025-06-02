@@ -30,7 +30,7 @@
           <li><a href="user.html"><i class="material-icons">person</i><span>USUARIO</span></a></li>
           <li class="divider-menu-h"></li>
           <li>
-            <a href="#" class="btn-subMenu"><i class="material-icons">work</i><span>COMPRAS</span><span class="material-icons arrow">chevron_left</span></a>
+            <a href="#" class="btn-subMenu"><i class="material-icons">work</i><span>COMPRAS</span><span class="material-icons arrow">expand_more</span></a>
             <ul class="sub-menu-options">
                 <li><a href="category.html"><i class="material-icons">label</i><span>CATEGORÍAS</span></a></li>
                 <li><a href="providers.html"><i class="material-icons">local_shipping</i><span>PROVEEDORES</span></a></li>
@@ -40,7 +40,7 @@
           </li>
           <li class="divider-menu-h"></li>
           <li>
-            <a href="#" class="btn-subMenu"><i class="material-icons">attach_money</i><span>VENTAS</span><span class="material-icons arrow">chevron_left</span></a>
+            <a href="#" class="btn-subMenu"><i class="material-icons">attach_money</i><span>VENTAS</span><span class="material-icons arrow">expand_more</span></a>
             <ul class="sub-menu-options">
               <li><a href="customer.html"><i class="material-icons">people</i><span>CLIENTES</span></a></li>
               <li><a href="branches.html"><i class="material-icons">store</i><span>SUCURSALES</span></a></li>
@@ -49,7 +49,7 @@
           </li>
           <li class="divider-menu-h"></li>
           <li>
-            <a href="#" class="btn-subMenu"><i class="material-icons">settings</i><span>CONFIGURACIÓN</span><span class="material-icons arrow">chevron_left</span></a>
+            <a href="#" class="btn-subMenu"><i class="material-icons">settings</i><span>CONFIGURACIÓN</span><span class="material-icons arrow">expand_more</span></a>
             <ul class="sub-menu-options">
               <li><a href="role.html"><i class="material-icons">assignment_ind</i><span>ROLES</span></a></li>
               <li><a href="permission.html"><i class="material-icons">lock_person</i><span>PERMISOS</span></a></li>
@@ -60,27 +60,34 @@
     </div>
   </section>
 
-  <header class="dashboard-header">
-    <button class="open-menu-btn btn-menu"><i class="material-icons">menu</i></button>
-    <div class="user-dropdown-container">
-      <div class="user-info" id="userDropdownToggle">
-        <i class="material-icons user-icon">account_circle</i>
-        <span class="user-name" id="loggedUserName">Usuario</span>
-        <i class="material-icons arrow-icon">expand_more</i>
-      </div>
-      <div class="user-dropdown-menu" id="userDropdownMenu">
-        <a href="profile.html" class="dropdown-item">
-          <i class="material-icons">person</i>
-          <span>Mi Perfil</span>
-        </a>
-        <div class="dropdown-divider"></div>
-        <a href="#" class="dropdown-item" onclick="logout()">
-          <i class="material-icons">logout</i>
-          <span>Cerrar Sesión</span>
-        </a>
-      </div>
-    </div>
-  </header>
+<header class="dashboard-header">
+        <button class="open-menu-btn btn-menu">
+            <i class="material-icons">menu</i>
+        </button>
+            <div class="userProfileSection" id="dashboardHeader">
+                <div class="user-info" id="userDropdownToggle">
+                    <i class="material-icons user-icon">account_circle</i>
+                    <span class="user-name" id="loggedUserName">Cargando...</span>
+                    <i class="material-icons arrow-icon">expand_more</i>
+                </div>
+                
+                <div class="user-dropdown-menu" id="userDropdownMenu">
+                    <div class="user-profile-info">
+                        <h4 id="dropdownUserName">Cargando...</h4>
+                        <span id="dropdownUserEmail">-</span>
+                        <span id="dropdownUserRole">-</span>
+                    </div>
+                    
+                    <div class="dropdown-divider"></div>
+                    
+                    <a href="#" class="dropdown-item" onclick="logout()">
+                        <i class="material-icons">logout</i>
+                        <span>Cerrar Sesión</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
 
   <main class="main-content">
     <div class="container">
@@ -139,7 +146,7 @@
             <div class="purchase-buttons-group">
               <div class="purchase-total-product">
                 <label>Total del producto:</label>
-                <span id="product-total">0</span>
+                <span id="product-total">$0</span>
               </div>
             </div>
             
@@ -162,13 +169,12 @@
               <tr>
                 <th>Producto</th>
                 <th>Cant.</th>
-                <th>Precio Compra
+                <th>Precio Compra</th>
                 <th>Total</th>
                 <th>Acción</th>
               </tr>
             </thead>
             <tbody id="modal-product-list">
-              <!-- Los productos se añadirán aquí -->
             </tbody>
           </table>
           <div id="productItemsList-error" class="error-message text-center" style="display:none;">
@@ -178,7 +184,7 @@
           <div class="purchase-modal-footer">
             <button id="registerButton" class="add-button">Guardar</button>
             <div class="purchase-total">
-              Total: <span id="totalAmount">0</span>
+              Total: <span id="totalAmount">$0</span>
             </div>
           </div>
         </div>
@@ -188,5 +194,12 @@
   
   <script src="js/menu.js"></script>
   <script src="js/purchases.js"></script>
+  <script src="js/profile.js"></script>
+
+   <script>
+  document.addEventListener('DOMContentLoaded', function() {
+      const userHeader = new UserHeaderIntegrated('dashboardHeader');
+  });
+  </script>
 </body>
 </html>
