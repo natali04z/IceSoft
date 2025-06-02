@@ -90,7 +90,7 @@ function closeModal(modalId) {
   }
 }
 
-// Renderizar tabla de categorías
+// ===== FUNCIÓN PRINCIPAL DE RENDERIZADO CON PAGINADO MEJORADO =====
 const renderCategoriesTable = (page = 1) => {
   const tbody = document.getElementById("categoryTableBody");
   
@@ -102,66 +102,89 @@ const renderCategoriesTable = (page = 1) => {
   tbody.innerHTML = "";
 
   if (!allCategories || allCategories.length === 0) {
-    console.warn("No hay categorías para mostrar");
-    tbody.innerHTML = `<tr><td colspan="4" class="text-center">No hay categorías disponibles</td></tr>`;
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="4" class="text-center">
+          No hay categorías disponibles
+        </td>
+      </tr>
+    `;
+    renderPaginationControls();
     return;
   }
 
+  // LÓGICA DE PAGINADO: Calcular elementos a mostrar
   const start = (page - 1) * rowsPerPage;
   const end = start + rowsPerPage;
   const categoriesToShow = allCategories.slice(start, end);
 
   const userPermissions = getUserPermissions();
   const canEditCategories = userPermissions.includes("edit_categories");
+  
+  let tableContent = '';
 
-  categoriesToShow.forEach(category => {
-    tbody.innerHTML += `
-      <tr>
-        <td>${category.id || ''}</td>
-        <td>${category.name || ''}</td>
-        <td>
-          <label class="switch">
-            <input type="checkbox" ${category.status === "active" ? "checked" : ""} 
-              ${canEditCategories ? `onchange="updateCategoryStatus('${category._id}', this.checked ? 'active' : 'inactive')"` : 'disabled'}>
-            <span class="slider round"></span>
-          </label>
-        </td>
-        <td>
-          <div class="action-buttons">
-            <button onclick="fillEditForm('${category._id}')" class="icon-button edit-button" title="Editar" ${canEditCategories ? '' : 'disabled'}>
-              <i class="material-icons">edit</i>
-            </button>
-            <button onclick="deleteCategory('${category._id}')" class="icon-button delete-button" title="Eliminar" ${userPermissions.includes("delete_categories") ? '' : 'disabled'}>
-              <i class="material-icons">delete</i>
-            </button>
-          </div>
-        </td>
-      </tr>
-    `;
+  // Renderizar solo los elementos de la página actual
+  categoriesToShow.forEach((category, index) => {
+    try {
+      const categoryId = category._id || "";
+      const displayId = category.id || categoryId || `Cat${String(index + 1).padStart(2, '0')}`;
+      const categoryName = category.name || "Sin nombre";
+      const status = category.status || "inactive";
+      
+      tableContent += `
+        <tr data-id="${categoryId}" data-index="${index}">
+          <td class="id-column">${displayId}</td>
+          <td>${categoryName}</td>
+          <td>
+            <label class="switch">
+              <input type="checkbox" ${status === "active" ? "checked" : ""} 
+                ${canEditCategories ? `onchange="updateCategoryStatus('${categoryId}', this.checked ? 'active' : 'inactive')"` : 'disabled'}>
+              <span class="slider round"></span>
+            </label>
+          </td>
+          <td>
+            <div class="action-buttons">
+              <button onclick="fillEditForm('${categoryId}')" class="icon-button edit-button" title="Editar" ${canEditCategories ? '' : 'disabled'}>
+                <i class="material-icons">edit</i>
+              </button>
+              <button onclick="deleteCategory('${categoryId}')" class="icon-button delete-button" title="Eliminar" ${userPermissions.includes("delete_categories") ? '' : 'disabled'}>
+                <i class="material-icons">delete</i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    } catch (error) {
+      tableContent += `
+        <tr>
+          <td colspan="4" class="text-center text-danger">
+            Error al renderizar esta categoría: ${error.message}
+          </td>
+        </tr>
+      `;
+    }
   });
-
-  renderPaginationControls();
+  
+  tbody.innerHTML = tableContent;
+  renderPaginationControls(); // Renderizar controles de paginación
 };
 
-// Renderizar controles de paginación
+// ===== FUNCIÓN DE CONTROLES DE PAGINACIÓN MEJORADA =====
 const renderPaginationControls = () => {
   if (!allCategories || allCategories.length === 0) {
-    console.warn("No hay categorías para paginar");
     return;
   }
   
+  // Calcular total de páginas
   const totalPages = Math.ceil(allCategories.length / rowsPerPage);
   const container = document.querySelector(".page-numbers");
-  const info = document.querySelector(".pagination .page-info:nth-child(2)");
+  const info = document.querySelector(".pagination .page-info");
   
-  if (!container || !info) {
-    console.error("Elementos de paginación no encontrados en el DOM");
-    return;
-  }
+  if (!container) return;
 
   container.innerHTML = "";
 
-  // Botón anterior
+  // Botón "Anterior"
   const prevBtn = document.createElement("button");
   prevBtn.classList.add("page-nav");
   prevBtn.innerText = "←";
@@ -179,25 +202,29 @@ const renderPaginationControls = () => {
     container.appendChild(btn);
   }
 
-  // Botón siguiente
+  // Botón "Siguiente"
   const nextBtn = document.createElement("button");
   nextBtn.classList.add("page-nav");
   nextBtn.innerText = "→";
-  nextBtn.disabled = currentPage === totalPages;
+  nextBtn.disabled = currentPage === totalPages || totalPages === 0;
   nextBtn.onclick = () => changePage(currentPage + 1);
   container.appendChild(nextBtn);
 
-  const startItem = (currentPage - 1) * rowsPerPage + 1;
-  const endItem = Math.min(startItem + rowsPerPage - 1, allCategories.length);
-  info.innerHTML = `${startItem}-${endItem} de ${allCategories.length}`;
+  // Información de paginación (ej: "1-10 de 50")
+  if (info) {
+    const startItem = allCategories.length > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0;
+    const endItem = Math.min(startItem + rowsPerPage - 1, allCategories.length);
+    info.innerHTML = `${startItem}-${endItem} de ${allCategories.length}`;
+  }
 };
 
-// Cambiar de página
+// ===== FUNCIÓN PARA CAMBIAR DE PÁGINA =====
 const changePage = (page) => {
   currentPage = page;
   renderCategoriesTable(currentPage);
 };
 
+// Cargar categorías sin indicador de carga (para actualizaciones internas)
 const loadCategoriesInternal = async () => {
   try {
     const token = localStorage.getItem("token");
@@ -218,25 +245,38 @@ const loadCategoriesInternal = async () => {
     
     if (res.ok) {
       originalCategories = data.categories || data;
-
-      if (originalCategories.length > 0) {
+      
+      // Verificar si originalCategories es un array válido
+      if (!Array.isArray(originalCategories)) {
+        originalCategories = [];
       }
       
       allCategories = [...originalCategories];
       currentPage = 1;
       renderCategoriesTable(currentPage);
+      
+      // Mostrar mensaje si no hay categorías
+      const tbody = document.getElementById("categoryTableBody");
+      if (tbody && (!tbody.children.length || tbody.innerHTML.trim() === '')) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="4" class="text-center">
+              No se encontraron categorías. Puede que necesite agregar una nueva categoría o revisar su conexión.
+            </td>
+          </tr>
+        `;
+      }
     } else {
       showError(data.message || "No se pudo listar las categorías.");
     }
   } catch (err) {
-    showError("Error al listar las categorias.");
+    showError("Error al listar las categorías.");
   }
 };
 
 // Listar categorías con indicador de carga (solo para carga inicial)
 const listCategories = async () => {
   try {
-    
     const token = localStorage.getItem("token");
     if (!token) {
       showError("Inicie sesión nuevamente.");
@@ -259,13 +299,27 @@ const listCategories = async () => {
     
     if (res.ok) {
       originalCategories = data.categories || data;
-
-      if (originalCategories.length > 0) {
+      
+      // Verificar si originalCategories es un array válido
+      if (!Array.isArray(originalCategories)) {
+        originalCategories = [];
       }
       
       allCategories = [...originalCategories];
       currentPage = 1;
       renderCategoriesTable(currentPage);
+      
+      // Mostrar mensaje si no hay categorías
+      const tbody = document.getElementById("categoryTableBody");
+      if (tbody && (!tbody.children.length || tbody.innerHTML.trim() === '')) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="4" class="text-center">
+              No se encontraron categorías. Puede que necesite agregar una nueva categoría o revisar su conexión.
+            </td>
+          </tr>
+        `;
+      }
     } else {
       showError(data.message || "No se pudo listar las categorías.");
     }
@@ -452,7 +506,6 @@ const updateCategoryStatus = async (id, status) => {
     
     if (res.ok) {
       showSuccess(`La categoría ha sido ${status === 'active' ? 'activada' : 'desactivada'}`);
-  
       loadCategoriesInternal();
     } else {
       let errorMsg = data.message || `No se pudo ${status === 'active' ? 'activar' : 'desactivar'} la categoría.`;
@@ -513,7 +566,7 @@ const deleteCategory = async (id) => {
   }
 };
 
-// Buscar categoría
+// ===== FUNCIÓN DE BÚSQUEDA CON PAGINADO =====
 const searchCategory = () => {
   const searchInput = document.getElementById("searchInput");
   
@@ -529,12 +582,19 @@ const searchCategory = () => {
     return;
   }
   
-  allCategories = term
-    ? originalCategories.filter(c => 
-        (c.name && c.name.toLowerCase().includes(term))
-      )
-    : [...originalCategories];
+  if (!term) {
+    allCategories = [...originalCategories];
+  } else {
+    // Filtrar categorías según el término de búsqueda
+    allCategories = originalCategories.filter(category => {
+      const nameMatch = category.name && category.name.toLowerCase().includes(term);
+      const idMatch = category.id && category.id.toLowerCase().includes(term);
+      
+      return nameMatch || idMatch;
+    });
+  }
   
+  // Resetear a la primera página después de una búsqueda
   currentPage = 1;
   renderCategoriesTable(currentPage);
 };
@@ -622,3 +682,4 @@ window.updateCategoryStatus = updateCategoryStatus;
 window.deleteCategory = deleteCategory;
 window.openModal = openModal;
 window.closeModal = closeModal;
+window.changePage = changePage;

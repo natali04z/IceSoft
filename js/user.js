@@ -39,7 +39,7 @@ function validateField(fieldId, errorMessage) {
   }
 }
 
-// Función para validar teléfono
+// Función para validar teléfono - ACTUALIZADA
 function validatePhone(fieldId) {
   const field = document.getElementById(fieldId);
   const errorElement = document.getElementById(`${fieldId}-error`);
@@ -51,6 +51,11 @@ function validatePhone(fieldId) {
     return false;
   } else if (!/^\d+$/.test(field.value.trim())) {
     errorElement.textContent = "El teléfono debe contener solo dígitos.";
+    errorElement.style.display = "block";
+    field.classList.add("input-error");
+    return false;
+  } else if (field.value.trim().length < 10) {
+    errorElement.textContent = "El teléfono debe tener al menos 10 dígitos.";
     errorElement.style.display = "block";
     field.classList.add("input-error");
     return false;
@@ -199,10 +204,11 @@ function closeModal(modalId) {
   document.getElementById(modalId).style.display = "none";
 }
 
-// Configurar validación para teléfonos
+// Función para establecer validación de campos numéricos - ACTUALIZADA
 function setupPhoneNumberValidation() {
   const phoneInputs = document.querySelectorAll('#contact_number, #editContact');
   
+  // Validación para teléfonos (solo números)
   phoneInputs.forEach(input => {
     input.addEventListener('keypress', function(e) {
       if (!/^\d$/.test(e.key) && !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key)) {
@@ -210,68 +216,113 @@ function setupPhoneNumberValidation() {
       }
     });
     
-    // Limpiar el input si de alguna manera entran caracteres no numéricos
     input.addEventListener('input', function() {
       this.value = this.value.replace(/\D/g, '');
     });
   });
 }
 
-// ===== FUNCIONES DE RENDERIZADO =====
-
-// Renderizar tabla de usuarios - SIN botones deshabilitados
+// ===== FUNCIÓN PRINCIPAL DE RENDERIZADO CON PAGINADO MEJORADO =====
 const renderUsersTable = (page = 1) => {
   const tbody = document.getElementById("userTableBody");
+  
+  if (!tbody) {
+    console.error("Elemento userTableBody no encontrado en el DOM");
+    return;
+  }
+  
   tbody.innerHTML = "";
 
+  if (!allUsers || allUsers.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" class="text-center">
+          No hay usuarios disponibles
+        </td>
+      </tr>
+    `;
+    renderPaginationControls();
+    return;
+  }
+
+  // LÓGICA DE PAGINADO: Calcular elementos a mostrar
   const start = (page - 1) * rowsPerPage;
   const end = start + rowsPerPage;
   const usersToShow = allUsers.slice(start, end);
 
-  usersToShow.forEach(user => {
-    const roleName = user.role?.displayName || user.role?.name || "No Rol";
-    const isCurrentUser = user._id === getCurrentUserId();
-    const currentUserClass = isCurrentUser ? 'current-user' : '';
-    
-    tbody.innerHTML += `
-      <tr class="${currentUserClass}">
-        <td>${user.name}</td>
-        <td>${user.lastname}</td>
-        <td>${user.contact_number}</td>
-        <td>${user.email}</td>
-        <td>${roleName}</td>
-        <td>
-          <label class="switch">
-            <input type="checkbox" ${user.status === "active" ? "checked" : ""} 
-              onchange="updateUserStatus('${user._id}', this.checked ? 'active' : 'inactive')">
-            <span class="slider round"></span>
-          </label>
-        </td>
-        <td>
-          <div class="action-buttons">
-            <button onclick="fillEditForm('${user._id}')" class="icon-button edit-button" title="Editar usuario">
-              <i class="material-icons">edit</i>
-            </button>
-            <button onclick="deleteUser('${user._id}')" class="icon-button delete-button" title="Eliminar usuario">
-              <i class="material-icons">delete</i>
-            </button>
-          </div>
-        </td>
-      </tr>`;
-  });
+  let tableContent = '';
 
-  renderPaginationControls();
+  // Renderizar solo los elementos de la página actual
+  usersToShow.forEach((user, index) => {
+    try {
+      const userId = user._id || "";
+      const userName = user.name || "Sin nombre";
+      const userLastname = user.lastname || "Sin apellido";
+      const userPhone = user.contact_number || "Sin teléfono";
+      const userEmail = user.email || "Sin email";
+      
+      const roleName = user.role?.displayName || user.role?.name || "No Rol";
+      const isCurrentUser = user._id === getCurrentUserId();
+      const currentUserClass = isCurrentUser ? 'current-user' : '';
+      const status = user.status || "inactive";
+      
+      tableContent += `
+        <tr class="${currentUserClass}" data-id="${userId}" data-index="${index}">
+          <td>${userName}</td>
+          <td>${userLastname}</td>
+          <td>${userPhone}</td>
+          <td>${userEmail}</td>
+          <td>${roleName}</td>
+          <td>
+            <label class="switch">
+              <input type="checkbox" ${status === "active" ? "checked" : ""} 
+                onchange="updateUserStatus('${userId}', this.checked ? 'active' : 'inactive')">
+              <span class="slider round"></span>
+            </label>
+          </td>
+          <td>
+            <div class="action-buttons">
+              <button onclick="fillEditForm('${userId}')" class="icon-button edit-button" title="Editar usuario">
+                <i class="material-icons">edit</i>
+              </button>
+              <button onclick="deleteUser('${userId}')" class="icon-button delete-button" title="Eliminar usuario">
+                <i class="material-icons">delete</i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    } catch (error) {
+      tableContent += `
+        <tr>
+          <td colspan="7" class="text-center text-danger">
+            Error al renderizar este usuario: ${error.message}
+          </td>
+        </tr>
+      `;
+    }
+  });
+  
+  tbody.innerHTML = tableContent;
+  renderPaginationControls(); // Renderizar controles de paginación
 };
 
-// Renderizar controles de paginación
+// ===== FUNCIÓN DE CONTROLES DE PAGINACIÓN MEJORADA =====
 const renderPaginationControls = () => {
+  if (!allUsers || allUsers.length === 0) {
+    return;
+  }
+  
+  // Calcular total de páginas
   const totalPages = Math.ceil(allUsers.length / rowsPerPage);
   const container = document.querySelector(".page-numbers");
-  const info = document.querySelector(".pagination .page-info:nth-child(2)");
+  const info = document.querySelector(".pagination .page-info");
+  
+  if (!container) return;
 
   container.innerHTML = "";
 
-  // Botón anterior
+  // Botón "Anterior"
   const prevBtn = document.createElement("button");
   prevBtn.classList.add("page-nav");
   prevBtn.innerText = "←";
@@ -289,20 +340,23 @@ const renderPaginationControls = () => {
     container.appendChild(btn);
   }
 
-  // Botón siguiente
+  // Botón "Siguiente"
   const nextBtn = document.createElement("button");
   nextBtn.classList.add("page-nav");
   nextBtn.innerText = "→";
-  nextBtn.disabled = currentPage === totalPages;
+  nextBtn.disabled = currentPage === totalPages || totalPages === 0;
   nextBtn.onclick = () => changePage(currentPage + 1);
   container.appendChild(nextBtn);
 
-  const startItem = (currentPage - 1) * rowsPerPage + 1;
-  const endItem = Math.min(startItem + rowsPerPage - 1, allUsers.length);
-  info.innerHTML = `${startItem}-${endItem} de ${allUsers.length}`;
+  // Información de paginación (ej: "1-10 de 50")
+  if (info) {
+    const startItem = allUsers.length > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0;
+    const endItem = Math.min(startItem + rowsPerPage - 1, allUsers.length);
+    info.innerHTML = `${startItem}-${endItem} de ${allUsers.length}`;
+  }
 };
 
-// Cambiar de página
+// ===== FUNCIÓN PARA CAMBIAR DE PÁGINA =====
 const changePage = (page) => {
   currentPage = page;
   renderUsersTable(currentPage);
@@ -325,7 +379,7 @@ const getCurrentUserId = () => {
   }
 };
 
-// Cargar roles desde el backend - CORREGIDO
+// Cargar roles desde el backend
 const loadRoles = async () => {
   try {
     const token = localStorage.getItem("token");
@@ -400,7 +454,7 @@ const loadRoles = async () => {
 
 // ===== FUNCIONES DE API =====
 
-// Función interna para cargar usuarios - CORREGIDO
+// Función interna para cargar usuarios sin indicador de carga
 const loadUsersInternal = async () => {
   try {
     const token = localStorage.getItem("token");
@@ -422,6 +476,11 @@ const loadUsersInternal = async () => {
     if (res.ok) {
       originalUsers = data.users || data;
       
+      // Verificar si originalUsers es un array válido
+      if (!Array.isArray(originalUsers)) {
+        originalUsers = [];
+      }
+      
       // Añadir displayName a los roles si no lo tienen
       originalUsers = originalUsers.map(user => {
         if (user.role) {
@@ -440,6 +499,18 @@ const loadUsersInternal = async () => {
       allUsers = [...originalUsers];
       currentPage = 1;
       renderUsersTable(currentPage);
+      
+      // Mostrar mensaje si no hay usuarios
+      const tbody = document.getElementById("userTableBody");
+      if (tbody && (!tbody.children.length || tbody.innerHTML.trim() === '')) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="text-center">
+              No se encontraron usuarios. Puede que necesite agregar un nuevo usuario o revisar su conexión.
+            </td>
+          </tr>
+        `;
+      }
     } else {
       showError(data.message || "No tienes permisos para listar usuarios.");
     }
@@ -474,6 +545,11 @@ const listUsers = async () => {
     if (res.ok) {
       originalUsers = data.users || data;
       
+      // Verificar si originalUsers es un array válido
+      if (!Array.isArray(originalUsers)) {
+        originalUsers = [];
+      }
+      
       // Añadir displayName a los roles si no lo tienen
       originalUsers = originalUsers.map(user => {
         if (user.role) {
@@ -492,6 +568,18 @@ const listUsers = async () => {
       allUsers = [...originalUsers];
       currentPage = 1;
       renderUsersTable(currentPage);
+      
+      // Mostrar mensaje si no hay usuarios
+      const tbody = document.getElementById("userTableBody");
+      if (tbody && (!tbody.children.length || tbody.innerHTML.trim() === '')) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="text-center">
+              No se encontraron usuarios. Puede que necesite agregar un nuevo usuario o revisar su conexión.
+            </td>
+          </tr>
+        `;
+      }
     } else {
       showError(data.message || "No tienes permisos para listar usuarios.");
     }
@@ -542,8 +630,8 @@ const registerUser = async () => {
     const data = await res.json();
 
     if (res.status === 201 || res.ok) {
-      if (data.user && data.user.role) {
-        const registeredUser = data.user;
+      if (data.data && data.data.role) {
+        const registeredUser = data.data;
         
         if (typeof registeredUser.role === 'string') {
           const roleName = registeredUser.role;
@@ -556,7 +644,13 @@ const registerUser = async () => {
         }
       }
 
-      showSuccess('El usuario ha sido registrado');
+      // Verificar si el email fue enviado
+      if (data.emailSent) {
+        showSuccess('El usuario ha sido registrado y las credenciales han sido enviadas por correo electrónico');
+      } else {
+        showSuccess('El usuario ha sido registrado (no se pudo enviar el correo de notificación)');
+      }
+      
       closeModal('registerModal');
       document.getElementById("userForm").reset();
       loadUsersInternal();
@@ -811,15 +905,41 @@ const deleteUser = async (id) => {
   }
 };
 
-// Buscar usuario
+// ===== FUNCIÓN DE BÚSQUEDA CON PAGINADO =====
 const searchUser = () => {
-  const term = document.getElementById("searchInput").value.toLowerCase().trim();
-  allUsers = term
-    ? originalUsers.filter(u => 
-        u.name.toLowerCase().includes(term) || 
-        u.email.toLowerCase().includes(term) ||
-        u.lastname.toLowerCase().includes(term))
-    : [...originalUsers];
+  const searchInput = document.getElementById("searchInput");
+  
+  if (!searchInput) {
+    console.error("Elemento searchInput no encontrado");
+    return;
+  }
+  
+  const term = searchInput.value.toLowerCase().trim();
+  
+  if (!originalUsers) {
+    console.error("Array originalUsers no inicializado");
+    return;
+  }
+  
+  if (!term) {
+    allUsers = [...originalUsers];
+  } else {
+    // Filtrar usuarios según el término de búsqueda
+    allUsers = originalUsers.filter(user => {
+      const nameMatch = user.name && user.name.toLowerCase().includes(term);
+      const lastnameMatch = user.lastname && user.lastname.toLowerCase().includes(term);
+      const emailMatch = user.email && user.email.toLowerCase().includes(term);
+      const phoneMatch = user.contact_number && user.contact_number.includes(term);
+      const roleMatch = user.role && (
+        (user.role.name && user.role.name.toLowerCase().includes(term)) ||
+        (user.role.displayName && user.role.displayName.toLowerCase().includes(term))
+      );
+      
+      return nameMatch || lastnameMatch || emailMatch || phoneMatch || roleMatch;
+    });
+  }
+  
+  // Resetear a la primera página después de una búsqueda
   currentPage = 1;
   renderUsersTable(currentPage);
 };
@@ -838,6 +958,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   try {
     await loadRoles();
   } catch (error) {
+    // Manejo silencioso del error
   }
   
   // Luego cargar los usuarios
@@ -881,11 +1002,30 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // Validación para formulario de registro
-  document.getElementById("name").addEventListener("blur", () => validateField("name", "El nombre es obligatorio."));
-  document.getElementById("lastname").addEventListener("blur", () => validateField("lastname", "El apellido es obligatorio."));
-  document.getElementById("contact_number").addEventListener("blur", () => validatePhone("contact_number"));
-  document.getElementById("email").addEventListener("blur", () => validateEmail("email"));
-  document.getElementById("password").addEventListener("blur", () => validatePassword("password"));
+  const nameInput = document.getElementById("name");
+  if (nameInput) {
+    nameInput.addEventListener("blur", () => validateField("name", "El nombre es obligatorio."));
+  }
+  
+  const lastnameInput = document.getElementById("lastname");
+  if (lastnameInput) {
+    lastnameInput.addEventListener("blur", () => validateField("lastname", "El apellido es obligatorio."));
+  }
+  
+  const contactInput = document.getElementById("contact_number");
+  if (contactInput) {
+    contactInput.addEventListener("blur", () => validatePhone("contact_number"));
+  }
+  
+  const emailInput = document.getElementById("email");
+  if (emailInput) {
+    emailInput.addEventListener("blur", () => validateEmail("email"));
+  }
+  
+  const passwordInput = document.getElementById("password");
+  if (passwordInput) {
+    passwordInput.addEventListener("blur", () => validatePassword("password"));
+  }
   
   // Usar 'rol' en lugar de 'role' para el selector del formulario de registro
   const rolSelector = document.getElementById("rol");
@@ -894,11 +1034,30 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
   
   // Validación para formulario de edición
-  document.getElementById("editName").addEventListener("blur", () => validateField("editName", "El nombre es obligatorio."));
-  document.getElementById("editLastname").addEventListener("blur", () => validateField("editLastname", "El apellido es obligatorio."));
-  document.getElementById("editContact").addEventListener("blur", () => validatePhone("editContact"));
-  document.getElementById("editEmail").addEventListener("blur", () => validateEmail("editEmail"));
-  document.getElementById("editRole").addEventListener("change", () => validateRole("editRole"));
+  const editNameInput = document.getElementById("editName");
+  if (editNameInput) {
+    editNameInput.addEventListener("blur", () => validateField("editName", "El nombre es obligatorio."));
+  }
+  
+  const editLastnameInput = document.getElementById("editLastname");
+  if (editLastnameInput) {
+    editLastnameInput.addEventListener("blur", () => validateField("editLastname", "El apellido es obligatorio."));
+  }
+  
+  const editContactInput = document.getElementById("editContact");
+  if (editContactInput) {
+    editContactInput.addEventListener("blur", () => validatePhone("editContact"));
+  }
+  
+  const editEmailInput = document.getElementById("editEmail");
+  if (editEmailInput) {
+    editEmailInput.addEventListener("blur", () => validateEmail("editEmail"));
+  }
+  
+  const editRoleInput = document.getElementById("editRole");
+  if (editRoleInput) {
+    editRoleInput.addEventListener("change", () => validateRole("editRole"));
+  }
 
   const editForm = document.getElementById("editForm");
   if (editForm) {
@@ -909,8 +1068,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 });
 
+// Exportar funciones globales
 window.fillEditForm = fillEditForm;
 window.deleteUser = deleteUser;
 window.updateUserStatus = updateUserStatus;
 window.openModal = openModal;
 window.closeModal = closeModal;
+window.changePage = changePage;

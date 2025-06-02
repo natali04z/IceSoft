@@ -7,6 +7,33 @@ let originalProducts = [];
 let currentPage = 1;
 const rowsPerPage = 10;
 
+// ===== FUNCIONES HELPER PARA FECHAS =====
+
+/**
+ * Formatea fecha para mostrar al usuario (DD/MM/YYYY)
+ * @param {Date|string} date - Fecha a formatear
+ * @returns {string} Fecha formateada para mostrar
+ */
+function formatDateForDisplay(date) {
+  if (!date) return "Fecha no disponible";
+  
+  try {
+    // Si viene en formato YYYY-MM-DD, parsearlo correctamente
+    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      const [year, month, day] = date.split('-').map(Number);
+      const dateObj = new Date(year, month - 1, day);
+      return dateObj.toLocaleDateString('es-CO');
+    }
+    
+    const dateObj = date instanceof Date ? date : new Date(date);
+    return dateObj.toLocaleDateString('es-CO');
+  } catch (e) {
+    return date.toString();
+  }
+}
+
+// ===== FUNCIONES DE VALIDACIÓN =====
+
 // Función para validar un campo y mostrar error
 function validateField(fieldId, errorMessage) {
   const field = document.getElementById(fieldId);
@@ -37,6 +64,11 @@ function validatePrice(fieldId) {
     return false;
   } else if (isNaN(price) || price <= 0) {
     errorElement.textContent = "El precio debe ser un número mayor que cero.";
+    errorElement.style.display = "block";
+    field.classList.add("input-error");
+    return false;
+  } else if (!Number.isInteger(price)) {
+    errorElement.textContent = "El precio debe ser un número entero.";
     errorElement.style.display = "block";
     field.classList.add("input-error");
     return false;
@@ -131,6 +163,8 @@ function validateDateRange(batchDateId, expirationDateId) {
 
 function clearValidationErrors(formId) {
   const form = document.getElementById(formId);
+  if (!form) return;
+  
   const errorElements = form.querySelectorAll('.error-message');
   const inputElements = form.querySelectorAll('.field-element');
   
@@ -165,13 +199,22 @@ function disableNativeBrowserValidation() {
   }
 }
 
+// ===== FUNCIONES DE UTILIDAD =====
+
 // Función para abrir un modal
 function openModal(modalId) {
-  document.getElementById(modalId).style.display = "flex";
+  const modal = document.getElementById(modalId);
+  if (!modal) return;
+  
+  modal.style.display = "flex";
 
   if (modalId === 'registerModal') {
     clearValidationErrors('productForm');
-    document.getElementById("productForm").reset();
+    
+    const productForm = document.getElementById("productForm");
+    if (productForm) {
+      productForm.reset();
+    }
   } else if (modalId === 'editModal') {
     clearValidationErrors('editForm');
   }
@@ -179,21 +222,10 @@ function openModal(modalId) {
 
 // Función para cerrar un modal
 function closeModal(modalId) {
-  document.getElementById(modalId).style.display = "none";
-}
-
-// Función para formatear fechas en formato DD/MM/YYYY
-function formatDateForDisplay(dateString) {
-  if (!dateString) return "N/A";
+  const modal = document.getElementById(modalId);
+  if (!modal) return;
   
-  const date = new Date(dateString);
-  if (isNaN(date.getTime())) return dateString;
-  
-  const day = date.getDate().toString().padStart(2, '0');
-  const month = (date.getMonth() + 1).toString().padStart(2, '0');
-  const year = date.getFullYear();
-  
-  return `${day}/${month}/${year}`;
+  modal.style.display = "none";
 }
 
 // Función para obtener permisos de usuario
@@ -209,9 +241,29 @@ function getUserPermissions() {
   }
 }
 
-// Renderizar tabla de productos
+function hideLoadingIndicator() {
+  Swal.close();
+}
+
+// ===== FUNCIONES DE FORMATEO =====
+
+// Formatear precio en formato colombiano
+const formatPrice = (price) => {
+  if (!price) return "$0";
+  return `$${parseFloat(price).toLocaleString('es-CO')}`;
+};
+
+// ✅ NUEVA IMPLEMENTACIÓN - usando la función helper para DD/MM/YYYY
+const formatDate = (dateString) => {
+  return formatDateForDisplay(dateString);
+};
+
+// ===== FUNCIONES DE RENDERIZADO =====
+
+// Renderizar tabla de productos con la estructura mejorada
 const renderProductsTable = (page = 1) => {
   const tbody = document.getElementById("productTableBody");
+  
   if (!tbody) {
     return;
   }
@@ -219,7 +271,14 @@ const renderProductsTable = (page = 1) => {
   tbody.innerHTML = "";
 
   if (!allProducts || allProducts.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="9" class="text-center">No hay productos disponibles</td></tr>`;
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="9" class="text-center">
+          No hay productos disponibles
+        </td>
+      </tr>
+    `;
+    renderPaginationControls();
     return;
   }
 
@@ -229,41 +288,60 @@ const renderProductsTable = (page = 1) => {
 
   const userPermissions = getUserPermissions();
   const canEditProducts = userPermissions.includes("edit_products");
+  
+  let tableContent = '';
 
-  productsToShow.forEach(product => {
-    const formattedBatchDate = product.formattedBatchDate || formatDateForDisplay(product.batchDate);
-    const formattedExpirationDate = product.formattedExpirationDate || formatDateForDisplay(product.expirationDate);
-    
-    tbody.innerHTML += `
-      <tr data-productid="${product._id}">
-        <td>${product.id || ''}</td>
-        <td>${product.name || ''}</td>
-        <td>${product.category?.name || ''}</td>
-        <td>${product.formattedPrice || formatPrice(product.price) || ''}</td>
-        <td>${product.stock || 0}</td>
-        <td>${formattedBatchDate}</td>
-        <td>${formattedExpirationDate}</td>
-        <td>
-          <label class="switch">
-            <input type="checkbox" ${product.status === "active" ? "checked" : ""} 
-              ${canEditProducts ? `onchange="updateProductStatus('${product._id}', this.checked ? 'active' : 'inactive')"` : 'disabled'}>
-            <span class="slider round"></span>
-          </label>
-        </td>
-        <td>
-          <div class="action-buttons">
-            <button onclick="fillEditForm('${product._id}')" class="icon-button edit-button" title="Editar" ${canEditProducts ? '' : 'disabled'}>
-              <i class="material-icons">edit</i>
-            </button>
-            <button onclick="deleteProduct('${product._id}')" class="icon-button delete-button" title="Eliminar" ${userPermissions.includes("delete_products") ? '' : 'disabled'}>
-              <i class="material-icons">delete</i>
-            </button>
-          </div>
-        </td>
-      </tr>
-    `;
+  productsToShow.forEach((product, index) => {
+    try {
+      const productId = product._id || "";
+      const displayId = product.id || productId || `Pr${String(index + 1).padStart(2, '0')}`;
+      
+      // ✅ NUEVA IMPLEMENTACIÓN - usando la función helper para formatear fechas
+      const formattedBatchDate = formatDate(product.batchDate);
+      const formattedExpirationDate = formatDate(product.expirationDate);
+      const formattedPrice = product.formattedPrice || formatPrice(product.price);
+      const status = product.status || "active";
+      
+      tableContent += `
+        <tr data-productid="${productId}" data-index="${index}">
+          <td class="id-column">${displayId}</td>
+          <td>${product.name || ''}</td>
+          <td>${product.category?.name || ''}</td>
+          <td>${formattedPrice}</td>
+          <td>${product.stock || 0}</td>
+          <td>${formattedBatchDate}</td>
+          <td>${formattedExpirationDate}</td>
+          <td>
+            <label class="switch">
+              <input type="checkbox" ${status === "active" ? "checked" : ""} 
+                ${canEditProducts ? `onchange="updateProductStatus('${productId}', this.checked ? 'active' : 'inactive')"` : 'disabled'}>
+              <span class="slider round"></span>
+            </label>
+          </td>
+          <td>
+            <div class="action-buttons">
+              <button onclick="fillEditForm('${productId}')" class="icon-button edit-button" title="Editar" ${canEditProducts ? '' : 'disabled'}>
+                <i class="material-icons">edit</i>
+              </button>
+              <button onclick="deleteProduct('${productId}')" class="icon-button delete-button" title="Eliminar" ${userPermissions.includes("delete_products") ? '' : 'disabled'}>
+                <i class="material-icons">delete</i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    } catch (error) {
+      tableContent += `
+        <tr>
+          <td colspan="9" class="text-center text-danger">
+            Error al renderizar este producto: ${error.message}
+          </td>
+        </tr>
+      `;
+    }
   });
-
+  
+  tbody.innerHTML = tableContent;
   renderPaginationControls();
 };
 
@@ -275,11 +353,9 @@ const renderPaginationControls = () => {
   
   const totalPages = Math.ceil(allProducts.length / rowsPerPage);
   const container = document.querySelector(".page-numbers");
-  const info = document.querySelector(".pagination .page-info:nth-child(2)");
+  const info = document.querySelector(".pagination .page-info");
   
-  if (!container || !info) {
-    return;
-  }
+  if (!container) return;
 
   container.innerHTML = "";
 
@@ -302,13 +378,15 @@ const renderPaginationControls = () => {
   const nextBtn = document.createElement("button");
   nextBtn.classList.add("page-nav");
   nextBtn.innerText = "→";
-  nextBtn.disabled = currentPage === totalPages;
+  nextBtn.disabled = currentPage === totalPages || totalPages === 0;
   nextBtn.onclick = () => changePage(currentPage + 1);
   container.appendChild(nextBtn);
 
-  const startItem = (currentPage - 1) * rowsPerPage + 1;
-  const endItem = Math.min(startItem + rowsPerPage - 1, allProducts.length);
-  info.innerHTML = `${startItem}-${endItem} de ${allProducts.length}`;
+  if (info) {
+    const startItem = allProducts.length > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0;
+    const endItem = Math.min(startItem + rowsPerPage - 1, allProducts.length);
+    info.innerHTML = `${startItem}-${endItem} de ${allProducts.length}`;
+  }
 };
 
 // Cambiar de página
@@ -317,11 +395,7 @@ const changePage = (page) => {
   renderProductsTable(currentPage);
 };
 
-// Formatear precio en formato colombiano
-const formatPrice = (price) => {
-  if (!price) return "$0";
-  return `$${parseFloat(price).toLocaleString('es-CO')}`;
-};
+// ===== FUNCIONES DE CARGA DE DATOS =====
 
 const loadCategories = async () => {
   try {
@@ -356,10 +430,10 @@ const loadCategories = async () => {
         editCategorySelect.innerHTML += option;
       });
     } else {
-      showError(data.message || "No se pudo listar los productos.");
+      showError(data.message || "No se pudo listar las categorías.");
     }
   } catch (err) {
-    showError("Error al listar los productos.");
+    showError("Error al listar las categorías.");
   }
 };
 
@@ -379,33 +453,40 @@ const loadProductsInternal = async () => {
       }
     });
     
+    if (!res.ok) {
+      const data = await res.json();
+      showError(data.message || "No se pudo listar los productos.");
+      return;
+    }
+    
     const data = await res.json();
     
-    if (res.ok) {
-      originalProducts = data.products || data;
-      allProducts = [...originalProducts];
-      currentPage = 1;
-
-      allProducts = allProducts.map(product => {
-        const formattedProduct = {...product};
-        
-        formattedProduct.formattedPrice = formatPrice(product.price);
-        
-        if (product.batchDate) {
-          formattedProduct.formattedBatchDate = formatDateForDisplay(product.batchDate);
-        }
-        
-        if (product.expirationDate) {
-          formattedProduct.formattedExpirationDate = formatDateForDisplay(product.expirationDate);
-        }
-        
-        return formattedProduct;
-      });
-      
-      renderProductsTable(currentPage);
-    } else {
-      showError(data.message || "No se pudo listar los productos.");
+    // Simplificar el procesamiento de datos
+    let products = [];
+    
+    if (data.products) {
+      products = data.products;
+    } else if (Array.isArray(data)) {
+      products = data;
     }
+    
+    // Procesar productos
+    originalProducts = products.map(product => ({
+      ...product,
+      formattedPrice: formatPrice(product.price),
+      status: product.status || "active"
+    }));
+    
+    allProducts = [...originalProducts];
+    currentPage = 1;
+    
+    // Mostrar alertas de productos próximos a vencer si existen
+    if (data.expiringProductsAlert && typeof showWarning === 'function') {
+      showWarning(data.expiringProductsAlert.message);
+    }
+    
+    renderProductsTable(currentPage);
+    
   } catch (err) {
     showError("Error al listar los productos");
   }
@@ -430,40 +511,49 @@ const listProducts = async () => {
       }
     });
     
-    const data = await res.json();
-    
     hideLoadingIndicator();
     
-    if (res.ok) {
-      originalProducts = data.products || data;
-      allProducts = [...originalProducts];
-      currentPage = 1;
-
-      allProducts = allProducts.map(product => {
-        const formattedProduct = {...product};
-        
-        formattedProduct.formattedPrice = formatPrice(product.price);
-        
-        if (product.batchDate) {
-          formattedProduct.formattedBatchDate = formatDateForDisplay(product.batchDate);
-        }
-        
-        if (product.expirationDate) {
-          formattedProduct.formattedExpirationDate = formatDateForDisplay(product.expirationDate);
-        }
-        
-        return formattedProduct;
-      });
-      
-      renderProductsTable(currentPage);
-    } else {
+    if (!res.ok) {
+      const data = await res.json();
       showError(data.message || "No se pudo listar los productos.");
+      return;
     }
+    
+    const data = await res.json();
+    
+    // Simplificar el procesamiento de datos
+    let products = [];
+    
+    if (data.products) {
+      products = data.products;
+    } else if (Array.isArray(data)) {
+      products = data;
+    }
+    
+    // Procesar productos
+    originalProducts = products.map(product => ({
+      ...product,
+      formattedPrice: formatPrice(product.price),
+      status: product.status || "active"
+    }));
+    
+    allProducts = [...originalProducts];
+    currentPage = 1;
+    
+    // Mostrar alertas de productos próximos a vencer si existen
+    if (data.expiringProductsAlert && typeof showWarning === 'function') {
+      showWarning(data.expiringProductsAlert.message);
+    }
+    
+    renderProductsTable(currentPage);
+    
   } catch (err) {
     hideLoadingIndicator();
     showError("Error al listar los productos");
   }
 };
+
+// ===== FUNCIONES DE OPERACIONES CRUD =====
 
 // Registrar producto
 const registerProduct = async () => {
@@ -486,11 +576,7 @@ const registerProduct = async () => {
   
   const name = document.getElementById("name").value.trim();
   const category = document.getElementById("category").value;
-  const price = parseFloat(document.getElementById("price").value);
-  
-  const statusElement = document.getElementById("status");
-  const status = statusElement ? (statusElement.checked ? "active" : "inactive") : "active";
-  
+  const price = parseInt(document.getElementById("price").value);
   const batchDate = document.getElementById("batchDate").value;
   const expirationDate = document.getElementById("expirationDate").value;
 
@@ -505,7 +591,6 @@ const registerProduct = async () => {
         name, 
         category, 
         price, 
-        status,
         batchDate,
         expirationDate
       })
@@ -513,8 +598,19 @@ const registerProduct = async () => {
     const data = await res.json();
     if (res.status === 201 || res.ok) {
       showSuccess('El producto ha sido registrado');
+      
+      // Mostrar alerta de vencimiento si existe
+      if (data.expirationAlert && typeof showWarning === 'function') {
+        showWarning(data.expirationAlert.message);
+      }
+      
       closeModal('registerModal');
-      document.getElementById("productForm").reset();
+      
+      const productForm = document.getElementById("productForm");
+      if (productForm) {
+        productForm.reset();
+      }
+      
       loadProductsInternal();
     } else {
       showError(data.message || "No se pudo registrar el producto.");
@@ -554,20 +650,27 @@ const fillEditForm = async (id) => {
     document.getElementById("editName").value = product.name || "";
     document.getElementById("editCategory").value = product.category?._id || "";
     document.getElementById("editPrice").value = product.price || "";
-    
-    const editStatusElement = document.getElementById("editStatus");
-    if (editStatusElement) {
-      editStatusElement.checked = product.status === "active";
-    }
    
+    // ✅ NUEVA IMPLEMENTACIÓN - manejo de fechas mejorado
     if (product.batchDate) {
+      // Si viene en formato ISO, convertir a YYYY-MM-DD para el input
       const batchDate = new Date(product.batchDate);
-      document.getElementById("editBatchDate").value = batchDate.toISOString().split('T')[0];
+      if (!isNaN(batchDate.getTime())) {
+        document.getElementById("editBatchDate").value = batchDate.toISOString().split('T')[0];
+      }
     }
     
     if (product.expirationDate) {
+      // Si viene en formato ISO, convertir a YYYY-MM-DD para el input
       const expirationDate = new Date(product.expirationDate);
-      document.getElementById("editExpirationDate").value = expirationDate.toISOString().split('T')[0];
+      if (!isNaN(expirationDate.getTime())) {
+        document.getElementById("editExpirationDate").value = expirationDate.toISOString().split('T')[0];
+      }
+    }
+
+    // Mostrar alerta de vencimiento si existe
+    if (product.expirationAlert && typeof showWarning === 'function') {
+      showWarning(product.expirationAlert.message);
     }
 
     openModal("editModal");
@@ -598,11 +701,7 @@ const updateProduct = async () => {
   const productId = document.getElementById("editId").value;
   const name = document.getElementById("editName").value.trim();
   const category = document.getElementById("editCategory").value;
-  const price = parseFloat(document.getElementById("editPrice").value);
-
-  const editStatusElement = document.getElementById("editStatus");
-  const status = editStatusElement ? (editStatusElement.checked ? "active" : "inactive") : "active";
-  
+  const price = parseInt(document.getElementById("editPrice").value);
   const batchDate = document.getElementById("editBatchDate").value;
   const expirationDate = document.getElementById("editExpirationDate").value;
 
@@ -617,7 +716,6 @@ const updateProduct = async () => {
         name, 
         category, 
         price,
-        status,
         batchDate,
         expirationDate
       }),
@@ -626,8 +724,19 @@ const updateProduct = async () => {
     const data = await res.json();
     if (res.ok) {
       showSuccess('El producto ha sido actualizado');
+      
+      // Mostrar alerta de vencimiento si existe
+      if (data.expirationAlert && typeof showWarning === 'function') {
+        showWarning(data.expirationAlert.message);
+      }
+      
       closeModal("editModal");
-      document.getElementById("editForm").reset();
+      
+      const editForm = document.getElementById("editForm");
+      if (editForm) {
+        editForm.reset();
+      }
+      
       loadProductsInternal();
     } else {
       showError(data.message || "No se pudo actualizar el producto.");
@@ -637,7 +746,7 @@ const updateProduct = async () => {
   }
 };
 
-// Actualizar solo el estado de un producto
+// Actualizar solo el estado de un producto usando la ruta existente
 const updateProductStatus = async (id, status) => {
   const token = localStorage.getItem("token");
   if (!token) {
@@ -648,8 +757,8 @@ const updateProductStatus = async (id, status) => {
   const switchElement = document.querySelector(`tr[data-productid="${id}"] input[type="checkbox"]`);
   
   try {
-    const res = await fetch(`${API_PRODUCTS}/${id}`, {
-      method: "PUT",
+    const res = await fetch(`${API_PRODUCTS}/${id}/status`, {
+      method: "PATCH",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`
@@ -671,14 +780,33 @@ const updateProductStatus = async (id, status) => {
         switchElement.checked = status === 'active';
       }
 
-      const productIndex = allProducts.findIndex(p => p._id === id);
-      if (productIndex !== -1) {
-        allProducts[productIndex].status = status;
+      // Mostrar advertencia si el producto fue desactivado
+      if (data.warning && typeof showWarning === 'function') {
+        showWarning(data.warning);
       }
-      
-      const originalIndex = originalProducts.findIndex(p => p._id === id);
-      if (originalIndex !== -1) {
-        originalProducts[originalIndex].status = status;
+
+      // Actualizar el estado en los arrays de productos
+      if (data.product) {
+        const productIndex = allProducts.findIndex(p => p._id === id);
+        if (productIndex !== -1) {
+          allProducts[productIndex] = { ...allProducts[productIndex], ...data.product };
+        }
+        
+        const originalIndex = originalProducts.findIndex(p => p._id === id);
+        if (originalIndex !== -1) {
+          originalProducts[originalIndex] = { ...originalProducts[originalIndex], ...data.product };
+        }
+      } else {
+        // Fallback: solo actualizar el status
+        const productIndex = allProducts.findIndex(p => p._id === id);
+        if (productIndex !== -1) {
+          allProducts[productIndex].status = status;
+        }
+        
+        const originalIndex = originalProducts.findIndex(p => p._id === id);
+        if (originalIndex !== -1) {
+          originalProducts[originalIndex].status = status;
+        }
       }
       
     } else {
@@ -688,13 +816,15 @@ const updateProductStatus = async (id, status) => {
       }
       showError(errorMsg);
 
+      // Revertir el switch si hay error
       if (switchElement) {
         switchElement.checked = status !== 'active';
       }
     }
   } catch (err) {
-    showError("Error al actualizar estado del producto");
+    showError("Error de conexión al actualizar estado del producto");
 
+    // Revertir el switch si hay error de conexión
     if (switchElement) {
       switchElement.checked = status !== 'active';
     }
@@ -766,35 +896,140 @@ const deleteProduct = async (id) => {
 
 // Buscar producto
 const searchProduct = () => {
-  const term = document.getElementById("searchInput").value.toLowerCase().trim();
-  allProducts = term
-    ? originalProducts.filter(p => p.name.toLowerCase().includes(term))
-    : [...originalProducts];
+  const searchInput = document.getElementById("searchInput");
+  if (!searchInput) return;
+  
+  const term = searchInput.value.toLowerCase().trim();
+  
+  if (!originalProducts) return;
+  
+  if (!term) {
+    allProducts = [...originalProducts];
+  } else {
+    allProducts = originalProducts.filter(p => {
+      const nameMatch = p.name && p.name.toLowerCase().includes(term);
+      const categoryMatch = p.category?.name && p.category.name.toLowerCase().includes(term);
+      const idMatch = p.id && p.id.toLowerCase().includes(term);
+      
+      return nameMatch || categoryMatch || idMatch;
+    });
+  }
+  
   currentPage = 1;
   renderProductsTable(currentPage);
 };
 
-// Eventos al cargar el DOM
-document.addEventListener("DOMContentLoaded", () => {
+// ===== FUNCIONES DE UTILIDAD ADICIONALES =====
+
+const checkAuth = () => {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    Swal.fire({
+      icon: 'error',
+      title: 'No autorizado',
+      text: 'Debe iniciar sesión para acceder a esta página',
+      confirmButtonText: 'Ir a login'
+    }).then(() => {
+      window.location.href = 'index.html';
+    });
+    return false;
+  }
+  return true;
+};
+
+// ===== FUNCIONES DE INICIALIZACIÓN =====
+
+function initializeValidationEvents() {
   disableNativeBrowserValidation();
   
+  // Validación en tiempo real - Formulario de registro
+  const nameField = document.getElementById("name");
+  if (nameField) {
+    nameField.addEventListener("blur", () => validateField("name", "El nombre es obligatorio."));
+  }
+  
+  const categoryField = document.getElementById("category");
+  if (categoryField) {
+    categoryField.addEventListener("change", () => validateCategory("category"));
+  }
+  
+  const priceField = document.getElementById("price");
+  if (priceField) {
+    priceField.addEventListener("blur", () => validatePrice("price"));
+  }
+  
+  const batchDateField = document.getElementById("batchDate");
+  if (batchDateField) {
+    batchDateField.addEventListener("change", () => {
+      validateDate("batchDate");
+      validateDateRange("batchDate", "expirationDate");
+    });
+  }
+  
+  const expirationDateField = document.getElementById("expirationDate");
+  if (expirationDateField) {
+    expirationDateField.addEventListener("change", () => {
+      validateDate("expirationDate");
+      validateDateRange("batchDate", "expirationDate");
+    });
+  }
+  
+  // Validación en tiempo real - Formulario de edición
+  const editNameField = document.getElementById("editName");
+  if (editNameField) {
+    editNameField.addEventListener("blur", () => validateField("editName", "El nombre es obligatorio."));
+  }
+  
+  const editCategoryField = document.getElementById("editCategory");
+  if (editCategoryField) {
+    editCategoryField.addEventListener("change", () => validateCategory("editCategory"));
+  }
+  
+  const editPriceField = document.getElementById("editPrice");
+  if (editPriceField) {
+    editPriceField.addEventListener("blur", () => validatePrice("editPrice"));
+  }
+  
+  const editBatchDateField = document.getElementById("editBatchDate");
+  if (editBatchDateField) {
+    editBatchDateField.addEventListener("change", () => {
+      validateDate("editBatchDate");
+      validateDateRange("editBatchDate", "editExpirationDate");
+    });
+  }
+  
+  const editExpirationDateField = document.getElementById("editExpirationDate");
+  if (editExpirationDateField) {
+    editExpirationDateField.addEventListener("change", () => {
+      validateDate("editExpirationDate");
+      validateDateRange("editBatchDate", "editExpirationDate");
+    });
+  }
+}
+
+function initializeListPage() {
   const productTableBody = document.getElementById("productTableBody");
   if (!productTableBody) {
     return;
   }
   
-  // Iniciar carga de datos
   try {
+    // Primero cargar productos y categorías
     listProducts();
     loadCategories();
   } catch (err) {
-    console.error("Error al inicializar:", err);
+    showError("Error al inicializar la página");
   }
   
   // Configurar botones y eventos
   const mobileAddButton = document.getElementById("mobileAddButton");
   if (mobileAddButton) {
     mobileAddButton.onclick = () => openModal('registerModal');
+  }
+  
+  const addUserButton = document.getElementById("addUserButton");
+  if (addUserButton) {
+    addUserButton.onclick = () => openModal('registerModal');
   }
   
   const registerButton = document.getElementById("registerButton");
@@ -811,38 +1046,60 @@ document.addEventListener("DOMContentLoaded", () => {
   if (searchInput) {
     searchInput.addEventListener("keyup", searchProduct);
   }
+}
+
+// ===== EVENTOS AL CARGAR EL DOM =====
+
+document.addEventListener("DOMContentLoaded", () => {
+  console.log('Products.js DOMContentLoaded started');
   
-  // Validación en tiempo real - Formulario de registro
-  document.getElementById("name").addEventListener("blur", () => validateField("name", "El nombre es obligatorio."));
-  document.getElementById("category").addEventListener("change", () => validateCategory("category"));
-  document.getElementById("price").addEventListener("blur", () => validatePrice("price"));
-  document.getElementById("batchDate").addEventListener("change", () => {
-    validateDate("batchDate");
-    validateDateRange("batchDate", "expirationDate");
-  });
-  document.getElementById("expirationDate").addEventListener("change", () => {
-    validateDate("expirationDate");
-    validateDateRange("batchDate", "expirationDate");
-  });
+  if (!checkAuth()) return;
   
-  // Validación en tiempo real - Formulario de edición
-  document.getElementById("editName").addEventListener("blur", () => validateField("editName", "El nombre es obligatorio."));
-  document.getElementById("editCategory").addEventListener("change", () => validateCategory("editCategory"));
-  document.getElementById("editPrice").addEventListener("blur", () => validatePrice("editPrice"));
-  document.getElementById("editBatchDate").addEventListener("change", () => {
-    validateDate("editBatchDate");
-    validateDateRange("editBatchDate", "editExpirationDate");
-  });
-  document.getElementById("editExpirationDate").addEventListener("change", () => {
-    validateDate("editExpirationDate");
-    validateDateRange("editBatchDate", "editExpirationDate");
-  });
+  initializeValidationEvents();
+  initializeListPage();
+  
+  // Debug: Verificar funciones antes de llamarlas
+  console.log('Checking notification functions...');
+  console.log('ensureNotificationManager:', typeof window.ensureNotificationManager);
+  console.log('getExpirationNotifications:', typeof window.getExpirationNotifications);
+  
+  // Inicializar notificaciones con debug
+  setTimeout(() => {
+      console.log('Initializing notifications...');
+      
+      if (typeof window.ensureNotificationManager === 'function') {
+          console.log('Calling ensureNotificationManager...');
+          window.ensureNotificationManager();
+      } else {
+          console.error('ensureNotificationManager not found!');
+      }
+      
+      if (typeof window.getExpirationNotifications === 'function') {
+          console.log('Calling getExpirationNotifications...');
+          window.getExpirationNotifications(7);
+      } else {
+          console.error('getExpirationNotifications not found!');
+      }
+  }, 1000);
 });
 
-// Hacer funciones globales 
+// ===== FUNCIONES GLOBALES =====
+
+window.validateField = validateField;
+window.validatePrice = validatePrice;
+window.validateStock = validateStock;
+window.validateDate = validateDate;
+window.validateCategory = validateCategory;
+window.validateDateRange = validateDateRange;
+window.clearValidationErrors = clearValidationErrors;
+window.disableNativeBrowserValidation = disableNativeBrowserValidation;
 window.fillEditForm = fillEditForm;
 window.deleteProduct = deleteProduct;
 window.openModal = openModal;
 window.closeModal = closeModal;
 window.updateProductStatus = updateProductStatus;
 window.updateProduct = updateProduct;
+window.checkProductStatus = checkProductStatus;
+window.searchProduct = searchProduct;
+window.hideLoadingIndicator = hideLoadingIndicator;
+window.formatDateForDisplay = formatDateForDisplay;

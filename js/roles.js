@@ -1,6 +1,6 @@
 const API_URL = "https://backend-yy4o.onrender.com/api/roles";
   
-// Variables globales
+// Variables globales para roles y paginación
 let allRoles = [];
 let originalRoles = [];
 let currentPage = 1;
@@ -46,6 +46,8 @@ function validatePermissions(formId) {
 // Limpiar mensajes de error
 function clearValidationErrors(formId) {
   const form = document.getElementById(formId);
+  if (!form) return;
+  
   const errorElements = form.querySelectorAll('.error-message');
   const inputElements = form.querySelectorAll('.field-element');
   
@@ -60,12 +62,10 @@ function clearValidationErrors(formId) {
 
 // Desactivar validación nativa del navegador en los formularios
 function disableNativeBrowserValidation() {
-  // Desactivar validación del formulario de registro
   const roleForm = document.getElementById("roleForm");
   if (roleForm) {
     roleForm.setAttribute("novalidate", "");
     
-    // Quitar atributos 'required' y 'pattern' de los campos
     const inputs = roleForm.querySelectorAll("input, select, textarea");
     inputs.forEach(input => {
       input.removeAttribute("required");
@@ -73,12 +73,10 @@ function disableNativeBrowserValidation() {
     });
   }
   
-  // Desactivar validación del formulario de edición
   const editRoleForm = document.getElementById("editRoleForm");
   if (editRoleForm) {
     editRoleForm.setAttribute("novalidate", "");
     
-    // Quitar atributos 'required' y 'pattern' de los campos
     const inputs = editRoleForm.querySelectorAll("input, select, textarea");
     inputs.forEach(input => {
       input.removeAttribute("required");
@@ -87,7 +85,7 @@ function disableNativeBrowserValidation() {
   }
 }
 
-// ===== FUNCIONES PRINCIPALES =====
+// ===== FUNCIONES DE UTILIDAD =====
 
 // Obtener permisos de usuario
 function getUserPermissions() {
@@ -106,36 +104,62 @@ function getUserPermissions() {
 // Abrir modal
 function openModal(modalId) {
   const modal = document.getElementById(modalId);
-  if (modal) {
-    modal.style.display = "flex";
-    
-    // Resetear mensajes de error al abrir el modal
-    if (modalId === 'roleModal') {
-      clearValidationErrors('roleForm');
-      document.getElementById("roleForm").reset();
-    } else if (modalId === 'editRoleModal') {
-      clearValidationErrors('editRoleForm');
-    }
-  } else {
+  if (!modal) {
     console.error(`Modal con ID "${modalId}" no encontrado`);
+    return;
+  }
+  
+  modal.style.display = "flex";
+  
+  if (modalId === 'roleModal') {
+    clearValidationErrors('roleForm');
+    
+    const roleForm = document.getElementById("roleForm");
+    if (roleForm) {
+      roleForm.reset();
+    }
+  } else if (modalId === 'editRoleModal') {
+    clearValidationErrors('editRoleForm');
   }
 }
 
 // Cerrar modal
 function closeModal(modalId) {
   const modal = document.getElementById(modalId);
-  if (modal) {
-    modal.style.display = "none";
-  } else {
+  if (!modal) {
     console.error(`Modal con ID "${modalId}" no encontrado`);
+    return;
   }
+  
+  modal.style.display = "none";
 }
+
+function hideLoadingIndicator() {
+  Swal.close();
+}
+
+const checkAuth = () => {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    Swal.fire({
+      icon: 'error',
+      title: 'No autorizado',
+      text: 'Debe iniciar sesión para acceder a esta página',
+      confirmButtonText: 'Ir a login'
+    }).then(() => {
+      window.location.href = 'index.html';
+    });
+    return false;
+  }
+  return true;
+};
+
+// ===== FUNCIONES DE FORMATEO =====
 
 // Formatear los permisos para mostrarlos en la tabla
 function formatPermissions(permissions, roleId) {
   if (!permissions || permissions.length === 0) return '-';
   
-  // Crear botón para ver detalles
   return `<button class="view-details-btn" onclick="showPermissionsDetails('${roleId}')">
             <i class="material-icons">visibility</i> 
             Ver ${permissions.length} permisos
@@ -145,7 +169,6 @@ function formatPermissions(permissions, roleId) {
 // Mostrar modal con detalles de permisos
 function showPermissionsDetails(roleId) {
   try {
-    // Encontrar el rol por ID
     const role = allRoles.find(r => r._id === roleId);
     if (!role || !role.permissions) {
       showError("No se encontraron permisos para este rol");
@@ -155,13 +178,10 @@ function showPermissionsDetails(roleId) {
     let permissionsHTML = '';
     let permissionCount = 0;
     
-    // Si los permisos son objetos completos
     if (role.permissions.length > 0 && typeof role.permissions[0] === 'object') {
-      // Agrupar permisos por categoría/módulo
       const groupedPermissions = {};
       
       role.permissions.forEach(perm => {
-        // Obtener categoría del código de permiso (suponiendo formato como "users_create", "users_edit")
         const category = perm.code ? perm.code.split('_')[0] : 'otros';
         if (!groupedPermissions[category]) {
           groupedPermissions[category] = [];
@@ -170,7 +190,6 @@ function showPermissionsDetails(roleId) {
         permissionCount++;
       });
       
-      // Generar HTML para cada categoría
       for (const category in groupedPermissions) {
         const perms = groupedPermissions[category];
         permissionsHTML += `
@@ -183,7 +202,6 @@ function showPermissionsDetails(roleId) {
         `;
       }
     } else {
-      // Si solo tenemos IDs, mostrar lista simple
       permissionsHTML = `
         <div class="permission-category">
           <h4>Permisos</h4>
@@ -193,7 +211,6 @@ function showPermissionsDetails(roleId) {
       permissionCount = role.permissions.length;
     }
     
-    // Mostrar modal con los detalles
     Swal.fire({
       title: `Permisos de ${role.name}`,
       html: `
@@ -205,25 +222,23 @@ function showPermissionsDetails(roleId) {
         </div>
       `,
       width: '600px',
-      showCloseButton: true,          // Agregar botón X para cerrar
-      showConfirmButton: false,       // Quitar botón de confirmar
-      allowOutsideClick: false,       // NO permitir cerrar al hacer clic fuera
-      allowEscapeKey: true,           // Permitir cerrar con ESC
+      showCloseButton: true,
+      showConfirmButton: false,
+      allowOutsideClick: false,
+      allowEscapeKey: true,
       customClass: {
         container: 'permissions-modal-container',
         popup: 'permissions-modal-popup',
         content: 'permissions-modal-content',
-        closeButton: 'permissions-modal-close'  // Clase para personalizar botón de cierre
+        closeButton: 'permissions-modal-close'
       }
     });
     
-    // Añadir estilos al modal
     const styleId = 'permissions-details-styles';
     if (!document.getElementById(styleId)) {
       const style = document.createElement('style');
       style.id = styleId;
       style.innerHTML = `
-        /* Estilos para el modal de detalles de permisos */
         .permissions-modal-popup {
           max-width: 90vw;
           padding-top: 15px;
@@ -310,7 +325,9 @@ function showPermissionsDetails(roleId) {
   }
 }
 
-// Renderizar tabla de roles
+// ===== FUNCIONES DE RENDERIZADO (Estructura mejorada) =====
+
+// Renderizar tabla de roles con la estructura mejorada
 const renderRolesTable = (page = 1) => {
   const tbody = document.getElementById("roleTableBody");
   
@@ -322,8 +339,14 @@ const renderRolesTable = (page = 1) => {
   tbody.innerHTML = "";
 
   if (!allRoles || allRoles.length === 0) {
-    showError("No hay roles para mostrar");
-    tbody.innerHTML = `<tr><td colspan="6" class="text-center">No hay roles disponibles</td></tr>`;
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="text-center">
+          No hay roles disponibles
+        </td>
+      </tr>
+    `;
+    renderPaginationControls();
     return;
   }
 
@@ -333,57 +356,72 @@ const renderRolesTable = (page = 1) => {
 
   const userPermissions = getUserPermissions();
   const canEditRoles = userPermissions.includes("edit_roles");
+  
+  let tableContent = '';
 
-  rolesToShow.forEach(role => {
-    tbody.innerHTML += `
-      <tr>
-        <td>${role.id || ''}</td>
-        <td>${role.name || ''}</td>
-        <td>${role.description || '-'}</td>
-        <td>${formatPermissions(role.permissions, role._id)}</td>
-        <td>
-          <label class="switch">
-            <input type="checkbox" ${role.status === "active" ? "checked" : ""} 
-              ${canEditRoles && role.name !== "admin" ? `onchange="updateRoleStatus('${role._id}', this.checked ? 'active' : 'inactive')"` : 'disabled'}>
-            <span class="slider round"></span>
-          </label>
-        </td>
-        <td>
-          <div class="action-buttons">
-            <button onclick="fillEditForm('${role._id}')" class="icon-button edit-button" title="Editar" ${canEditRoles && role.name !== "admin" ? '' : 'disabled'}>
-              <i class="material-icons">edit</i>
-            </button>
-            <button onclick="deleteRole('${role._id}')" class="icon-button delete-button" title="Eliminar" ${userPermissions.includes("delete_roles") && !role.isDefault ? '' : 'disabled'}>
-              <i class="material-icons">delete</i>
-            </button>
-          </div>
-        </td>
-      </tr>
-    `;
+  rolesToShow.forEach((role, index) => {
+    try {
+      const roleId = role._id || "";
+      const displayId = role.id || roleId || `Ro${String(index + 1).padStart(2, '0')}`;
+      const status = role.status || "active";
+      
+      tableContent += `
+        <tr data-roleid="${roleId}" data-index="${index}">
+          <td class="id-column">${displayId}</td>
+          <td>${role.name || ''}</td>
+          <td>${role.description || '-'}</td>
+          <td>${formatPermissions(role.permissions, roleId)}</td>
+          <td>
+            <label class="switch">
+              <input type="checkbox" ${status === "active" ? "checked" : ""} 
+                ${canEditRoles && role.name !== "admin" ? `onchange="updateRoleStatus('${roleId}', this.checked ? 'active' : 'inactive')"` : 'disabled'}>
+              <span class="slider round"></span>
+            </label>
+          </td>
+          <td>
+            <div class="action-buttons">
+              <button onclick="fillEditForm('${roleId}')" class="icon-button edit-button" title="Editar" ${canEditRoles && role.name !== "admin" ? '' : 'disabled'}>
+                <i class="material-icons">edit</i>
+              </button>
+              <button onclick="deleteRole('${roleId}')" class="icon-button delete-button" title="Eliminar" ${userPermissions.includes("delete_roles") && !role.isDefault ? '' : 'disabled'}>
+                <i class="material-icons">delete</i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    } catch (error) {
+      tableContent += `
+        <tr>
+          <td colspan="6" class="text-center text-danger">
+            Error al renderizar este rol: ${error.message}
+          </td>
+        </tr>
+      `;
+    }
   });
-
+  
+  tbody.innerHTML = tableContent;
   renderPaginationControls();
 };
 
-// Renderizar controles de paginación
+// Renderizar controles de paginación con la estructura mejorada
 const renderPaginationControls = () => {
   if (!allRoles || allRoles.length === 0) {
-    console.warn("No hay roles para paginar");
     return;
   }
   
   const totalPages = Math.ceil(allRoles.length / rowsPerPage);
   const container = document.querySelector(".page-numbers");
-  const info = document.querySelector(".pagination .page-info:nth-child(2)");
+  const info = document.querySelector(".pagination .page-info");
   
-  if (!container || !info) {
+  if (!container) {
     console.error("Elementos de paginación no encontrados en el DOM");
     return;
   }
 
   container.innerHTML = "";
 
-  // Botón anterior
   const prevBtn = document.createElement("button");
   prevBtn.classList.add("page-nav");
   prevBtn.innerText = "←";
@@ -391,7 +429,6 @@ const renderPaginationControls = () => {
   prevBtn.onclick = () => changePage(currentPage - 1);
   container.appendChild(prevBtn);
 
-  // Números de página
   for (let i = 1; i <= totalPages; i++) {
     const btn = document.createElement("div");
     btn.classList.add("page-number");
@@ -401,17 +438,18 @@ const renderPaginationControls = () => {
     container.appendChild(btn);
   }
 
-  // Botón siguiente
   const nextBtn = document.createElement("button");
   nextBtn.classList.add("page-nav");
   nextBtn.innerText = "→";
-  nextBtn.disabled = currentPage === totalPages;
+  nextBtn.disabled = currentPage === totalPages || totalPages === 0;
   nextBtn.onclick = () => changePage(currentPage + 1);
   container.appendChild(nextBtn);
 
-  const startItem = (currentPage - 1) * rowsPerPage + 1;
-  const endItem = Math.min(startItem + rowsPerPage - 1, allRoles.length);
-  info.innerHTML = `${startItem}-${endItem} de ${allRoles.length}`;
+  if (info) {
+    const startItem = allRoles.length > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0;
+    const endItem = Math.min(startItem + rowsPerPage - 1, allRoles.length);
+    info.innerHTML = `${startItem}-${endItem} de ${allRoles.length}`;
+  }
 };
 
 // Cambiar de página
@@ -420,12 +458,14 @@ const changePage = (page) => {
   renderRolesTable(currentPage);
 };
 
+// ===== FUNCIONES DE CARGA DE DATOS =====
+
 // Cargar roles sin indicador de carga
 const loadRolesInternal = async () => {
   try {
     const token = localStorage.getItem("token");
     if (!token) {
-      showError("Token no encontrado. Inicie sesión nuevamente.", "error");
+      showError("Token no encontrado. Inicie sesión nuevamente.");
       return;
     }
     
@@ -440,27 +480,54 @@ const loadRolesInternal = async () => {
     const data = await res.json();
     
     if (res.ok) {
-      originalRoles = data.roles || data;
+      let roles = [];
       
+      if (data && typeof data === 'object' && data.roles) {
+        roles = data.roles;
+      } else if (Array.isArray(data)) {
+        roles = data;
+      } else if (data && typeof data === 'object') {
+        const arrayProps = Object.keys(data).filter(key => Array.isArray(data[key]));
+        if (arrayProps.length > 0) {
+          roles = data[arrayProps[0]];
+        }
+      }
+      
+      if (!Array.isArray(roles)) {
+        roles = [];
+      }
+      
+      originalRoles = roles;
       allRoles = [...originalRoles];
       currentPage = 1;
+      
       renderRolesTable(currentPage);
+      
+      const tbody = document.getElementById("roleTableBody");
+      if (tbody && (!tbody.children.length || tbody.innerHTML.trim() === '')) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="text-center">
+              No se encontraron roles. Puede que necesite agregar un nuevo rol o revisar su conexión.
+            </td>
+          </tr>
+        `;
+      }
     } else {
-      showAlert(data.message || "Error al listar roles.", "error");
+      showError(data.message || "Error al listar roles.");
     }
   } catch (err) {
     console.error("Error al listar roles:", err);
-    showError("Error al listar roles: " + (err.message || err), "error");
+    showError("Error al listar roles: " + (err.message || err));
   }
 };
 
 // Listar roles con indicador de carga (solo para carga inicial)
 const listRoles = async () => {
   try {
-    
     const token = localStorage.getItem("token");
     if (!token) {
-      showError("Token no encontrado. Inicie sesión nuevamente.", "error");
+      showError("Token no encontrado. Inicie sesión nuevamente.");
       return;
     }
  
@@ -479,18 +546,46 @@ const listRoles = async () => {
     hideLoadingIndicator();
     
     if (res.ok) {
-      originalRoles = data.roles || data;
+      let roles = [];
       
+      if (data && typeof data === 'object' && data.roles) {
+        roles = data.roles;
+      } else if (Array.isArray(data)) {
+        roles = data;
+      } else if (data && typeof data === 'object') {
+        const arrayProps = Object.keys(data).filter(key => Array.isArray(data[key]));
+        if (arrayProps.length > 0) {
+          roles = data[arrayProps[0]];
+        }
+      }
+      
+      if (!Array.isArray(roles)) {
+        roles = [];
+      }
+      
+      originalRoles = roles;
       allRoles = [...originalRoles];
       currentPage = 1;
+      
       renderRolesTable(currentPage);
+      
+      const tbody = document.getElementById("roleTableBody");
+      if (tbody && (!tbody.children.length || tbody.innerHTML.trim() === '')) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="text-center">
+              No se encontraron roles. Puede que necesite agregar un nuevo rol o revisar su conexión.
+            </td>
+          </tr>
+        `;
+      }
     } else {
-      showError(data.message || "Error al listar roles.", "error");
+      showError(data.message || "Error al listar roles.");
     }
   } catch (err) {
     hideLoadingIndicator();
     console.error("Error al listar roles:", err);
-    showAlert("Error al listar roles: " + (err.message || err), "error");
+    showError("Error al listar roles: " + (err.message || err));
   }
 };
 
@@ -499,7 +594,7 @@ const loadPermissionsForForm = async () => {
   try {
     const token = localStorage.getItem("token");
     if (!token) {
-      showError("Token no encontrado. Inicie sesión nuevamente.", "error");
+      showError("Token no encontrado. Inicie sesión nuevamente.");
       return;
     }
     
@@ -515,19 +610,16 @@ const loadPermissionsForForm = async () => {
     
     if (res.ok) {
       const permissions = data.permissions || data;
-      console.log("Permisos cargados:", permissions); // Log de depuración
+      console.log("Permisos cargados:", permissions);
       
       const permissionsContainer = document.getElementById("permissionsContainer");
       const editPermissionsContainer = document.getElementById("editPermissionsContainer");
       
-      // Agrupar permisos por categoría/módulo
       const groupedPermissions = {};
       
       permissions.forEach(permission => {
         if (permission.status !== "active") return;
         
-        // Obtener categoría del código de permiso (suponiendo formato como "users_create", "users_edit")
-        // Si no tiene código, usar el nombre o "otros"
         const category = permission.code ? permission.code.split('_')[0] : 
                         (permission.name ? permission.name.split(' ')[0].toLowerCase() : 'otros');
         
@@ -541,12 +633,10 @@ const loadPermissionsForForm = async () => {
       if (permissionsContainer) {
         permissionsContainer.innerHTML = "";
         
-        // Crear un accordion/tabs para cada categoría
         for (const category in groupedPermissions) {
           const perms = groupedPermissions[category];
           const categoryId = `category-${category}`;
           
-          // Todas las categorías empiezan contraídas excepto la primera
           const isFirstCategory = Object.keys(groupedPermissions)[0] === category;
           
           permissionsContainer.innerHTML += `
@@ -567,7 +657,6 @@ const loadPermissionsForForm = async () => {
           `;
         }
         
-        // Botones para seleccionar todos/ninguno
         permissionsContainer.innerHTML = `
           <div class="permissions-actions">
             <button type="button" class="text-button" onclick="selectAllPermissions('permissions')">Seleccionar todos</button>
@@ -580,12 +669,10 @@ const loadPermissionsForForm = async () => {
       if (editPermissionsContainer) {
         editPermissionsContainer.innerHTML = "";
         
-        // Crear un accordion/tabs para cada categoría
         for (const category in groupedPermissions) {
           const perms = groupedPermissions[category];
           const categoryId = `edit-category-${category}`;
           
-          // Todas las categorías empiezan contraídas excepto la primera
           const isFirstCategory = Object.keys(groupedPermissions)[0] === category;
           
           editPermissionsContainer.innerHTML += `
@@ -606,7 +693,6 @@ const loadPermissionsForForm = async () => {
           `;
         }
         
-        // Botones para seleccionar todos/ninguno
         editPermissionsContainer.innerHTML = `
           <div class="permissions-actions">
             <button type="button" class="text-button" onclick="selectAllPermissions('editPermissions')">Seleccionar todos</button>
@@ -621,7 +707,6 @@ const loadPermissionsForForm = async () => {
         const style = document.createElement('style');
         style.id = styleId;
         style.innerHTML = `
-          /* Estilos para los contenedores de permisos */
           .permissions-container {
             max-height: 300px;
             overflow-y: auto;
@@ -707,7 +792,6 @@ const loadPermissionsForForm = async () => {
             color: #0039cb;
           }
           
-          /* Estilos para el botón de ver detalles en la tabla */
           .view-details-btn {
             background: none;
             border: none;
@@ -729,14 +813,12 @@ const loadPermissionsForForm = async () => {
             font-size: 16px;
           }
           
-          /* Mejorar la apariencia de los modales */
           .modal-content {
             max-width: 700px;
             max-height: 80vh;
             overflow-y: auto;
           }
           
-          /* Hacer los formularios más compactos */
           .form-field {
             margin-bottom: 12px;
           }
@@ -745,7 +827,6 @@ const loadPermissionsForForm = async () => {
             margin-bottom: 10px;
           }
           
-          /* Hacer que los checkboxes ocupen menos espacio */
           input[type="checkbox"] {
             margin-right: 5px;
             vertical-align: middle;
@@ -754,13 +835,15 @@ const loadPermissionsForForm = async () => {
         document.head.appendChild(style);
       }
     } else {
-      showError(data.message || "Error al cargar permisos.", "error");
+      showError(data.message || "Error al cargar permisos.");
     }
   } catch (err) {
     console.error("Error al cargar permisos:", err);
-    showError("Error al cargar permisos: " + (err.message || err), "error");
+    showError("Error al cargar permisos: " + (err.message || err));
   }
 };
+
+// ===== FUNCIONES AUXILIARES PARA PERMISOS =====
 
 // Función para alternar la visibilidad de una categoría de permisos
 function togglePermissionCategory(categoryId) {
@@ -793,19 +876,73 @@ function deselectAllPermissions(name) {
   });
 }
 
+// Función específica para marcar los permisos en el formulario
+function marcarPermisosEnFormulario(permisos) {
+  if (!permisos || !Array.isArray(permisos) || permisos.length === 0) {
+    console.warn("No hay permisos para marcar o formato incorrecto");
+    return;
+  }
+  
+  console.log("Iniciando marcado de permisos. Total permisos a marcar:", permisos.length);
+  
+  const allCheckboxes = document.querySelectorAll('input[name="editPermissions"]');
+  allCheckboxes.forEach(checkbox => {
+    checkbox.checked = false;
+  });
+  
+  console.log("Total checkboxes encontrados:", allCheckboxes.length);
+  
+  const permisosIds = new Set();
+  permisos.forEach(perm => {
+    if (typeof perm === 'object' && perm !== null && perm._id) {
+      permisosIds.add(perm._id);
+      console.log(`Permiso a marcar (objeto): ${perm._id}`);
+    } else if (typeof perm === 'string') {
+      permisosIds.add(perm);
+      console.log(`Permiso a marcar (string): ${perm}`);
+    }
+  });
+  
+  console.log("IDs de permisos a marcar:", Array.from(permisosIds));
+  
+  let permisosEncontrados = 0;
+  allCheckboxes.forEach(checkbox => {
+    const permissionId = checkbox.value;
+    console.log(`Verificando checkbox: id=${checkbox.id}, value=${permissionId}`);
+    
+    if (permisosIds.has(permissionId)) {
+      checkbox.checked = true;
+      permisosEncontrados++;
+      console.log(`✓ Checkbox marcado: ${checkbox.id} (${permissionId})`);
+      
+      const categoryItem = checkbox.closest('.permission-items');
+      if (categoryItem && categoryItem.style.display === 'none') {
+        categoryItem.style.display = 'grid';
+        const header = categoryItem.previousElementSibling;
+        if (header) {
+          const icon = header.querySelector('.category-toggle');
+          if (icon) icon.textContent = 'expand_more';
+        }
+      }
+    }
+  });
+  
+  console.log(`Permisos marcados: ${permisosEncontrados} de ${permisosIds.size} esperados`);
+}
+
+// ===== FUNCIONES DE OPERACIONES CRUD =====
+
 // Registrar rol
 const registerRole = async () => {
   const token = localStorage.getItem("token");
   if (!token) {
-    showAlert("Token no encontrado. Inicie sesión nuevamente.", "error");
+    showError("Token no encontrado. Inicie sesión nuevamente.");
     return;
   }
   
-  // Validar campos
   const nameValid = validateField("name", "El nombre es obligatorio.");
   const permissionsValid = validatePermissions("roleForm");
   
-  // Si algún campo no es válido, detener el proceso
   if (!nameValid || !permissionsValid) {
     return;
   }
@@ -813,7 +950,6 @@ const registerRole = async () => {
   const name = document.getElementById("name").value.trim();
   const description = document.getElementById("description") ? document.getElementById("description").value.trim() : "";
   
-  // Obtener permisos seleccionados
   const selectedPermissions = [];
   const permissionCheckboxes = document.querySelectorAll('input[name="permissions"]:checked');
   permissionCheckboxes.forEach(checkbox => {
@@ -833,29 +969,22 @@ const registerRole = async () => {
     const data = await res.json();
     
     if (res.status === 201 || res.ok) {
-      Swal.fire({
-        icon: 'success',
-        title: 'Éxito',
-        text: `Rol registrado correctamente.`,
-        showConfirmButton: true,
-      });
+      showSuccess('Rol registrado correctamente.');
       closeModal('roleModal');
       
       const roleForm = document.getElementById("roleForm");
       if (roleForm) {
         roleForm.reset();
         clearValidationErrors('roleForm');
-      } else {
-        showError("Formulario roleForm no encontrado");
       }
       
       loadRolesInternal();
     } else {
-      showError(data.message || "Error al registrar rol.", "error");
+      showError(data.message || "Error al registrar rol.");
     }
   } catch (err) {
     console.error("Error al registrar rol:", err);
-    showError("Error al registrar rol: " + (err.message || err), "error");
+    showError("Error al registrar rol: " + (err.message || err));
   }
 };
 
@@ -863,12 +992,12 @@ const registerRole = async () => {
 const fillEditForm = async (id) => {
   const token = localStorage.getItem("token");
   if (!token) {
-    showError("Token no encontrado. Inicie sesión nuevamente.", "error");
+    showError("Token no encontrado. Inicie sesión nuevamente.");
     return;
   }
 
   try {
-    showLoadingIndicator(); // Mostrar indicador de carga mientras se obtienen los datos
+    clearValidationErrors('editRoleForm');
     
     const res = await fetch(`${API_URL}/${id}`, {
       method: "GET",
@@ -878,17 +1007,13 @@ const fillEditForm = async (id) => {
       }
     });
 
-    hideLoadingIndicator(); // Ocultar indicador de carga
-
     if (!res.ok) {
       const data = await res.json();
-      showError(data.message || "Error al cargar los datos del rol.", "error");
+      showError(data.message || "Error al cargar los datos del rol.");
       return;
     }
 
     const role = await res.json();
-    // Limpiar mensajes de validación
-    clearValidationErrors('editRoleForm');
 
     const editIdElement = document.getElementById("editId");
     const editNameElement = document.getElementById("editName");
@@ -898,92 +1023,29 @@ const fillEditForm = async (id) => {
     if (editNameElement) editNameElement.value = role.name || "";
     if (editDescriptionElement) editDescriptionElement.value = role.description || "";
     
-    // Abrir el modal primero para asegurar que los elementos DOM de los permisos estén disponibles
     openModal('editRoleModal');
     
-    // Esperar un momento para asegurarse de que el DOM está listo
     setTimeout(() => {
       marcarPermisosEnFormulario(role.permissions);
     }, 300);
     
   } catch (err) {
-    hideLoadingIndicator(); // Asegurar que se oculte el indicador en caso de error
     console.error("Error al cargar el rol:", err);
-    showError(`Ocurrió un error: ${err.message || err}`, "error");
+    showError(`Ocurrió un error: ${err.message || err}`);
   }
 };
-
-// Función específica para marcar los permisos en el formulario
-function marcarPermisosEnFormulario(permisos) {
-  if (!permisos || !Array.isArray(permisos) || permisos.length === 0) {
-    console.warn("No hay permisos para marcar o formato incorrecto");
-    return;
-  }
-  
-  console.log("Iniciando marcado de permisos. Total permisos a marcar:", permisos.length);
-  
-  // Primero, desmarcar todos los permisos
-  const allCheckboxes = document.querySelectorAll('input[name="editPermissions"]');
-  allCheckboxes.forEach(checkbox => {
-    checkbox.checked = false;
-  });
-  
-  console.log("Total checkboxes encontrados:", allCheckboxes.length);
-  
-  // Crear un mapa de IDs de permisos para búsqueda más eficiente
-  const permisosIds = new Set();
-  permisos.forEach(perm => {
-    if (typeof perm === 'object' && perm !== null && perm._id) {
-      permisosIds.add(perm._id);
-      console.log(`Permiso a marcar (objeto): ${perm._id}`);
-    } else if (typeof perm === 'string') {
-      permisosIds.add(perm);
-      console.log(`Permiso a marcar (string): ${perm}`);
-    }
-  });
-  
-  console.log("IDs de permisos a marcar:", Array.from(permisosIds));
-  
-  // Marcar los permisos que corresponden
-  let permisosEncontrados = 0;
-  allCheckboxes.forEach(checkbox => {
-    const permissionId = checkbox.value;
-    console.log(`Verificando checkbox: id=${checkbox.id}, value=${permissionId}`);
-    
-    if (permisosIds.has(permissionId)) {
-      checkbox.checked = true;
-      permisosEncontrados++;
-      console.log(`✓ Checkbox marcado: ${checkbox.id} (${permissionId})`);
-      
-      // Expandir la categoría si está cerrada
-      const categoryItem = checkbox.closest('.permission-items');
-      if (categoryItem && categoryItem.style.display === 'none') {
-        categoryItem.style.display = 'grid';
-        const header = categoryItem.previousElementSibling;
-        if (header) {
-          const icon = header.querySelector('.category-toggle');
-          if (icon) icon.textContent = 'expand_more';
-        }
-      }
-    }
-  });
-  
-  console.log(`Permisos marcados: ${permisosEncontrados} de ${permisosIds.size} esperados`);
-}
 
 // Actualizar rol
 const updateRole = async () => {
   const token = localStorage.getItem("token");
   if (!token) {
-    showError("Token no encontrado. Inicie sesión nuevamente.", "error");
+    showError("Token no encontrado. Inicie sesión nuevamente.");
     return;
   }
 
-  // Validar campos
   const nameValid = validateField("editName", "El nombre es obligatorio.");
   const permissionsValid = validatePermissions("editRoleForm");
   
-  // Si algún campo no es válido, detener el proceso
   if (!nameValid || !permissionsValid) {
     return;
   }
@@ -992,7 +1054,6 @@ const updateRole = async () => {
   const name = document.getElementById("editName").value.trim();
   const description = document.getElementById("editDescription") ? document.getElementById("editDescription").value.trim() : "";
   
-  // Obtener permisos seleccionados
   const selectedPermissions = [];
   const permissionCheckboxes = document.querySelectorAll('input[name="editPermissions"]:checked');
   permissionCheckboxes.forEach(checkbox => {
@@ -1012,29 +1073,22 @@ const updateRole = async () => {
     const data = await res.json();
  
     if (res.ok) {
-       Swal.fire({
-        icon: 'success',
-        title: 'Éxito',
-        text: `Rol actualizado correctamente.`,
-        showConfirmButton: true,
-      });
+      showSuccess('Rol actualizado correctamente.');
       closeModal('editRoleModal');
       
       const editRoleForm = document.getElementById("editRoleForm");
       if (editRoleForm) {
         editRoleForm.reset();
         clearValidationErrors('editRoleForm');
-      } else {
-        console.warn("Formulario editRoleForm no encontrado");
       }
       
       loadRolesInternal();
     } else {
-      showError(data.message || "Error al actualizar el rol.", "error");
+      showError(data.message || "Error al actualizar el rol.");
     }
   } catch (err) {
     console.error("Error al actualizar rol:", err);
-    showError(`Ocurrió un error: ${err.message || err}`, "error");
+    showError(`Ocurrió un error: ${err.message || err}`);
   }
 };
 
@@ -1042,12 +1096,14 @@ const updateRole = async () => {
 const updateRoleStatus = async (id, status) => {
   const token = localStorage.getItem("token");
   if (!token) {
-    showError("Token no encontrado. Inicie sesión nuevamente.", "error");
+    showError("Token no encontrado. Inicie sesión nuevamente.");
     return;
   }
+
+  const switchElement = document.querySelector(`tr[data-roleid="${id}"] input[type="checkbox"]`);
   
   try {
-     const res = await fetch(`${API_URL}/${id}/status`, {
+    const res = await fetch(`${API_URL}/${id}/status`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -1065,29 +1121,37 @@ const updateRoleStatus = async (id, status) => {
     }
     
     if (res.ok) {
-      Swal.fire({
-        icon: 'success',
-        title: 'Éxito',
-        text: `Rol ${status === 'active' ? 'activado' : 'desactivado'} correctamente.`,
-        showConfirmButton: true,
-      });
+      showSuccess(`Rol ${status === 'active' ? 'activado' : 'desactivado'} correctamente.`);
       
-      loadRolesInternal();
+      if (switchElement) {
+        switchElement.checked = status === 'active';
+      }
+      
+      const roleIndex = allRoles.findIndex(r => r._id === id);
+      if (roleIndex !== -1) {
+        allRoles[roleIndex].status = status;
+      }
+      
+      const originalIndex = originalRoles.findIndex(r => r._id === id);
+      if (originalIndex !== -1) {
+        originalRoles[originalIndex].status = status;
+      }
+      
     } else {
       let errorMsg = data.message || `Error al ${status === 'active' ? 'activar' : 'desactivar'} el rol (${res.status})`;
-      
-      showError(errorMsg, "error");
+      showError(errorMsg);
 
-      console.error("Error response:", {
-        status: res.status,
-        data: data
-      });
-      loadRolesInternal();
+      if (switchElement) {
+        switchElement.checked = status !== 'active';
+      }
     }
   } catch (err) {
     console.error("Error al actualizar estado:", err);
-    showError(`Ocurrió un error de red: ${err.message || err}`, "error");
-    loadRolesInternal();
+    showError(`Ocurrió un error de red: ${err.message || err}`);
+    
+    if (switchElement) {
+      switchElement.checked = status !== 'active';
+    }
   }
 };
 
@@ -1095,7 +1159,7 @@ const updateRoleStatus = async (id, status) => {
 const deleteRole = async (id) => {
   const token = localStorage.getItem("token");
   if (!token) {
-    showError("Token no encontrado. Inicie sesión nuevamente.", "error");
+    showError("Token no encontrado. Inicie sesión nuevamente.");
     return;
   }
 
@@ -1116,22 +1180,16 @@ const deleteRole = async (id) => {
       }
     });
     
-    const data = await res.json();
-    
     if (res.ok) {
-      Swal.fire({
-        icon: 'success',
-        title: 'Éxito',
-        text: `Rol eliminado correctamente.`,
-        showConfirmButton: true,
-      });
+      showSuccess('Rol eliminado correctamente.');
       loadRolesInternal();
     } else {
-      showAlert(data.message || "No se pudo eliminar el rol", "error");
+      const data = await res.json();
+      showError(data.message || "No se pudo eliminar el rol");
     }
   } catch (err) {
     console.error("Error al eliminar rol:", err);
-    showError("Error al eliminar rol: " + (err.message || err), "error");
+    showError("Error al eliminar rol: " + (err.message || err));
   }
 };
 
@@ -1151,33 +1209,107 @@ const searchRole = () => {
     return;
   }
   
-  allRoles = term
-    ? originalRoles.filter(r => 
-        (r.name && r.name.toLowerCase().includes(term)) ||
-        (r.id && r.id.toLowerCase().includes(term)) ||
-        (r.description && r.description.toLowerCase().includes(term))
-      )
-    : [...originalRoles];
+  if (!term) {
+    allRoles = [...originalRoles];
+  } else {
+    allRoles = originalRoles.filter(r => {
+      const nameMatch = r.name && r.name.toLowerCase().includes(term);
+      const idMatch = (r.id || r._id) && (r.id || r._id).toLowerCase().includes(term);
+      const descriptionMatch = r.description && r.description.toLowerCase().includes(term);
+      
+      return nameMatch || idMatch || descriptionMatch;
+    });
+  }
   
   currentPage = 1;
   renderRolesTable(currentPage);
 };
 
-// Inicialización
-document.addEventListener("DOMContentLoaded", () => {
-  // Desactivar validación nativa del navegador
+// ===== FUNCIONES DE UTILIDAD ADICIONALES =====
+
+// Función para mostrar alertas
+function showAlert(message, type) {
+  let alertContainer = document.getElementById("alertContainer");
+  if (!alertContainer) {
+    alertContainer = document.createElement("div");
+    alertContainer.id = "alertContainer";
+    alertContainer.className = "alert-container";
+    document.body.appendChild(alertContainer);
+  }
+  
+  const alertElement = document.createElement("div");
+  alertElement.className = `alert alert-${type}`;
+  alertElement.textContent = message;
+  
+  const closeButton = document.createElement("span");
+  closeButton.className = "alert-close";
+  closeButton.innerHTML = "&times;";
+  closeButton.onclick = function() {
+    alertContainer.removeChild(alertElement);
+  };
+  
+  alertElement.appendChild(closeButton);
+  alertContainer.appendChild(alertElement);
+  
+  setTimeout(() => {
+    if (alertElement.parentNode === alertContainer) {
+      alertContainer.removeChild(alertElement);
+    }
+  }, 5000);
+}
+
+// Función para mostrar error
+function showError(message, type = "error") {
+  showAlert(message, type);
+}
+
+// ===== FUNCIONES DE INICIALIZACIÓN =====
+
+function initializeValidationEvents() {
   disableNativeBrowserValidation();
   
+  // Validación en tiempo real - Formulario de registro
+  const nameField = document.getElementById("name");
+  if (nameField) {
+    nameField.addEventListener("blur", () => validateField("name", "El nombre es obligatorio."));
+  }
+  
+  // Validación en tiempo real - Formulario de edición
+  const editNameField = document.getElementById("editName");
+  if (editNameField) {
+    editNameField.addEventListener("blur", () => validateField("editName", "El nombre es obligatorio."));
+  }
+
+  const editRoleForm = document.getElementById("editRoleForm");
+  if (editRoleForm) {
+    editRoleForm.onsubmit = async (event) => {
+      event.preventDefault();
+      await updateRole();
+    };
+  }
+  
+  const roleForm = document.getElementById("roleForm");
+  if (roleForm) {
+    roleForm.onsubmit = async (event) => {
+      event.preventDefault();
+      await registerRole();
+    };
+  }
+}
+
+function initializeListPage() {
   const roleTableBody = document.getElementById("roleTableBody");
   if (!roleTableBody) {
     console.error("ELEMENTO CRÍTICO NO ENCONTRADO: roleTableBody");
+    return;
   }
  
   try {
-    listRoles(); // Esta es la única que usa el indicador de carga
-    loadPermissionsForForm(); // Cargar permisos para los formularios
+    listRoles();
+    loadPermissionsForForm();
   } catch (err) {
     console.error("Error durante la inicialización:", err);
+    showError("Error al inicializar la página");
   }
   
   const mobileAddButton = document.getElementById("mobileAddButton");
@@ -1185,6 +1317,11 @@ document.addEventListener("DOMContentLoaded", () => {
     mobileAddButton.onclick = () => openModal('roleModal');
   } else {
     console.warn("Elemento mobileAddButton no encontrado");
+  }
+  
+  const addUserButton = document.getElementById("addUserButton");
+  if (addUserButton) {
+    addUserButton.onclick = () => openModal('roleModal');
   }
   
   const createRoleButton = document.getElementById("createRoleButton");
@@ -1207,77 +1344,23 @@ document.addEventListener("DOMContentLoaded", () => {
   } else {
     console.warn("Elemento searchInput no encontrado");
   }
+}
 
-  // Agregar validación para campos individuales en tiempo real - Formulario de registro
-  const nameField = document.getElementById("name");
-  if (nameField) {
-    nameField.addEventListener("blur", () => validateField("name", "El nombre es obligatorio."));
-  }
-  
-  // Agregar validación para campos individuales en tiempo real - Formulario de edición
-  const editNameField = document.getElementById("editName");
-  if (editNameField) {
-    editNameField.addEventListener("blur", () => validateField("editName", "El nombre es obligatorio."));
-  }
+// ===== EVENTOS AL CARGAR EL DOM =====
 
-  const editRoleForm = document.getElementById("editRoleForm");
-  if (editRoleForm) {
-    editRoleForm.onsubmit = async (event) => {
-      event.preventDefault();
-      await updateRole();
-    };
-  }
+document.addEventListener("DOMContentLoaded", () => {
+  if (!checkAuth()) return;
   
-  const roleForm = document.getElementById("roleForm");
-  if (roleForm) {
-    roleForm.onsubmit = async (event) => {
-      event.preventDefault();
-      await registerRole();
-    };
-  }
+  initializeValidationEvents();
+  initializeListPage();
 });
 
-// Función para mostrar alertas
-function showAlert(message, type) {
-  // Crear un contenedor de alertas si no existe
-  let alertContainer = document.getElementById("alertContainer");
-  if (!alertContainer) {
-    alertContainer = document.createElement("div");
-    alertContainer.id = "alertContainer";
-    alertContainer.className = "alert-container";
-    document.body.appendChild(alertContainer);
-  }
-  
-  const alertElement = document.createElement("div");
-  alertElement.className = `alert alert-${type}`;
-  alertElement.textContent = message;
-  
-  // Agregar botón de cerrar
-  const closeButton = document.createElement("span");
-  closeButton.className = "alert-close";
-  closeButton.innerHTML = "&times;";
-  closeButton.onclick = function() {
-    alertContainer.removeChild(alertElement);
-  };
-  
-  alertElement.appendChild(closeButton);
-  alertContainer.appendChild(alertElement);
-  
-  // Auto eliminar después de 5 segundos
-  setTimeout(() => {
-    if (alertElement.parentNode === alertContainer) {
-      alertContainer.removeChild(alertElement);
-    }
-  }, 5000);
-}
+// ===== FUNCIONES GLOBALES =====
 
-// Función para mostrar error
-function showError(message, type = "error") {
-  showAlert(message, type);
-}
-
-
-// Exportar funciones globales
+window.validateField = validateField;
+window.validatePermissions = validatePermissions;
+window.clearValidationErrors = clearValidationErrors;
+window.disableNativeBrowserValidation = disableNativeBrowserValidation;
 window.fillEditForm = fillEditForm;
 window.updateRoleStatus = updateRoleStatus;
 window.deleteRole = deleteRole;
@@ -1288,3 +1371,4 @@ window.showPermissionsDetails = showPermissionsDetails;
 window.togglePermissionCategory = togglePermissionCategory;
 window.selectAllPermissions = selectAllPermissions;
 window.deselectAllPermissions = deselectAllPermissions;
+window.hideLoadingIndicator = hideLoadingIndicator;

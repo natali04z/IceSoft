@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Permisos | ICESOFT</title>
+  <title>Registro de Ventas | ICESOFT</title>
   <link rel="icon" href="assets/icesoft.png" type="image/png">
   <link rel="stylesheet" href="css/style.css">
   <script src="js/alerts.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.materialdesignicons.com/6.5.95/css/materialdesignicons.min.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body class="dashboard-page">
   <section class="navLateral">
@@ -23,7 +23,7 @@
         </a>
         <span class="logo-text">ICESOFT</span>
       </div>
-      <nav>
+            <nav>
         <ul class="menu-principal">
           <li><a href="home.html"><i class="material-icons">dashboard</i><span>DASHBOARD</span></a></li>
           <li class="divider-menu-h"></li>
@@ -91,128 +91,115 @@
 
   <main class="main-content">
     <div class="container">
-      <h2 class="title">Gestión de Permisos</h2>
-  
-      <!-- Search container -->
-      <div class="search-container">
-        <div class="search-box">
-          <input type="text" id="searchInput" placeholder="Buscar permiso...">
-          <button onclick="searchPermission()"><i class="material-icons">search</i></button>
-        </div>
-      </div>
-  
-      <!-- Tabla de Permisos -->
-      <section class="table-card">
-        <div class="card-header card-header-flex">
-          <h3>Listado de Permisos</h3>
-          <button type="button" class="add-button" id="mobileAddButton">
-            <i class="material-icons">add</i> Añadir
-          </button>
-        </div>
-        <div class="card-body">
-          <div class="table-responsive">
-            <table class="users-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Nombre</th>
-                  <th>Código</th>
-                  <th>Descripción</th>
-                  <th>Estado</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody id="permissionTableBody">
-                <!-- Permisos cargados dinámicamente -->
-              </tbody>
-            </table>
-          </div>
-          <div class="pagination">
-            <div class="page-info"></div>
-            <div class="page-numbers"></div>
-          </div>
-        </div>
-      </section>
-  
-        <!-- Formulario de Registro de Permiso -->
-    <div id="registerModal" class="modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 id="formTitle">Registrar Permiso</h3>
-          <button class="modal-close" onclick="closeModal('registerModal')">&times;</button>
-        </div>
-        <div class="modal-body">
-          <form id="permissionForm" novalidate>
-            <div class="form-row">
-              <div class="form-field">
-                <input type="text" class="field-element" id="name" placeholder="Nombre">
-                <div class="error-message" id="name-error">El campo es obligatorio.</div>
-              </div>
-              <div class="form-field">
-                <input type="text" class="field-element" id="code" placeholder="Código">
-                <div class="error-message" id="code-error">El campo es obligatorio.</div>
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="form-field" style="width: 100%;">
-                <textarea class="field-element" id="description" placeholder="Descripción"></textarea>
-                <div class="error-message" id="description-error">El campo es obligatorio.</div>
-              </div>
-            </div>
-            <div class="controls-container">
-              <button type="button" class="action-button" id="registerButton">Registrar</button>
-            </div>
-          </form>
-        </div>
-      </div>
+      <h2 class="title">Registro de Ventas</h2>
+    <div class="page-header">
+      <button type="button" class="add-button" onclick="window.location.href='sale.html'">
+        <i class="material-icons">arrow_back</i> Volver a Ventas
+      </button>
     </div>
-
-    <!-- Modal de Edición de Permiso -->
-    <div id="editModal" class="modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 id="editFormTitle">Editar Permiso</h3>
-          <button class="modal-close" onclick="closeModal('editModal')">&times;</button>
-        </div>
-        <div class="modal-body">
-          <form id="editForm" novalidate>
-            <input type="hidden" id="editId">
-            <div class="form-row">
-              <div class="form-field">
-                <input type="text" class="field-element" id="editName" placeholder="Nombre">
-                <div class="error-message" id="editName-error">El campo es obligatorio.</div>
-              </div>
-              <div class="form-field">
-                <input type="text" class="field-element" id="editCode" placeholder="Código">
-                <div class="error-message" id="editCode-error">El campo es obligatorio.</div>
+      
+    <div class="purchase-register-container">
+      <div class="purchase-modal-content" style="display: flex; position: relative; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin: 20px auto;">
+        <!-- Panel izquierdo - Formulario -->
+        <div class="purchase-modal-left">
+          <div class="purchase-modal-header">
+            <h3 id="formTitle">Detalles de la Venta</h3>
+          </div>
+          
+          <form id="saleForm" novalidate>
+            <div class="purchase-form-group">
+              <label for="customer">Cliente</label>
+              <select class="field-element" id="customer">
+                <option value="" disabled selected hidden>Seleccionar cliente</option>
+                <!-- Los clientes se cargarán dinámicamente -->
+              </select>
+              <div class="error-message" id="customer-error" style="display:none;">El campo es obligatorio.</div>
+            </div>
+            
+            <div class="purchase-form-group">
+              <label for="product">Producto</label>
+              <select class="field-element" id="product">
+                <option value="" disabled selected hidden>Seleccionar producto</option>
+                <!-- Los productos se cargarán dinámicamente -->
+              </select>
+              <div class="error-message" id="product-error" style="display:none;">El campo es obligatorio.</div>
+            </div>
+            
+            <div class="purchase-form-group">
+              <label for="quantity">Cantidad</label>
+              <input type="number" class="field-element" id="quantity" min="1" value="1" onkeypress="return isNumber(event)">
+              <div class="error-message" id="quantity-error" style="display:none;">El campo es obligatorio.</div>
+            </div>
+            
+            <div class="purchase-form-group">
+              <label for="salePrice">Precio Venta</label>
+              <input type="number" class="field-element" id="salePrice" min="0" step="0.01"  onkeypress="return isNumber(event, true)">
+              <div class="error-message" id="salePrice-error" style="display:none;">El campo es obligatorio.</div>
+            </div>
+            
+            <div class="purchase-form-group">
+              <label for="salesDate">Fecha de venta</label>
+              <input type="date" class="field-element" id="salesDate">
+              <div class="error-message" id="salesDate-error" style="display:none;">El campo es obligatorio.</div>
+            </div>
+            
+            <div class="purchase-buttons-group">
+              <div class="purchase-total-product">
+                <label>Total del producto:</label>
+                <span id="product-total">$0</span>
               </div>
             </div>
-            <div class="form-row">
-              <div class="form-field" style="width: 100%;">
-                <textarea class="field-element" id="editDescription" placeholder="Descripción"></textarea>
-                <div class="error-message" id="editDescription-error">El campo es obligatorio.</div>
-              </div>
-            </div>
-            <div class="controls-container">
-              <button type="button" class="action-button" id="updateButton">Actualizar</button>
+            
+            <div class="purchase-modal-footer">
+              <button type="button" id="addToListBtn" class="add-button">
+                <i class="material-icons">add</i> Añadir
+              </button>
             </div>
           </form>
+        </div>
+        
+        <!-- Panel derecho - Tabla de productos -->
+        <div class="purchase-modal-right">
+          <div class="purchase-modal-header">
+            <h3>Lista de productos</h3>
+          </div>
+          
+          <table class="purchase-table">
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Cant.</th>
+                <th>Precio Venta</th>
+                <th>Total</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody id="modal-product-list">
+              <!-- Los productos se añadirán aquí -->
+            </tbody>
+          </table>
+          <div id="productItemsList-error" class="error-message text-center" style="display:none;">
+            Debe agregar al menos un producto a la venta.
+          </div>
+          
+          <div class="purchase-modal-footer">
+            <button id="registerButton" class="add-button">Guardar</button>
+            <div class="purchase-total">
+              Total: <span id="totalAmount">$0</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </main>
   
   <script src="js/menu.js"></script>
-  <script src="js/permission.js"></script>
+  <script src="js/sale.js"></script>
   <script src="js/profile.js"></script>
-
-   <script>
+  <script>
   document.addEventListener('DOMContentLoaded', function() {
       const userHeader = new UserHeaderIntegrated('dashboardHeader');
   });
   </script>
-
 </body>
 </html>
-
- 

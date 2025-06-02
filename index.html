@@ -64,7 +64,7 @@
       </div>
     </div>
     
-    <!-- FORMULARIO DE RECUPERACIÓN -->
+        <!-- FORMULARIO DE RECUPERACIÓN -->
     <div id="recoveryForm" class="recovery-container" style="display: none;">
       <div class="recovery-content">
         <div class="recovery-header">
@@ -115,22 +115,22 @@
               </div>
               <h3>Nueva Contraseña</h3>
             </div>
-            <p>Crea una contraseña segura de al menos 6 caracteres</p>
+            <p>Crea una contraseña segura entre 6 y 12 caracteres.</p>
             
             <div class="recovery-input-group">
               <label for="newPassword">Nueva Contraseña</label>
-              <input type="password" id="newPassword" placeholder="••••••" class="field-element">
+              <input type="password" id="newPassword" placeholder="••••••" class="field-element" maxlength="12">
               <div class="error-message" id="newPassword-error"></div>
             </div>
             
             <div class="recovery-input-group">
               <label for="confirmPassword">Confirmar Contraseña</label>
-              <input type="password" id="confirmPassword" placeholder="••••••" class="field-element">
+              <input type="password" id="confirmPassword" placeholder="••••••" class="field-element" maxlength="12">
               <div class="error-message" id="confirmPassword-error"></div>
             </div>
             
             <div class="password-requirements">
-              <p>La contraseña debe tener al menos 6 caracteres.</p>
+              <p>La contraseña debe tener entre 6 y 12 caracteres.</p>
             </div>
             
             <div class="recovery-actions">
@@ -197,10 +197,9 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
         
-        <div class="recovery-footer">
-          <p>© 2025 ICESOFT - Todos los derechos reservados</p>
-        </div>
       </div>
     </div>
   </section>
@@ -209,7 +208,7 @@
   <script src="js/login.js"></script>
   <script src="js/forgot-password.js"></script>
   
-  <script>
+<script>
     // Script para validación de formularios y recuperación de contraseña
     document.addEventListener('DOMContentLoaded', function() {
       // ===== FUNCIONES DE VALIDACIÓN =====
@@ -256,7 +255,7 @@
         }
       }
 
-      // Función para validar contraseña
+      // Función para validar contraseña ACTUALIZADA (6-12 caracteres)
       function validatePassword(fieldId, minLength = 6) {
         const field = document.getElementById(fieldId);
         const errorElement = document.getElementById(`${fieldId}-error`);
@@ -266,17 +265,21 @@
           errorElement.style.display = "block";
           field.classList.add("input-error");
           return false;
-        } else if (minLength && field.value.trim().length < minLength) {
-          errorElement.textContent = `La contraseña debe tener al menos ${minLength} caracteres.`;
+        }
+        
+        // NUEVA VALIDACIÓN: Entre 6 y 12 caracteres (igual que el backend)
+        if (field.value.trim().length < 6 || field.value.trim().length > 12) {
+          errorElement.textContent = "La contraseña debe tener entre 6 y 12 caracteres.";
           errorElement.style.display = "block";
           field.classList.add("input-error");
           return false;
-        } else {
-          errorElement.textContent = "";
-          errorElement.style.display = "none";
-          field.classList.remove("input-error");
-          return true;
         }
+        
+        // Limpiar errores si es válida
+        errorElement.textContent = "";
+        errorElement.style.display = "none";
+        field.classList.remove("input-error");
+        return true;
       }
 
       // Función para validar confirmación de contraseña
@@ -394,9 +397,9 @@
         return false;
       };
       
-      // Función para verificar email
-      window.verifyUserEmail = function() {
-        // Validar email con la nueva función de validación
+      // Función para verificar email CON API REAL
+      window.verifyUserEmail = async function() {
+        // Validar email con la función de validación
         if (!validateEmail('recoveryEmail')) {
           return false;
         }
@@ -419,38 +422,77 @@
           }
         });
         
-        // Simular proceso de verificación (1.5 segundos)
-        setTimeout(function() {
+        try {
+          // Llamada real a la API
+          const response = await fetch(`${API_URL}/auth/verify-email`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ email })
+          });
+          
+          const result = await response.json();
+          
+          // Cerrar loading
           Swal.close();
           
-          // Mostrar paso de contraseña
-          const stepEmail = document.getElementById('step-email');
-          const stepPassword = document.getElementById('step-password');
-          
-          if (stepEmail) stepEmail.classList.remove('active');
-          if (stepPassword) {
-            stepPassword.classList.add('active');
-            // Guardar email para uso posterior
-            stepPassword.setAttribute('data-email', email);
+          if (response.status === 200) {
+            // Email verificado exitosamente
+            const stepEmail = document.getElementById('step-email');
+            const stepPassword = document.getElementById('step-password');
+            
+            if (stepEmail) stepEmail.classList.remove('active');
+            if (stepPassword) {
+              stepPassword.classList.add('active');
+              // Guardar email para uso posterior
+              stepPassword.setAttribute('data-email', email);
+            }
+            
+            // Limpiar campos de contraseña y validaciones
+            const newPasswordField = document.getElementById('newPassword');
+            const confirmPasswordField = document.getElementById('confirmPassword');
+            
+            if (newPasswordField) newPasswordField.value = '';
+            if (confirmPasswordField) confirmPasswordField.value = '';
+            
+            clearValidationErrors('step-password');
+            
+          } else if (response.status === 404) {
+            // Usuario no encontrado
+            Swal.fire({
+              icon: 'error',
+              title: 'Email no registrado',
+              text: 'El correo electrónico no está registrado en nuestro sistema.',
+              confirmButtonColor: '#2e3b52'
+            });
+          } else {
+            // Otro error
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: result.message || 'Error al verificar el correo electrónico.',
+              confirmButtonColor: '#2e3b52'
+            });
           }
+        } catch (error) {
+          console.error("Error al verificar correo:", error);
+          Swal.close();
           
-          // Limpiar campos de contraseña y validaciones
-          const newPasswordField = document.getElementById('newPassword');
-          const confirmPasswordField = document.getElementById('confirmPassword');
-          
-          if (newPasswordField) newPasswordField.value = '';
-          if (confirmPasswordField) confirmPasswordField.value = '';
-          
-          clearValidationErrors('step-password');
-          
-        }, 1500);
+          Swal.fire({
+            icon: 'error',
+            title: 'Error de conexión',
+            text: 'No se pudo conectar con el servidor. Inténtalo de nuevo.',
+            confirmButtonColor: '#2e3b52'
+          });
+        }
         
         return false;
       };
       
-      // Función para cambiar contraseña
-      window.changePassword = function() {
-        // Validar contraseñas usando las nuevas funciones
+      // Función para cambiar contraseña CON API REAL
+      window.changePassword = async function() {
+        // Validar contraseñas usando las funciones actualizadas
         const passwordValid = validatePassword('newPassword', 6);
         const confirmValid = validatePasswordMatch('newPassword', 'confirmPassword');
         
@@ -460,16 +502,24 @@
         }
         
         const newPasswordField = document.getElementById('newPassword');
-        const confirmPasswordField = document.getElementById('confirmPassword');
         const passwordStep = document.getElementById('step-password');
         
-        if (!newPasswordField || !confirmPasswordField || !passwordStep) {
+        if (!newPasswordField || !passwordStep) {
           return false;
         }
         
         const newPassword = newPasswordField.value.trim();
-        const confirmPassword = confirmPasswordField.value.trim();
         const email = passwordStep.getAttribute('data-email');
+        
+        if (!email) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No se encontró el email. Por favor, intenta de nuevo.',
+            confirmButtonColor: '#2e3b52'
+          });
+          return false;
+        }
         
         // Mostrar indicador de carga
         Swal.fire({
@@ -482,20 +532,74 @@
           }
         });
         
-        // Simular proceso de cambio de contraseña (2 segundos)
-        setTimeout(function() {
-          Swal.fire({
-            icon: 'success',
-            title: '¡Contraseña actualizada!',
-            text: 'Tu contraseña ha sido actualizada correctamente. Ahora puedes iniciar sesión.'
-          }).then(() => {
-            const stepPassword = document.getElementById('step-password');
-            const stepSuccess = document.getElementById('step-success');
-            
-            if (stepPassword) stepPassword.classList.remove('active');
-            if (stepSuccess) stepSuccess.classList.add('active');
+        try {
+          // Llamada real a la API
+          const response = await fetch(`${API_URL}/auth/reset-password`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 
+              email, 
+              newPassword 
+            })
           });
-        }, 2000);
+          
+          const result = await response.json();
+          
+          if (response.status === 200) {
+            // Contraseña actualizada exitosamente
+            Swal.fire({
+              icon: 'success',
+              title: '¡Contraseña actualizada!',
+              text: 'Tu contraseña ha sido actualizada correctamente. Ahora puedes iniciar sesión.',
+              confirmButtonColor: '#2e3b52'
+            }).then(() => {
+              const stepPassword = document.getElementById('step-password');
+              const stepSuccess = document.getElementById('step-success');
+              
+              if (stepPassword) stepPassword.classList.remove('active');
+              if (stepSuccess) stepSuccess.classList.add('active');
+            });
+          } else if (response.status === 400) {
+            // Error de validación (contraseña muy corta/larga)
+            Swal.close();
+            Swal.fire({
+              icon: 'error',
+              title: 'Error de validación',
+              text: result.message || 'La contraseña debe tener entre 6 y 12 caracteres.',
+              confirmButtonColor: '#2e3b52'
+            });
+          } else if (response.status === 404) {
+            // Usuario no encontrado
+            Swal.close();
+            Swal.fire({
+              icon: 'error',
+              title: 'Usuario no encontrado',
+              text: 'No se pudo encontrar el usuario. Inténtalo de nuevo.',
+              confirmButtonColor: '#2e3b52'
+            });
+          } else {
+            // Otro error
+            Swal.close();
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: result.message || 'No se pudo actualizar la contraseña.',
+              confirmButtonColor: '#2e3b52'
+            });
+          }
+        } catch (error) {
+          console.error("Error al cambiar contraseña:", error);
+          Swal.close();
+          
+          Swal.fire({
+            icon: 'error',
+            title: 'Error de conexión',
+            text: 'No se pudo conectar con el servidor. Inténtalo de nuevo.',
+            confirmButtonColor: '#2e3b52'
+          });
+        }
         
         return false;
       };
@@ -555,9 +659,9 @@
         loginForm.addEventListener('submit', async function(e) {
           e.preventDefault();
           
-          // Validar campos
+          // Validar campos - NOTA: Para login no validamos longitud de contraseña
           const emailValid = validateEmail('email');
-          const passwordValid = validatePassword('password', 0);
+          const passwordValid = validateField('password', 'La contraseña es obligatoria.');
           
           // Si algún campo no es válido, detener el proceso
           if (!emailValid || !passwordValid) {

@@ -1,6 +1,6 @@
 const API_URL = "https://backend-yy4o.onrender.com/api/permissions";
   
-// Variables globales
+// Variables globales para permisos y paginación
 let allPermissions = [];
 let originalPermissions = [];
 let currentPage = 1;
@@ -28,6 +28,8 @@ function validateField(fieldId, errorMessage) {
 // Limpiar mensajes de error
 function clearValidationErrors(formId) {
   const form = document.getElementById(formId);
+  if (!form) return;
+  
   const errorElements = form.querySelectorAll('.error-message');
   const inputElements = form.querySelectorAll('.field-element');
   
@@ -42,12 +44,10 @@ function clearValidationErrors(formId) {
 
 // Desactivar validación nativa del navegador en los formularios
 function disableNativeBrowserValidation() {
-  // Desactivar validación del formulario de registro
   const permissionForm = document.getElementById("permissionForm");
   if (permissionForm) {
     permissionForm.setAttribute("novalidate", "");
     
-    // Quitar atributos 'required' y 'pattern' de los campos
     const inputs = permissionForm.querySelectorAll("input, select, textarea");
     inputs.forEach(input => {
       input.removeAttribute("required");
@@ -55,12 +55,10 @@ function disableNativeBrowserValidation() {
     });
   }
   
-  // Desactivar validación del formulario de edición
   const editForm = document.getElementById("editForm");
   if (editForm) {
     editForm.setAttribute("novalidate", "");
     
-    // Quitar atributos 'required' y 'pattern' de los campos
     const inputs = editForm.querySelectorAll("input, select, textarea");
     inputs.forEach(input => {
       input.removeAttribute("required");
@@ -69,7 +67,7 @@ function disableNativeBrowserValidation() {
   }
 }
 
-// ===== FUNCIONES PRINCIPALES =====
+// ===== FUNCIONES DE UTILIDAD =====
 
 // Obtener permisos de usuario
 function getUserPermissions() {
@@ -88,30 +86,55 @@ function getUserPermissions() {
 // Abrir modal
 function openModal(modalId) {
   const modal = document.getElementById(modalId);
-  if (modal) {
-    modal.style.display = "flex";
-    
-    // Resetear mensajes de error al abrir el modal
-    if (modalId === 'registerModal') {
-      clearValidationErrors('permissionForm');
-      document.getElementById("permissionForm").reset();
-    } else if (modalId === 'editModal') {
-      clearValidationErrors('editForm');
-    }
-  } else {
+  if (!modal) {
     console.error(`Modal con ID "${modalId}" no encontrado`);
+    return;
+  }
+  
+  modal.style.display = "flex";
+  
+  if (modalId === 'registerModal') {
+    clearValidationErrors('permissionForm');
+    
+    const permissionForm = document.getElementById("permissionForm");
+    if (permissionForm) {
+      permissionForm.reset();
+    }
+  } else if (modalId === 'editModal') {
+    clearValidationErrors('editForm');
   }
 }
 
 // Cerrar modal
 function closeModal(modalId) {
   const modal = document.getElementById(modalId);
-  if (modal) {
-    modal.style.display = "none";
-  } else {
+  if (!modal) {
     console.error(`Modal con ID "${modalId}" no encontrado`);
+    return;
   }
+  
+  modal.style.display = "none";
 }
+
+function hideLoadingIndicator() {
+  Swal.close();
+}
+
+const checkAuth = () => {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    Swal.fire({
+      icon: 'error',
+      title: 'No autorizado',
+      text: 'Debe iniciar sesión para acceder a esta página',
+      confirmButtonText: 'Ir a login'
+    }).then(() => {
+      window.location.href = 'index.html';
+    });
+    return false;
+  }
+  return true;
+};
 
 // Mostrar formulario de registro
 const showRegisterForm = () => {
@@ -161,7 +184,9 @@ const hideForms = () => {
   }
 };
 
-// Renderizar tabla de permisos
+// ===== FUNCIONES DE RENDERIZADO (Estructura mejorada) =====
+
+// Renderizar tabla de permisos con la estructura mejorada
 const renderPermissionsTable = (page = 1) => {
   const tbody = document.getElementById("permissionTableBody");
   
@@ -173,8 +198,14 @@ const renderPermissionsTable = (page = 1) => {
   tbody.innerHTML = "";
 
   if (!allPermissions || allPermissions.length === 0) {
-    showError("No hay permisos para mostrar");
-    tbody.innerHTML = `<tr><td colspan="6" class="text-center">No hay permisos disponibles</td></tr>`;
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="text-center">
+          No hay permisos disponibles
+        </td>
+      </tr>
+    `;
+    renderPaginationControls();
     return;
   }
 
@@ -184,57 +215,72 @@ const renderPermissionsTable = (page = 1) => {
 
   const userPermissions = getUserPermissions();
   const canEditPermissions = userPermissions.includes("edit_permissions");
+  
+  let tableContent = '';
 
-  permissionsToShow.forEach(permission => {
-    tbody.innerHTML += `
-      <tr>
-        <td>${permission.id || ''}</td>
-        <td>${permission.name || ''}</td>
-        <td>${permission.code || ''}</td>
-        <td>${permission.description || '-'}</td>
-        <td>
-          <label class="switch">
-            <input type="checkbox" ${permission.status === "active" ? "checked" : ""} 
-              ${canEditPermissions ? `onchange="updatePermissionStatus('${permission._id}', this.checked ? 'active' : 'inactive')"` : 'disabled'}>
-            <span class="slider round"></span>
-          </label>
-        </td>
-        <td>
-          <div class="action-buttons">
-            <button onclick="fillEditForm('${permission._id}')" class="icon-button edit-button" title="Editar" ${canEditPermissions ? '' : 'disabled'}>
-              <i class="material-icons">edit</i>
-            </button>
-            <button onclick="deletePermission('${permission._id}')" class="icon-button delete-button" title="Eliminar" ${userPermissions.includes("delete_permissions") ? '' : 'disabled'}>
-              <i class="material-icons">delete</i>
-            </button>
-          </div>
-        </td>
-      </tr>
-    `;
+  permissionsToShow.forEach((permission, index) => {
+    try {
+      const permissionId = permission._id || "";
+      const displayId = permission.id || permissionId || `Pe${String(index + 1).padStart(2, '0')}`;
+      const status = permission.status || "active";
+      
+      tableContent += `
+        <tr data-permissionid="${permissionId}" data-index="${index}">
+          <td class="id-column">${displayId}</td>
+          <td>${permission.name || ''}</td>
+          <td>${permission.code || ''}</td>
+          <td>${permission.description || '-'}</td>
+          <td>
+            <label class="switch">
+              <input type="checkbox" ${status === "active" ? "checked" : ""} 
+                ${canEditPermissions ? `onchange="updatePermissionStatus('${permissionId}', this.checked ? 'active' : 'inactive')"` : 'disabled'}>
+              <span class="slider round"></span>
+            </label>
+          </td>
+          <td>
+            <div class="action-buttons">
+              <button onclick="fillEditForm('${permissionId}')" class="icon-button edit-button" title="Editar" ${canEditPermissions ? '' : 'disabled'}>
+                <i class="material-icons">edit</i>
+              </button>
+              <button onclick="deletePermission('${permissionId}')" class="icon-button delete-button" title="Eliminar" ${userPermissions.includes("delete_permissions") ? '' : 'disabled'}>
+                <i class="material-icons">delete</i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    } catch (error) {
+      tableContent += `
+        <tr>
+          <td colspan="6" class="text-center text-danger">
+            Error al renderizar este permiso: ${error.message}
+          </td>
+        </tr>
+      `;
+    }
   });
-
+  
+  tbody.innerHTML = tableContent;
   renderPaginationControls();
 };
 
-// Renderizar controles de paginación
+// Renderizar controles de paginación con la estructura mejorada
 const renderPaginationControls = () => {
   if (!allPermissions || allPermissions.length === 0) {
-    console.warn("No hay permisos para paginar");
     return;
   }
   
   const totalPages = Math.ceil(allPermissions.length / rowsPerPage);
   const container = document.querySelector(".page-numbers");
-  const info = document.querySelector(".pagination .page-info:nth-child(2)");
+  const info = document.querySelector(".pagination .page-info");
   
-  if (!container || !info) {
+  if (!container) {
     console.error("Elementos de paginación no encontrados en el DOM");
     return;
   }
 
   container.innerHTML = "";
 
-  // Botón anterior
   const prevBtn = document.createElement("button");
   prevBtn.classList.add("page-nav");
   prevBtn.innerText = "←";
@@ -242,7 +288,6 @@ const renderPaginationControls = () => {
   prevBtn.onclick = () => changePage(currentPage - 1);
   container.appendChild(prevBtn);
 
-  // Números de página
   for (let i = 1; i <= totalPages; i++) {
     const btn = document.createElement("div");
     btn.classList.add("page-number");
@@ -252,17 +297,18 @@ const renderPaginationControls = () => {
     container.appendChild(btn);
   }
 
-  // Botón siguiente
   const nextBtn = document.createElement("button");
   nextBtn.classList.add("page-nav");
   nextBtn.innerText = "→";
-  nextBtn.disabled = currentPage === totalPages;
+  nextBtn.disabled = currentPage === totalPages || totalPages === 0;
   nextBtn.onclick = () => changePage(currentPage + 1);
   container.appendChild(nextBtn);
 
-  const startItem = (currentPage - 1) * rowsPerPage + 1;
-  const endItem = Math.min(startItem + rowsPerPage - 1, allPermissions.length);
-  info.innerHTML = `${startItem}-${endItem} de ${allPermissions.length}`;
+  if (info) {
+    const startItem = allPermissions.length > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0;
+    const endItem = Math.min(startItem + rowsPerPage - 1, allPermissions.length);
+    info.innerHTML = `${startItem}-${endItem} de ${allPermissions.length}`;
+  }
 };
 
 // Cambiar de página
@@ -270,6 +316,8 @@ const changePage = (page) => {
   currentPage = page;
   renderPermissionsTable(currentPage);
 };
+
+// ===== FUNCIONES DE CARGA DE DATOS =====
 
 // Cargar permisos sin indicador de carga
 const loadPermissionsInternal = async () => {
@@ -291,11 +339,39 @@ const loadPermissionsInternal = async () => {
     const data = await res.json();
     
     if (res.ok) {
-      originalPermissions = data.permissions || data;
+      let permissions = [];
       
+      if (data && typeof data === 'object' && data.permissions) {
+        permissions = data.permissions;
+      } else if (Array.isArray(data)) {
+        permissions = data;
+      } else if (data && typeof data === 'object') {
+        const arrayProps = Object.keys(data).filter(key => Array.isArray(data[key]));
+        if (arrayProps.length > 0) {
+          permissions = data[arrayProps[0]];
+        }
+      }
+      
+      if (!Array.isArray(permissions)) {
+        permissions = [];
+      }
+      
+      originalPermissions = permissions;
       allPermissions = [...originalPermissions];
       currentPage = 1;
+      
       renderPermissionsTable(currentPage);
+      
+      const tbody = document.getElementById("permissionTableBody");
+      if (tbody && (!tbody.children.length || tbody.innerHTML.trim() === '')) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="text-center">
+              No se encontraron permisos. Puede que necesite agregar un nuevo permiso o revisar su conexión.
+            </td>
+          </tr>
+        `;
+      }
     } else {
       showError(data.message || "No se pudo listar los permisos.");
     }
@@ -304,10 +380,9 @@ const loadPermissionsInternal = async () => {
   }
 };
 
-// Listar permisos con indicador de carga
+// Listar permisos con indicador de carga (solo para carga inicial)
 const listPermissions = async () => {
   try {
-    
     const token = localStorage.getItem("token");
     if (!token) {
       showError("Inicie sesión nuevamente.");
@@ -329,33 +404,61 @@ const listPermissions = async () => {
     hideLoadingIndicator();
     
     if (res.ok) {
-      originalPermissions = data.permissions || data;
+      let permissions = [];
       
+      if (data && typeof data === 'object' && data.permissions) {
+        permissions = data.permissions;
+      } else if (Array.isArray(data)) {
+        permissions = data;
+      } else if (data && typeof data === 'object') {
+        const arrayProps = Object.keys(data).filter(key => Array.isArray(data[key]));
+        if (arrayProps.length > 0) {
+          permissions = data[arrayProps[0]];
+        }
+      }
+      
+      if (!Array.isArray(permissions)) {
+        permissions = [];
+      }
+      
+      originalPermissions = permissions;
       allPermissions = [...originalPermissions];
       currentPage = 1;
+      
       renderPermissionsTable(currentPage);
+      
+      const tbody = document.getElementById("permissionTableBody");
+      if (tbody && (!tbody.children.length || tbody.innerHTML.trim() === '')) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="text-center">
+              No se encontraron permisos. Puede que necesite agregar un nuevo permiso o revisar su conexión.
+            </td>
+          </tr>
+        `;
+      }
     } else {
-      showError(data.message || "Error al listar permisos.", "error");
+      showError(data.message || "Error al listar permisos.");
     }
   } catch (err) {
     hideLoadingIndicator();
-    showAlert("Error al listar los permisos");
+    showError("Error al listar los permisos");
   }
 };
+
+// ===== FUNCIONES DE OPERACIONES CRUD =====
 
 // Registrar permiso
 const registerPermission = async () => {
   const token = localStorage.getItem("token");
   if (!token) {
-    showAlert("Inicie sesión nuevamente.");
+    showError("Inicie sesión nuevamente.");
     return;
   }
   
-  // Validar campos"
   const nameValid = validateField("name", "El nombre es obligatorio.");
   const codeValid = validateField("code", "El código es obligatorio.");
   
-  // Si algún campo no es válido, detener el proceso
   if (!nameValid || !codeValid) {
     return;
   }
@@ -384,13 +487,11 @@ const registerPermission = async () => {
       if (permissionForm) {
         permissionForm.reset();
         clearValidationErrors('permissionForm');
-      } else {
-        showError("Formulario permissionForm no encontrado");
       }
       
       loadPermissionsInternal();
     } else {
-      showErrort(data.message || "No se pudo registrar el permiso.");
+      showError(data.message || "No se pudo registrar el permiso.");
     }
   } catch (err) {
     showError("Error al registrar el permiso");
@@ -406,6 +507,8 @@ const fillEditForm = async (id) => {
   }
 
   try {
+    clearValidationErrors('editForm');
+    
     const res = await fetch(`${API_URL}/${id}`, {
       method: "GET",
       headers: {
@@ -422,8 +525,6 @@ const fillEditForm = async (id) => {
 
     const permission = await res.json();
 
-    clearValidationErrors('editForm');
-
     const editIdElement = document.getElementById("editId");
     const editNameElement = document.getElementById("editName");
     const editCodeElement = document.getElementById("editCode");
@@ -438,7 +539,7 @@ const fillEditForm = async (id) => {
 
     openModal('editModal');
   } catch (err) {
-   showError("Error al cargar el permiso.");
+    showError("Error al cargar el permiso.");
   }
 };
 
@@ -450,11 +551,9 @@ const updatePermission = async () => {
     return;
   }
 
-  // Validar campos
   const nameValid = validateField("editName", "El nombre es obligatorio.");
   const codeValid = validateField("editCode", "El código es obligatorio.");
   
-  // Si algún campo no es válido, detener el proceso
   if (!nameValid || !codeValid) {
     return;
   }
@@ -484,13 +583,11 @@ const updatePermission = async () => {
       if (editForm) {
         editForm.reset();
         clearValidationErrors('editForm');
-      } else {
-        console.warn("Formulario editForm no encontrado");
       }
       
       loadPermissionsInternal();
     } else {
-      showError(data.message ||"No se pudo actualizar el permiso.");
+      showError(data.message || "No se pudo actualizar el permiso.");
     }
   } catch (err) {
     showError("Error al actualizar el permiso");
@@ -504,9 +601,11 @@ const updatePermissionStatus = async (id, status) => {
     showError("Inicie sesión nuevamente.");
     return;
   }
+
+  const switchElement = document.querySelector(`tr[data-permissionid="${id}"] input[type="checkbox"]`);
   
   try {
-     const res = await fetch(`${API_URL}/${id}/status`, {
+    const res = await fetch(`${API_URL}/${id}/status`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -524,23 +623,37 @@ const updatePermissionStatus = async (id, status) => {
     }
     
     if (res.ok) {
-       showSuccess(`El permiso ha sido ${status === 'active' ? 'activado' : 'desactivado'}`);
+      showSuccess(`El permiso ha sido ${status === 'active' ? 'activado' : 'desactivado'}`);
       
-      loadPermissionsInternal();
+      if (switchElement) {
+        switchElement.checked = status === 'active';
+      }
+      
+      // Actualizar el estado en los arrays de permisos
+      const permissionIndex = allPermissions.findIndex(p => p._id === id);
+      if (permissionIndex !== -1) {
+        allPermissions[permissionIndex].status = status;
+      }
+      
+      const originalIndex = originalPermissions.findIndex(p => p._id === id);
+      if (originalIndex !== -1) {
+        originalPermissions[originalIndex].status = status;
+      }
+      
     } else {
       let errorMsg = data.message || `Error al ${status === 'active' ? 'activar' : 'desactivar'} el permiso (${res.status})`;
-      
-      showError(errorMsg, "error");
+      showError(errorMsg);
 
-      console.error("Error response:", {
-        status: res.status,
-        data: data
-      });
-      loadPermissionsInternal();
+      if (switchElement) {
+        switchElement.checked = status !== 'active';
+      }
     }
   } catch (err) {
     showError("Error al actualizar estado del permiso");
-    loadPermissionsInternal();
+    
+    if (switchElement) {
+      switchElement.checked = status !== 'active';
+    }
   }
 };
 
@@ -569,13 +682,12 @@ const deletePermission = async (id) => {
       }
     });
     
-    const data = await res.json();
-    
     if (res.ok) {
       showSuccess('El permiso ha sido eliminado');
       loadPermissionsInternal();
     } else {
-      showAlert(data.message || "No se pudo eliminar el permiso");
+      const data = await res.json();
+      showError(data.message || "No se pudo eliminar el permiso");
     }
   } catch (err) {
     showError("Error al eliminar el permiso");
@@ -598,32 +710,117 @@ const searchPermission = () => {
     return;
   }
   
-  allPermissions = term
-    ? originalPermissions.filter(p => 
-        (p.name && p.name.toLowerCase().includes(term)) ||
-        (p.code && p.code.toLowerCase().includes(term)) ||
-        (p.description && p.description.toLowerCase().includes(term))
-      )
-    : [...originalPermissions];
+  if (!term) {
+    allPermissions = [...originalPermissions];
+  } else {
+    allPermissions = originalPermissions.filter(p => {
+      const nameMatch = p.name && p.name.toLowerCase().includes(term);
+      const codeMatch = p.code && p.code.toLowerCase().includes(term);
+      const descriptionMatch = p.description && p.description.toLowerCase().includes(term);
+      const idMatch = (p.id || p._id) && (p.id || p._id).toLowerCase().includes(term);
+      
+      return nameMatch || codeMatch || descriptionMatch || idMatch;
+    });
+  }
   
   currentPage = 1;
   renderPermissionsTable(currentPage);
 };
 
-// Inicialización
-document.addEventListener("DOMContentLoaded", () => {
-  // Desactivar validación nativa del navegador
+// ===== FUNCIONES DE UTILIDAD ADICIONALES =====
+
+// Función para mostrar alertas
+function showAlert(message, type) {
+  let alertContainer = document.getElementById("alertContainer");
+  if (!alertContainer) {
+    alertContainer = document.createElement("div");
+    alertContainer.id = "alertContainer";
+    alertContainer.className = "alert-container";
+    document.body.appendChild(alertContainer);
+  }
+  
+  const alertElement = document.createElement("div");
+  alertElement.className = `alert alert-${type}`;
+  alertElement.textContent = message;
+  
+  const closeButton = document.createElement("span");
+  closeButton.className = "alert-close";
+  closeButton.innerHTML = "&times;";
+  closeButton.onclick = function() {
+    alertContainer.removeChild(alertElement);
+  };
+  
+  alertElement.appendChild(closeButton);
+  alertContainer.appendChild(alertElement);
+  
+  setTimeout(() => {
+    if (alertElement.parentNode === alertContainer) {
+      alertContainer.removeChild(alertElement);
+    }
+  }, 5000);
+}
+
+// Función para mostrar error
+function showError(message, type = "error") {
+  showAlert(message, type);
+}
+
+// ===== FUNCIONES DE INICIALIZACIÓN =====
+
+function initializeValidationEvents() {
   disableNativeBrowserValidation();
   
+  // Validación en tiempo real - Formulario de registro
+  const nameField = document.getElementById("name");
+  if (nameField) {
+    nameField.addEventListener("blur", () => validateField("name", "El nombre es obligatorio."));
+  }
+  
+  const codeField = document.getElementById("code");
+  if (codeField) {
+    codeField.addEventListener("blur", () => validateField("code", "El código es obligatorio."));
+  }
+  
+  // Validación en tiempo real - Formulario de edición
+  const editNameField = document.getElementById("editName");
+  if (editNameField) {
+    editNameField.addEventListener("blur", () => validateField("editName", "El nombre es obligatorio."));
+  }
+  
+  const editCodeField = document.getElementById("editCode");
+  if (editCodeField) {
+    editCodeField.addEventListener("blur", () => validateField("editCode", "El código es obligatorio."));
+  }
+
+  const editForm = document.getElementById("editForm");
+  if (editForm) {
+    editForm.onsubmit = async (event) => {
+      event.preventDefault();
+      await updatePermission();
+    };
+  }
+  
+  const permissionForm = document.getElementById("permissionForm");
+  if (permissionForm) {
+    permissionForm.onsubmit = async (event) => {
+      event.preventDefault();
+      await registerPermission();
+    };
+  }
+}
+
+function initializeListPage() {
   const permissionTableBody = document.getElementById("permissionTableBody");
   if (!permissionTableBody) {
     console.error("ELEMENTO CRÍTICO NO ENCONTRADO: permissionTableBody");
+    return;
   }
  
   try {
-    listPermissions(); // Esta es la única que usa el indicador de carga
+    listPermissions();
   } catch (err) {
     console.error("Error durante la inicialización:", err);
+    showError("Error al inicializar la página");
   }
   
   const mobileAddButton = document.getElementById("mobileAddButton");
@@ -631,6 +828,11 @@ document.addEventListener("DOMContentLoaded", () => {
     mobileAddButton.onclick = () => openModal('registerModal');
   } else {
     console.warn("Elemento mobileAddButton no encontrado");
+  }
+  
+  const addUserButton = document.getElementById("addUserButton");
+  if (addUserButton) {
+    addUserButton.onclick = () => openModal('registerModal');
   }
   
   const registerButton = document.getElementById("registerButton");
@@ -653,66 +855,22 @@ document.addEventListener("DOMContentLoaded", () => {
   } else {
     console.warn("Elemento searchInput no encontrado");
   }
-
-  // Agregar validación para campos individuales en tiempo real - Formulario de registro
-  document.getElementById("name").addEventListener("blur", () => validateField("name", "El nombre es obligatorio."));
-  document.getElementById("code").addEventListener("blur", () => validateField("code", "El código es obligatorio."));
-  
-  // Agregar validación para campos individuales en tiempo real - Formulario de edición
-  document.getElementById("editName").addEventListener("blur", () => validateField("editName", "El nombre es obligatorio."));
-  document.getElementById("editCode").addEventListener("blur", () => validateField("editCode", "El código es obligatorio."));
-
-  const editForm = document.getElementById("editForm");
-  if (editForm) {
-    editForm.onsubmit = async (event) => {
-      event.preventDefault();
-      await updatePermission();
-    };
-  }
-  
-  const permissionForm = document.getElementById("permissionForm");
-  if (permissionForm) {
-    permissionForm.onsubmit = async (event) => {
-      event.preventDefault();
-      await registerPermission();
-    };
-  }
-});
-
-
-// Función para mostrar alertas
-function showAlert(message, type) {
-  const alertContainer = document.getElementById("alertContainer");
-  if (!alertContainer) {
-    console.error("Contenedor de alertas no encontrado");
-    alert(message); // Fallback a alert nativo
-    return;
-  }
-  
-  const alertElement = document.createElement("div");
-  alertElement.className = `alert alert-${type}`;
-  alertElement.textContent = message;
-  
-  // Agregar botón de cerrar
-  const closeButton = document.createElement("span");
-  closeButton.className = "alert-close";
-  closeButton.innerHTML = "&times;";
-  closeButton.onclick = function() {
-    alertContainer.removeChild(alertElement);
-  };
-  
-  alertElement.appendChild(closeButton);
-  alertContainer.appendChild(alertElement);
-  
-  // Auto eliminar después de 5 segundos
-  setTimeout(() => {
-    if (alertElement.parentNode === alertContainer) {
-      alertContainer.removeChild(alertElement);
-    }
-  }, 5000);
 }
 
-// Exportar funciones globales
+// ===== EVENTOS AL CARGAR EL DOM =====
+
+document.addEventListener("DOMContentLoaded", () => {
+  if (!checkAuth()) return;
+  
+  initializeValidationEvents();
+  initializeListPage();
+});
+
+// ===== FUNCIONES GLOBALES =====
+
+window.validateField = validateField;
+window.clearValidationErrors = clearValidationErrors;
+window.disableNativeBrowserValidation = disableNativeBrowserValidation;
 window.fillEditForm = fillEditForm;
 window.updatePermissionStatus = updatePermissionStatus;
 window.deletePermission = deletePermission;
@@ -720,3 +878,5 @@ window.openModal = openModal;
 window.closeModal = closeModal;
 window.showRegisterForm = showRegisterForm;
 window.hideRegisterForm = hideRegisterForm;
+window.searchPermission = searchPermission;
+window.hideLoadingIndicator = hideLoadingIndicator;

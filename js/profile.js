@@ -1,200 +1,275 @@
-// Endpoints de la API
-const API_BASE_URL = "https://backend-yy4o.onrender.com/api";
-const API_PROFILE = `${API_BASE_URL}/users/profile/me`;
+// userHeaderIntegrated.js - SIN botón de menú (para evitar duplicados)
 
-// Variable global para almacenar los datos del perfil
-let userProfile = null;
-
-// ===== FUNCIONES DE CARGA Y VISUALIZACIÓN =====
-
-// Cargar perfil del usuario
-const loadProfile = async () => {
-  try {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      window.location.href = "login.html";
-      return;
+class UserHeaderIntegrated {
+    constructor(containerId = 'userProfileSection') {
+        this.container = document.getElementById(containerId);
+        this.userInfo = {
+            name: '',
+            lastname: '',
+            contact_number: '',
+            email: '',
+            role: '',
+            status: 'inactive'
+        };
+        
+        // URLs de la API
+        this.API_BASE_URL = "https://backend-yy4o.onrender.com/api";
+        this.API_PROFILE = `${this.API_BASE_URL}/users/profile/me`;
+        
+        this.init();
     }
-    
-    showLoadingIndicator();
-    
-    const res = await fetch(API_PROFILE, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
-      }
-    });
-    
-    const data = await res.json();
-    
-    hideLoadingIndicator();
-    
-    if (res.ok) {
-      userProfile = data;
-      displayProfile(userProfile);
-      
-      // Actualizar el nombre en el navbar
-      updateUserNameInHeader(userProfile);
-      
-      // Guardar datos en localStorage para uso en otras páginas
-      saveUserDataToLocalStorage(userProfile);
-    } else {
-      showError(data.message || "Error al cargar el perfil de usuario.");
+
+    async init() {
+        this.render();
+        this.bindEvents();
+        await this.loadUserProfile();
     }
-  } catch (err) {
-    hideLoadingIndicator();
-    showError("Error al cargar el perfil: " + (err.message || err));
-  }
-};
 
-// Mostrar datos del perfil en la interfaz
-const displayProfile = (profile) => {
-  if (!profile) return;
-  
-  // Información básica del perfil
-  document.getElementById('profileName').textContent = profile.name || 'No disponible';
-  document.getElementById('profileLastname').textContent = profile.lastname || 'No disponible';
-  document.getElementById('profileContact').textContent = profile.contact_number || 'No disponible';
-  document.getElementById('profileEmail').textContent = profile.email || 'No disponible';
-  
-  // Mostrar el nombre del rol (usando displayName si está disponible)
-  const roleElement = document.getElementById('profileRole');
-  if (roleElement) {
-    let roleName = 'No asignado';
-    
-    if (profile.role) {
-      if (typeof profile.role === 'string') {
-        roleName = profile.role;
-      } else if (profile.role.displayName) {
-        roleName = profile.role.displayName;
-      } else if (profile.role.name) {
-        roleName = profile.role.name;
-      }
+    // Renderizar SOLO el perfil de usuario (SIN botón de menú)
+    render() {
+        this.container.innerHTML = `
+            <div class="uhi-user-dropdown-container">
+                <div class="uhi-user-info" id="userDropdownToggle">
+                    <div class="uhi-user-avatar" id="userAvatar">U</div>
+                    <div class="uhi-user-details">
+                        <span class="uhi-user-name" id="loggedUserName">Cargando...</span>
+                        <span class="uhi-user-role" id="userRoleBadge">-</span>
+                    </div>
+                     <i class="material-icons uhi-arrow-icon" id="arrowIcon">expand_more</i>
+                </div>
+                
+                <div class="uhi-user-dropdown-menu" id="userDropdownMenu">
+                    <!-- Información del Usuario -->
+                    <div class="uhi-user-profile-section">
+                        <div class="uhi-user-profile-header">
+                            <div class="uhi-user-avatar-large" id="dropdownAvatar">U</div>
+                            <div class="uhi-user-profile-info">
+                                <h3 id="dropdownUserName">Cargando...</h3>
+                                <div class="uhi-user-badges">
+                                    <span class="uhi-badge uhi-badge-role" id="dropdownUserRole">-</span>
+                                    <span class="uhi-badge uhi-badge-status" id="dropdownUserStatus">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Detalles del Usuario -->
+                    <div class="uhi-user-details-section">
+                        <div class="uhi-detail-item">
+                            <i class="material-icons">phone</i>
+                            <div>
+                                <span class="uhi-detail-label">Teléfono</span>
+                                <span class="uhi-detail-value" id="dropdownUserPhone">-</span>
+                            </div>
+                        </div>
+                        <div class="uhi-detail-item">
+                            <i class="material-icons">email</i>
+                            <div>
+                                <span class="uhi-detail-label">Correo</span>
+                                <span class="uhi-detail-value" id="dropdownUserEmail">-</span>
+                            </div>
+                        </div>
+                        <div class="uhi-detail-item">
+                            <i class="material-icons">check_circle</i>
+                            <div>
+                                <span class="uhi-detail-label">Estado</span>
+                                <span class="uhi-detail-value" id="dropdownUserStatusText">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="uhi-dropdown-divider"></div>
+                    
+                    <a href="#" class="uhi-dropdown-item" onclick="logout()">
+                        <i class="material-icons">logout</i>
+                        <span>Cerrar Sesión</span>
+                    </a>
+                </div>
+            </div>
+        `;
     }
-    
-    roleElement.textContent = roleName;
-  }
-  
-  // Mostrar el estado como texto
-  const statusElement = document.getElementById('profileStatus');
-  if (statusElement) {
-    statusElement.textContent = profile.status === "active" ? "Activo" : "Inactivo";
-  }
-};
 
-// Actualizar el nombre de usuario en el header
-const updateUserNameInHeader = (profile) => {
-  if (!profile) return;
-  
-  const loggedUserName = document.getElementById('loggedUserName');
-  if (loggedUserName) {
-    loggedUserName.textContent = `${profile.name || ''} ${profile.lastname || ''}`.trim() || 'Usuario';
-  }
-};
-
-// Guardar datos del usuario en localStorage
-const saveUserDataToLocalStorage = (profile) => {
-  if (!profile) return;
-  
-  let roleName = '';
-  if (profile.role) {
-    if (typeof profile.role === 'string') {
-      roleName = profile.role;
-    } else if (profile.role.displayName) {
-      roleName = profile.role.displayName;
-    } else if (profile.role.name) {
-      roleName = profile.role.name;
+    async loadUserProfile() {
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                window.location.href = "login.html";
+                return;
+            }
+            
+            const res = await fetch(this.API_PROFILE, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                }
+            });
+            
+            const data = await res.json();
+            
+            if (res.ok) {
+                this.userInfo = data;
+                this.updateUserInterface();
+                this.saveUserDataToLocalStorage(data);
+            } else {
+                this.showError(data.message || "Error al cargar el perfil de usuario.");
+            }
+        } catch (err) {
+            this.showError("Error al cargar el perfil: " + (err.message || err));
+        }
     }
-  }
-  
-  const userData = {
-    name: profile.name || '',
-    lastname: profile.lastname || '',
-    email: profile.email || '',
-    role: roleName,
-    status: profile.status || 'inactive'
-  };
-  
-  localStorage.setItem('userData', JSON.stringify(userData));
-};
 
-// ===== FUNCIONES DE INTERFAZ DE USUARIO =====
+    bindEvents() {
+        const dropdownToggle = document.getElementById('userDropdownToggle');
+        const dropdownMenu = document.getElementById('userDropdownMenu');
+        const arrowIcon = document.getElementById('arrowIcon');
 
-// Función para configurar el desplegable del usuario en el header
-const setupUserDropdown = () => {
-  const dropdownToggle = document.getElementById("userDropdownToggle");
-  const dropdownMenu = document.getElementById("userDropdownMenu");
-  
-  if (dropdownToggle && dropdownMenu) {
-    // Toggle del menú al hacer clic
-    dropdownToggle.addEventListener("click", () => {
-      dropdownMenu.classList.toggle("show");
-    });
-    
-    // Cerrar el menú al hacer clic fuera de él
-    document.addEventListener("click", (event) => {
-      if (!dropdownToggle.contains(event.target) && !dropdownMenu.contains(event.target)) {
-        dropdownMenu.classList.remove("show");
-      }
-    });
-  }
-};
+        // Toggle dropdown
+        dropdownToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = dropdownMenu.classList.contains('uhi-show');
+            
+            if (isOpen) {
+                this.closeDropdown();
+            } else {
+                // MODIFICACIÓN: Cerrar dropdown de notificaciones antes de abrir usuario
+                const notificationDropdown = document.getElementById('notificationDropdown');
+                if (notificationDropdown) {
+                    notificationDropdown.classList.remove('show');
+                }
+                
+                this.openDropdown();
+            }
+        });
 
-// Función de cierre de sesión
-const logout = () => {
-  localStorage.removeItem("token");
-  localStorage.removeItem("userData");
-  window.location.href = "login.html";
-};
+        // Cerrar dropdown al hacer clic fuera
+        document.addEventListener('click', (e) => {
+            if (!dropdownToggle.contains(e.target) && !dropdownMenu.contains(e.target)) {
+                this.closeDropdown();
+            }
+        });
 
-// ===== FUNCIONES DE UTILIDAD =====
+        // Cerrar con Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                this.closeDropdown();
+            }
+        });
+    }
 
-// Mostrar indicador de carga
-function showLoadingIndicator() {
-  const loader = document.getElementById("loadingIndicator");
-  if (loader) {
-    loader.style.display = "flex";
-  }
+    openDropdown() {
+        document.getElementById('userDropdownMenu').classList.add('uhi-show');
+        document.getElementById('arrowIcon').style.transform = 'rotate(180deg)';
+    }
+
+    closeDropdown() {
+        document.getElementById('userDropdownMenu').classList.remove('uhi-show');
+        document.getElementById('arrowIcon').style.transform = 'rotate(0deg)';
+    }
+
+    updateUserInterface() {
+        const userDisplay = this.getUserDisplayInfo();
+
+        // Actualizar elementos del header
+        document.getElementById('userAvatar').textContent = userDisplay.initials;
+        document.getElementById('loggedUserName').textContent = userDisplay.fullName;
+        document.getElementById('userRoleBadge').textContent = userDisplay.roleName;
+        
+        // Actualizar elementos del dropdown
+        document.getElementById('dropdownAvatar').textContent = userDisplay.initials;
+        document.getElementById('dropdownUserName').textContent = userDisplay.fullName;
+        document.getElementById('dropdownUserRole').textContent = userDisplay.roleName;
+        document.getElementById('dropdownUserStatus').textContent = userDisplay.statusText;
+        document.getElementById('dropdownUserPhone').textContent = this.userInfo.contact_number || 'No disponible';
+        document.getElementById('dropdownUserEmail').textContent = this.userInfo.email || 'No disponible';
+        document.getElementById('dropdownUserStatusText').textContent = userDisplay.statusText;
+
+        // Actualizar clases de badges
+        const roleBadge = document.getElementById('dropdownUserRole');
+        const statusBadge = document.getElementById('dropdownUserStatus');
+        
+        roleBadge.className = `uhi-badge uhi-badge-role ${userDisplay.roleClass}`;
+        statusBadge.className = `uhi-badge uhi-badge-status ${userDisplay.statusClass}`;
+    }
+
+    getUserDisplayInfo() {
+        const name = this.userInfo.name || '';
+        const lastname = this.userInfo.lastname || '';
+        const initials = (name.charAt(0) + lastname.charAt(0)).toUpperCase() || 'U';
+        const fullName = `${name} ${lastname}`.trim() || 'Usuario';
+        const roleName = this.getRoleName();
+        const statusText = this.userInfo.status === "active" ? "Activo" : "Inactivo";
+        const roleClass = this.getRoleClass(roleName);
+        const statusClass = this.userInfo.status === 'active' ? 'uhi-status-active' : 'uhi-status-inactive';
+
+        return {
+            initials,
+            fullName,
+            roleName,
+            statusText,
+            roleClass,
+            statusClass
+        };
+    }
+
+    getRoleName() {
+        if (!this.userInfo.role) return 'No asignado';
+        
+        if (typeof this.userInfo.role === 'string') {
+            return this.userInfo.role;
+        } else if (this.userInfo.role.displayName) {
+            return this.userInfo.role.displayName;
+        } else if (this.userInfo.role.name) {
+            return this.userInfo.role.name;
+        }
+        
+        return 'No asignado';
+    }
+
+    getRoleClass(roleName) {
+        const role = roleName.toLowerCase();
+        if (role.includes('admin')) return 'uhi-role-admin';
+        if (role.includes('editor')) return 'uhi-role-editor';
+        if (role.includes('moderator')) return 'uhi-role-moderator';
+        return 'uhi-role-user';
+    }
+
+    saveUserDataToLocalStorage(profile) {
+        if (!profile) return;
+        
+        const userData = {
+            name: profile.name || '',
+            lastname: profile.lastname || '',
+            email: profile.email || '',
+            contact_number: profile.contact_number || '',
+            role: this.getRoleName(),
+            status: profile.status || 'inactive'
+        };
+        
+        localStorage.setItem('userData', JSON.stringify(userData));
+    }
+
+    showError(message) {
+        if (typeof showError === 'function') {
+            showError(message);
+        } else {
+            console.error(message);
+        }
+    }
+
+    getUserInfo() {
+        return { ...this.userInfo };
+    }
+
+    async refreshUserData() {
+        await this.loadUserProfile();
+    }
 }
 
-// Ocultar indicador de carga
-function hideLoadingIndicator() {
-  const loader = document.getElementById("loadingIndicator");
-  if (loader) {
-    loader.style.display = "none";
-  }
+function logout() {
+    localStorage.removeItem("token");
+    localStorage.removeItem("userData");
+    window.location.href = "index.html";
 }
 
-// Mostrar mensaje de error
-function showError(message) {
-  Swal.fire({
-    icon: 'error',
-    title: 'Error',
-    text: message,
-    showConfirmButton: true,
-  });
-}
-
-// ===== INICIALIZACIÓN =====
-
-document.addEventListener("DOMContentLoaded", () => {
-  // Configurar el dropdown del usuario
-  setupUserDropdown();
-  
-  // Cargar datos del perfil
-  loadProfile();
-  
-  // Configurar el menú lateral (si existe)
-  const menuBtn = document.querySelector(".btn-menu");
-  const sidebar = document.querySelector(".sidebar");
-  
-  if (menuBtn && sidebar) {
-    menuBtn.addEventListener("click", () => {
-      sidebar.classList.toggle("active");
-    });
-  }
-});
-
-// Exponer funciones globales
-window.logout = logout;
+let userHeaderInstance = null;

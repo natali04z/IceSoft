@@ -24,7 +24,7 @@ function validateField(fieldId, errorMessage) {
   }
 }
 
-// Función para validar número NIT
+// Función para validar número NIT - ACTUALIZADA
 function validateNIT(fieldId) {
   const field = document.getElementById(fieldId);
   const errorElement = document.getElementById(`${fieldId}-error`);
@@ -34,8 +34,13 @@ function validateNIT(fieldId) {
     errorElement.style.display = "block";
     field.classList.add("input-error");
     return false;
-  } else if (!/^\d+$/.test(field.value.trim())) {
-    errorElement.textContent = "El NIT debe contener solo dígitos.";
+  } else if (!/^[\d-]+$/.test(field.value.trim())) {
+    errorElement.textContent = "El NIT debe contener solo dígitos y guiones.";
+    errorElement.style.display = "block";
+    field.classList.add("input-error");
+    return false;
+  } else if (field.value.trim().replace(/-/g, '').length < 9) {
+    errorElement.textContent = "El NIT debe tener al menos 9 dígitos.";
     errorElement.style.display = "block";
     field.classList.add("input-error");
     return false;
@@ -133,20 +138,34 @@ function clearValidationErrors(formId) {
   });
 }
 
-// Función para establecer validación de campos numéricos
+// Función para establecer validación de campos numéricos - ACTUALIZADA
 function setupNumericValidation() {
-  const numericInputs = document.querySelectorAll('#contact_phone, #editContactPhone, #nit, #editNit');
+  const phoneInputs = document.querySelectorAll('#contact_phone, #editContactPhone');
+  const nitInputs = document.querySelectorAll('#nit, #editNit');
   
-  numericInputs.forEach(input => {
+  // Validación para teléfonos (solo números)
+  phoneInputs.forEach(input => {
     input.addEventListener('keypress', function(e) {
       if (!/^\d$/.test(e.key) && !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key)) {
         e.preventDefault();
       }
     });
     
-    // Limpiar el input si de alguna manera entran caracteres no numéricos
     input.addEventListener('input', function() {
       this.value = this.value.replace(/\D/g, '');
+    });
+  });
+  
+  // Validación para NIT (números y guiones)
+  nitInputs.forEach(input => {
+    input.addEventListener('keypress', function(e) {
+      if (!/^[\d-]$/.test(e.key) && !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key)) {
+        e.preventDefault();
+      }
+    });
+    
+    input.addEventListener('input', function() {
+      this.value = this.value.replace(/[^\d-]/g, '');
     });
   });
 }
@@ -188,21 +207,30 @@ function closeModal(modalId) {
   }
 }
 
-// Renderizar tabla de proveedores
+// ===== FUNCIÓN PRINCIPAL DE RENDERIZADO CON PAGINADO MEJORADO =====
 const renderProvidersTable = (page = 1) => {
   const tbody = document.getElementById("providerTableBody");
   
   if (!tbody) {
+    console.error("Elemento providerTableBody no encontrado en el DOM");
     return;
   }
   
   tbody.innerHTML = "";
 
   if (!allProviders || allProviders.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" class="text-center">No hay proveedores disponibles</td></tr>`;
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8" class="text-center">
+          No hay proveedores disponibles
+        </td>
+      </tr>
+    `;
+    renderPaginationControls();
     return;
   }
 
+  // LÓGICA DE PAGINADO: Calcular elementos a mostrar
   const start = (page - 1) * rowsPerPage;
   const end = start + rowsPerPage;
   const providersToShow = allProviders.slice(start, end);
@@ -211,58 +239,80 @@ const renderProvidersTable = (page = 1) => {
   const userPermissions = getUserPermissions();
   const canEditProviders = userPermissions.includes("update_providers");
   const canUpdateStatus = userPermissions.includes("update_status_providers");
+  
+  let tableContent = '';
 
-  providersToShow.forEach(provider => {
-    tbody.innerHTML += `
-      <tr data-id="${provider._id}">
-        <td>${provider.id || ''}</td>
-        <td>${provider.nit || ''}</td>
-        <td>${provider.company || ''}</td>
-        <td>${provider.name || ''}</td>
-        <td>${provider.contact_phone || ''}</td>
-        <td>${provider.email || ''}</td>
-        <td>
-          <label class="switch">
-            <input type="checkbox" ${provider.status === "active" ? "checked" : ""} 
-              onclick="updateProviderStatus('${provider._id}', this.checked ? 'active' : 'inactive')" 
-              ${canUpdateStatus ? '' : 'disabled'}>
-            <span class="slider round"></span>
-          </label>
-        </td>
-        <td>
-          <div class="action-buttons">
-            <button onclick="fillEditForm('${provider._id}')" class="icon-button edit-button" title="Editar" ${canEditProviders ? '' : 'disabled'}>
-              <i class="material-icons">edit</i>
-            </button>
-            <button onclick="deleteProvider('${provider._id}')" class="icon-button delete-button" title="Eliminar" ${userPermissions.includes("delete_providers") ? '' : 'disabled'}>
-              <i class="material-icons">delete</i>
-            </button>
-          </div>
-        </td>
-      </tr>
-    `;
+  // Renderizar solo los elementos de la página actual
+  providersToShow.forEach((provider, index) => {
+    try {
+      const providerId = provider._id || "";
+      const displayId = provider.id || providerId || `Prov${String(index + 1).padStart(2, '0')}`;
+      const providerNit = provider.nit || "Sin NIT";
+      const providerCompany = provider.company || "Sin empresa";
+      const providerName = provider.name || "Sin nombre";
+      const providerPhone = provider.contact_phone || "Sin teléfono";
+      const providerEmail = provider.email || "Sin email";
+      const status = provider.status || "inactive";
+      
+      tableContent += `
+        <tr data-id="${providerId}" data-index="${index}">
+          <td class="id-column">${displayId}</td>
+          <td>${providerNit}</td>
+          <td>${providerCompany}</td>
+          <td>${providerName}</td>
+          <td>${providerPhone}</td>
+          <td>${providerEmail}</td>
+          <td>
+            <label class="switch">
+              <input type="checkbox" ${status === "active" ? "checked" : ""} 
+                onclick="updateProviderStatus('${providerId}', this.checked ? 'active' : 'inactive')" 
+                ${canUpdateStatus ? '' : 'disabled'}>
+              <span class="slider round"></span>
+            </label>
+          </td>
+          <td>
+            <div class="action-buttons">
+              <button onclick="fillEditForm('${providerId}')" class="icon-button edit-button" title="Editar" ${canEditProviders ? '' : 'disabled'}>
+                <i class="material-icons">edit</i>
+              </button>
+              <button onclick="deleteProvider('${providerId}')" class="icon-button delete-button" title="Eliminar" ${userPermissions.includes("delete_providers") ? '' : 'disabled'}>
+                <i class="material-icons">delete</i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    } catch (error) {
+      tableContent += `
+        <tr>
+          <td colspan="8" class="text-center text-danger">
+            Error al renderizar este proveedor: ${error.message}
+          </td>
+        </tr>
+      `;
+    }
   });
-
-  renderPaginationControls();
+  
+  tbody.innerHTML = tableContent;
+  renderPaginationControls(); // Renderizar controles de paginación
 };
 
-// Renderizar controles de paginación
+// ===== FUNCIÓN DE CONTROLES DE PAGINACIÓN MEJORADA =====
 const renderPaginationControls = () => {
   if (!allProviders || allProviders.length === 0) {
     return;
   }
   
+  // Calcular total de páginas
   const totalPages = Math.ceil(allProviders.length / rowsPerPage);
   const container = document.querySelector(".page-numbers");
-  const info = document.querySelector(".pagination .page-info:nth-child(2)");
+  const info = document.querySelector(".pagination .page-info");
 
-  if (!container || !info) {
-    return;
-  }
+  if (!container) return;
 
   container.innerHTML = "";
 
-  // Botón anterior
+  // Botón "Anterior"
   const prevBtn = document.createElement("button");
   prevBtn.classList.add("page-nav");
   prevBtn.innerText = "←";
@@ -280,26 +330,29 @@ const renderPaginationControls = () => {
     container.appendChild(btn);
   }
 
-  // Botón siguiente
+  // Botón "Siguiente"
   const nextBtn = document.createElement("button");
   nextBtn.classList.add("page-nav");
   nextBtn.innerText = "→";
-  nextBtn.disabled = currentPage === totalPages;
+  nextBtn.disabled = currentPage === totalPages || totalPages === 0;
   nextBtn.onclick = () => changePage(currentPage + 1);
   container.appendChild(nextBtn);
 
-  const startItem = (currentPage - 1) * rowsPerPage + 1;
-  const endItem = Math.min(startItem + rowsPerPage - 1, allProviders.length);
-  info.innerHTML = `${startItem}-${endItem} de ${allProviders.length}`;
+  // Información de paginación (ej: "1-10 de 50")
+  if (info) {
+    const startItem = allProviders.length > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0;
+    const endItem = Math.min(startItem + rowsPerPage - 1, allProviders.length);
+    info.innerHTML = `${startItem}-${endItem} de ${allProviders.length}`;
+  }
 };
 
-// Cambiar de página
+// ===== FUNCIÓN PARA CAMBIAR DE PÁGINA =====
 const changePage = (page) => {
   currentPage = page;
   renderProvidersTable(currentPage);
 };
 
-// Cargar proveedores internamente
+// Cargar proveedores internamente sin indicador de carga
 const loadProvidersInternal = async () => {
   try {
     const token = localStorage.getItem("token");
@@ -316,22 +369,60 @@ const loadProvidersInternal = async () => {
       }
     });
     
-    const data = await res.json();
-    
-    if (res.ok) {
-      originalProviders = data || [];
-      allProviders = [...originalProviders];
-      currentPage = 1;
-      renderProvidersTable(currentPage);
-    } else {
-      showError(data.message || "No se pudo listar los proveedores.");
+    // Verificar si la respuesta es exitosa
+    if (!res.ok) {
+      try {
+        const errorData = await res.json();
+        showError(errorData.message || `Error del servidor: ${res.status} ${res.statusText}`);
+      } catch (parseError) {
+        showError(`Error del servidor: ${res.status} ${res.statusText}`);
+      }
+      return;
     }
+    
+    const data = await res.json();
+    console.log("Datos cargados internamente:", data);
+    
+    if (data.success) {
+      // Si la respuesta tiene la estructura {success: true, data: [...]}
+      originalProviders = data.data || [];
+    } else if (Array.isArray(data)) {
+      // Si la respuesta es directamente un array
+      originalProviders = data;
+    } else {
+      // Si hay datos pero no en el formato esperado
+      originalProviders = [];
+      console.warn("Formato de respuesta inesperado en loadProvidersInternal:", data);
+    }
+    
+    // Verificar si originalProviders es un array válido
+    if (!Array.isArray(originalProviders)) {
+      originalProviders = [];
+    }
+    
+    allProviders = [...originalProviders];
+    currentPage = 1;
+    renderProvidersTable(currentPage);
+    
+    // Mostrar mensaje si no hay proveedores
+    const tbody = document.getElementById("providerTableBody");
+    if (tbody && (!tbody.children.length || tbody.innerHTML.trim() === '')) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8" class="text-center">
+            No se encontraron proveedores. Puede que necesite agregar un nuevo proveedor o revisar su conexión.
+          </td>
+        </tr>
+      `;
+    }
+    
   } catch (err) {
-    showError("Error al listar los proveedores.");
+    console.error("Error en loadProvidersInternal:", err);
+    showError("Error de conexión al cargar los proveedores.");
   }
 };
 
-// Listar proveedores desde el backend
+// Listar proveedores desde el backend con indicador de carga
 const listProviders = async () => {
   try {
     const token = localStorage.getItem("token");
@@ -350,21 +441,63 @@ const listProviders = async () => {
       }
     });
     
+    // Verificar si la respuesta es exitosa antes de parsear JSON
+    if (!res.ok) {
+      hideLoadingIndicator();
+      
+      // Intentar obtener el mensaje de error del servidor
+      try {
+        const errorData = await res.json();
+        showError(errorData.message || `Error del servidor: ${res.status} ${res.statusText}`);
+      } catch (parseError) {
+        showError(`Error del servidor: ${res.status} ${res.statusText}`);
+      }
+      return;
+    }
+    
     const data = await res.json();
-
     hideLoadingIndicator();
 
-    if (res.ok) {
-      originalProviders = data || [];
-      allProviders = [...originalProviders];
-      currentPage = 1;
-      renderProvidersTable(currentPage);
+    // Verificar la estructura de la respuesta
+    console.log("Respuesta del servidor:", data);
+    
+    if (data.success) {
+      // Si la respuesta tiene la estructura {success: true, data: [...]}
+      originalProviders = data.data || [];
+    } else if (Array.isArray(data)) {
+      // Si la respuesta es directamente un array
+      originalProviders = data;
     } else {
-      showError(data.message || "No se pudo listar los proveedores.");
+      // Si hay datos pero no en el formato esperado
+      originalProviders = [];
+      console.warn("Formato de respuesta inesperado:", data);
     }
+    
+    // Verificar si originalProviders es un array válido
+    if (!Array.isArray(originalProviders)) {
+      originalProviders = [];
+    }
+    
+    allProviders = [...originalProviders];
+    currentPage = 1;
+    renderProvidersTable(currentPage);
+    
+    // Mostrar mensaje si no hay proveedores
+    const tbody = document.getElementById("providerTableBody");
+    if (tbody && (!tbody.children.length || tbody.innerHTML.trim() === '')) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8" class="text-center">
+            No se encontraron proveedores. Puede que necesite agregar un nuevo proveedor o revisar su conexión.
+          </td>
+        </tr>
+      `;
+    }
+    
   } catch (err) {
     hideLoadingIndicator();
-    showError("Error al listar los proveedores.");
+    console.error("Error completo:", err);
+    showError("Error de conexión al servidor. Verifique su conexión a internet.");
   }
 };
 
@@ -438,7 +571,6 @@ const registerProvider = async () => {
     showError("Error al registrar el proveedor.");
   }
 };
-
 
 // Llenar formulario de edición
 const fillEditForm = async (id) => {
@@ -637,31 +769,41 @@ try {
 }
 };
 
-// Buscar proveedor
+// ===== FUNCIÓN DE BÚSQUEDA CON PAGINADO =====
 const searchProvider = () => {
-const searchInput = document.getElementById("searchInput");
+  const searchInput = document.getElementById("searchInput");
 
-if (!searchInput) {
-  return;
-}
+  if (!searchInput) {
+    console.error("Elemento searchInput no encontrado");
+    return;
+  }
 
-const term = searchInput.value.toLowerCase().trim();
+  const term = searchInput.value.toLowerCase().trim();
 
-if (!originalProviders) {
-  return;
-}
+  if (!originalProviders) {
+    console.error("Array originalProviders no inicializado");
+    return;
+  }
 
-allProviders = term
-  ? originalProviders.filter(p => 
-      (p.name && p.name.toLowerCase().includes(term)) || 
-      (p.email && p.email.toLowerCase().includes(term)) ||
-      (p.company && p.company.toLowerCase().includes(term)) ||
-      (p.nit && p.nit.toLowerCase().includes(term))
-    )
-  : [...originalProviders];
+  if (!term) {
+    allProviders = [...originalProviders];
+  } else {
+    // Filtrar proveedores según el término de búsqueda
+    allProviders = originalProviders.filter(provider => {
+      const nameMatch = provider.name && provider.name.toLowerCase().includes(term);
+      const emailMatch = provider.email && provider.email.toLowerCase().includes(term);
+      const companyMatch = provider.company && provider.company.toLowerCase().includes(term);
+      const nitMatch = provider.nit && provider.nit.toLowerCase().includes(term);
+      const phoneMatch = provider.contact_phone && provider.contact_phone.includes(term);
+      const idMatch = provider.id && provider.id.toLowerCase().includes(term);
+      
+      return nameMatch || emailMatch || companyMatch || nitMatch || phoneMatch || idMatch;
+    });
+  }
 
-currentPage = 1;
-renderProvidersTable(currentPage);
+  // Resetear a la primera página después de una búsqueda
+  currentPage = 1;
+  renderProvidersTable(currentPage);
 };
 
 function disableNativeBrowserValidation() {
@@ -688,6 +830,10 @@ if (editForm) {
     input.removeAttribute("minlength");
   });
 }
+}
+
+function hideLoadingIndicator() {
+  Swal.close();
 }
 
 // Eventos al cargar el DOM
@@ -718,6 +864,7 @@ if (searchInput) {
   searchInput.addEventListener("keyup", searchProvider);
 }
 
+// Validación para formulario de registro
 const nit = document.getElementById("nit");
 if (nit) {
   nit.addEventListener("blur", () => validateNIT("nit"));
@@ -743,6 +890,7 @@ if (email) {
   email.addEventListener("blur", () => validateEmail("email"));
 }
 
+// Validación para formulario de edición
 const editNit = document.getElementById("editNit");
 if (editNit) {
   editNit.addEventListener("blur", () => validateNIT("editNit"));
@@ -767,6 +915,14 @@ const editEmail = document.getElementById("editEmail");
 if (editEmail) {
   editEmail.addEventListener("blur", () => validateEmail("editEmail"));
 }
+
+const editForm = document.getElementById("editForm");
+if (editForm) {
+  editForm.onsubmit = async (event) => {
+    event.preventDefault();
+    await updateProvider();
+  };
+}
 });
 
 // Hacer funciones globales si es necesario
@@ -775,3 +931,4 @@ window.updateProviderStatus = updateProviderStatus;
 window.deleteProvider = deleteProvider;
 window.openModal = openModal;
 window.closeModal = closeModal;
+window.changePage = changePage;

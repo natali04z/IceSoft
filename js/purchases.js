@@ -13,6 +13,67 @@ let providerIdToNameMap = {};
 const isRegisterPage = window.location.pathname.includes('purchase-register.html');
 const isListPage = !isRegisterPage;
 
+// ===== FUNCIONES HELPER PARA FECHAS =====
+
+/**
+ * Convierte una fecha a formato YYYY-MM-DD respetando la zona horaria local
+ * @param {Date|string} date - Fecha a convertir
+ * @returns {string} Fecha en formato YYYY-MM-DD
+ */
+function formatLocalDate(date = new Date()) {
+  const dateObj = date instanceof Date ? date : new Date(date);
+  
+  const year = dateObj.getFullYear();
+  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const day = String(dateObj.getDate()).padStart(2, '0');
+  
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Obtiene la fecha actual en formato YYYY-MM-DD (zona local)
+ * @returns {string} Fecha actual en formato YYYY-MM-DD
+ */
+function getTodayLocal() {
+  return formatLocalDate(new Date());
+}
+
+/**
+ * Formatea fecha para mostrar al usuario (DD/MM/YYYY)
+ * @param {Date|string} date - Fecha a formatear
+ * @returns {string} Fecha formateada para mostrar
+ */
+function formatDateForDisplay(date) {
+  if (!date) return "Fecha no disponible";
+  
+  try {
+    // Si viene en formato YYYY-MM-DD, parsearlo correctamente
+    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      const [year, month, day] = date.split('-').map(Number);
+      const dateObj = new Date(year, month - 1, day);
+      return dateObj.toLocaleDateString('es-CO'); // Formato DD/MM/YYYY
+    }
+    
+    const dateObj = date instanceof Date ? date : new Date(date);
+    return dateObj.toLocaleDateString('es-CO'); // Formato DD/MM/YYYY
+  } catch (e) {
+    return date.toString();
+  }
+}
+
+/**
+ * Convierte fecha de string YYYY-MM-DD a objeto Date (zona local)
+ * @param {string} dateString - Fecha en formato YYYY-MM-DD
+ * @returns {Date} Objeto Date en zona local
+ */
+function parseLocalDate(dateString) {
+  if (!dateString) return new Date();
+  
+  // Dividir la fecha para evitar problemas de zona horaria
+  const [year, month, day] = dateString.split('-').map(Number);
+  return new Date(year, month - 1, day); // month - 1 porque los meses van de 0-11
+}
+
 // ===== FUNCIONES DE VALIDACIÓN =====
 
 function validateField(fieldId, errorMessage) {
@@ -40,38 +101,59 @@ function validateQuantity(fieldId) {
     errorElement.style.display = "block";
     field.classList.add("input-error");
     return false;
-  } else if (!/^\d+$/.test(field.value.trim()) || parseInt(field.value.trim()) <= 0) {
+  }
+  
+  const quantity = parseInt(field.value.trim());
+  
+  if (isNaN(quantity) || quantity <= 0) {
     errorElement.textContent = "La cantidad debe ser un número entero mayor que cero.";
     errorElement.style.display = "block";
     field.classList.add("input-error");
     return false;
-  } else {
-    errorElement.style.display = "none";
-    field.classList.remove("input-error");
-    return true;
   }
+  
+  if (quantity > 999999) {
+    errorElement.textContent = "La cantidad no puede ser mayor a 999,999.";
+    errorElement.style.display = "block";
+    field.classList.add("input-error");
+    return false;
+  }
+  
+  errorElement.style.display = "none";
+  field.classList.remove("input-error");
+  return true;
 }
 
 function validatePrice(fieldId) {
   const field = document.getElementById(fieldId);
   const errorElement = document.getElementById(`${fieldId}-error`);
-  const price = parseFloat(field.value);
   
   if (!field.value.trim()) {
     errorElement.textContent = "El precio es obligatorio.";
     errorElement.style.display = "block";
     field.classList.add("input-error");
     return false;
-  } else if (isNaN(price) || price <= 0) {
+  }
+  
+  const price = parseFloat(field.value.trim());
+  
+  if (isNaN(price) || price <= 0) {
     errorElement.textContent = "El precio debe ser un número mayor que cero.";
     errorElement.style.display = "block";
     field.classList.add("input-error");
     return false;
-  } else {
-    errorElement.style.display = "none";
-    field.classList.remove("input-error");
-    return true;
   }
+  
+  if (price > 999999999) {
+    errorElement.textContent = "El precio no puede ser mayor a $999,999,999.";
+    errorElement.style.display = "block";
+    field.classList.add("input-error");
+    return false;
+  }
+  
+  errorElement.style.display = "none";
+  field.classList.remove("input-error");
+  return true;
 }
 
 function validateProvider(fieldId) {
@@ -205,9 +287,11 @@ function openModal(modalId) {
     productItems = [];
     updateProductItemsList();
     
+    // ✅ NUEVA IMPLEMENTACIÓN - fecha local sin conversión UTC
     const purchaseDateElement = document.getElementById("purchaseDate");
     if (purchaseDateElement) {
-      purchaseDateElement.value = new Date().toISOString().split('T')[0];
+      const todayLocal = getTodayLocal();
+      purchaseDateElement.value = todayLocal;
     }
   } else if (modalId === 'editModal') {
     clearValidationErrors('editForm');
@@ -227,14 +311,9 @@ function hideLoadingIndicator() {
 
 // ===== FUNCIONES DE FORMATEO =====
 
+// ✅ NUEVA IMPLEMENTACIÓN - usando la función helper para DD/MM/YYYY
 const formatDate = (dateString) => {
-  if (!dateString) return "Fecha no disponible";
-  try {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('es-ES');
-  } catch (e) {
-    return dateString;
-  }
+  return formatDateForDisplay(dateString);
 };
 
 const formatCurrency = (amount) => {
@@ -840,23 +919,55 @@ const addProductItem = () => {
   const productId = productSelect.value;
   const quantity = parseInt(quantityInput.value);
   const purchasePrice = parseFloat(purchasePriceInput.value);
+  
+  if (quantity <= 0) {
+    showError("La cantidad debe ser mayor que cero");
+    return;
+  }
+  
+  if (purchasePrice <= 0) {
+    showError("El precio debe ser mayor que cero");
+    return;
+  }
+  
   const total = quantity * purchasePrice;
   const productName = productSelect.options[productSelect.selectedIndex].text;
   
-  productItems.push({
-    product: productId,
-    quantity: quantity,
-    purchase_price: purchasePrice,
-    total: total,
-    name: productName
-  });
+  // Verificar si el producto ya está en la lista
+  const existingProductIndex = productItems.findIndex(item => item.product === productId);
+  
+  if (existingProductIndex >= 0) {
+    // Si ya existe, actualizar cantidad y totales
+    productItems[existingProductIndex].quantity += quantity;
+    productItems[existingProductIndex].total = productItems[existingProductIndex].quantity * productItems[existingProductIndex].purchase_price;
+    
+    showSuccess("Producto actualizado en la lista");
+  } else {
+    // Si no existe, agregarlo
+    productItems.push({
+      product: productId,
+      quantity: quantity,
+      purchase_price: purchasePrice,
+      total: total,
+      name: productName
+    });
+    
+    showSuccess("Producto agregado a la lista");
+  }
   
   updateProductItemsList();
   
-  productSelect.value = "";
+  // Limpiar formulario
+  productSelect.selectedIndex = 0;
   quantityInput.value = "1";
   purchasePriceInput.value = "";
   document.getElementById("product-total").textContent = formatCurrency(0);
+  
+  // Ocultar errores de validación de la lista de productos
+  const productListError = document.getElementById("productItemsList-error");
+  if (productListError) {
+    productListError.style.display = "none";
+  }
   
   updateTotalAmount();
 };
@@ -1151,13 +1262,21 @@ const registerPurchase = async () => {
   const providerId = providerSelect.value;
   const purchaseDate = purchaseDateInput.value;
   
-  const statusElement = document.getElementById("status");
-  const status = statusElement ? (statusElement.checked ? "active" : "inactive") : "active";
-
   const total = productItems.reduce((sum, item) => sum + item.total, 0);
 
+  // Preparar los productos en el formato correcto
+  const formattedProducts = productItems.map(item => ({
+    product: item.product,
+    quantity: parseInt(item.quantity),
+    purchase_price: parseFloat(item.purchase_price)
+  }));
+
   try {
-    showLoadingIndicator();
+    const payload = {
+      provider: providerId,
+      products: formattedProducts,
+      purchase_date: purchaseDate
+    };
     
     const res = await fetch(API_PURCHASES, {
       method: "POST",
@@ -1165,24 +1284,31 @@ const registerPurchase = async () => {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`
       },
-      body: JSON.stringify({
-        provider: providerId,
-        products: productItems,
-        purchase_date: purchaseDate,
-        total: total,
-        status: status
-      })
+      body: JSON.stringify(payload)
     });
     
     hideLoadingIndicator();
     
     if (!res.ok) {
-      const data = await res.json();
-      showError(data.message || "No se pudo registrar la compra.");
+      let errorMessage = "No se pudo registrar la compra.";
+      
+      try {
+        const data = await res.json();
+        errorMessage = data.message || data.error || errorMessage;
+      } catch (parseError) {
+        errorMessage = `Error del servidor (${res.status}): ${res.statusText}`;
+      }
+      
+      showError(errorMessage);
       return;
     }
     
-    const data = await res.json();
+    let data;
+    try {
+      data = await res.json();
+    } catch (parseError) {
+      data = { message: "Compra registrada correctamente" };
+    }
     
     if (isRegisterPage) {
       showSuccess("Compra registrada correctamente.")
@@ -1190,7 +1316,7 @@ const registerPurchase = async () => {
         window.location.href = "purchases.html";
       });
     } else {
-      showSuccess(data.message || "Compra registrada correctamente.");
+      showSuccess("Compra registrada correctamente.");
       closeModal('registerModal');
       
       const purchaseForm = document.getElementById("purchaseForm");
@@ -1204,7 +1330,7 @@ const registerPurchase = async () => {
     }
   } catch (err) {
     hideLoadingIndicator();
-    showError("Error al registrar compra: " + (err.message || err));
+    showError("Error de conexión al registrar compra: " + (err.message || err));
   }
 };
 
@@ -1572,7 +1698,7 @@ function initializeListPage() {
   try {
     listPurchases();
   } catch (err) {
-    console.error("Error al inicializar:", err);
+    showError("Error al inicializar la página");
   }
   
   const mobileAddButton = document.getElementById("mobileAddButton");
@@ -1598,12 +1724,26 @@ function initializeRegisterPage() {
     loadProducts();
     loadProviders();
   } catch (err) {
-    console.error("Error al cargar datos:", err);
+    showError("Error al cargar datos iniciales. Por favor, recargue la página.");
   }
   
+  // ✅ NUEVA IMPLEMENTACIÓN - fecha local sin conversión UTC
   const purchaseDateElement = document.getElementById("purchaseDate");
   if (purchaseDateElement) {
-    purchaseDateElement.value = new Date().toISOString().split('T')[0];
+    const todayLocal = getTodayLocal();
+    purchaseDateElement.value = todayLocal;
+    purchaseDateElement.max = todayLocal;
+  }
+  
+  // Inicializar total en 0
+  const totalAmountElement = document.getElementById("totalAmount");
+  if (totalAmountElement) {
+    totalAmountElement.textContent = formatCurrency(0);
+  }
+  
+  const productTotalElement = document.getElementById("product-total");
+  if (productTotalElement) {
+    productTotalElement.textContent = formatCurrency(0);
   }
 }
 
@@ -1643,5 +1783,4 @@ window.removeProductItem = removeProductItem;
 window.viewPurchaseDetails = viewPurchaseDetails;
 window.isNumber = isNumber;
 window.updateProductTotal = updateProductTotal;
-window.showLoadingIndicator = showLoadingIndicator;
 window.hideLoadingIndicator = hideLoadingIndicator;
