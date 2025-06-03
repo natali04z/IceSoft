@@ -10,8 +10,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.materialdesignicons.com/6.5.95/css/materialdesignicons.min.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body class="dashboard-page">
   <section class="navLateral">
@@ -60,64 +60,62 @@
     </div>
   </section>
 
-<header class="dashboard-header">
-        <button class="open-menu-btn btn-menu">
-            <i class="material-icons">menu</i>
-        </button>
-            <div class="userProfileSection" id="dashboardHeader">
-                <div class="user-info" id="userDropdownToggle">
-                    <i class="material-icons user-icon">account_circle</i>
-                    <span class="user-name" id="loggedUserName">Cargando...</span>
-                    <i class="material-icons arrow-icon">expand_more</i>
-                </div>
-                
-                <div class="user-dropdown-menu" id="userDropdownMenu">
-                    <div class="user-profile-info">
-                        <h4 id="dropdownUserName">Cargando...</h4>
-                        <span id="dropdownUserEmail">-</span>
-                        <span id="dropdownUserRole">-</span>
-                    </div>
-                    
-                    <div class="dropdown-divider"></div>
-                    
-                    <a href="#" class="dropdown-item" onclick="logout()">
-                        <i class="material-icons">logout</i>
-                        <span>Cerrar Sesión</span>
-                    </a>
-                </div>
-            </div>
+  <header class="dashboard-header">
+    <button class="open-menu-btn btn-menu">
+      <i class="material-icons">menu</i>
+    </button>
+    <div class="userProfileSection" id="dashboardHeader">
+      <div class="user-info" id="userDropdownToggle">
+        <i class="material-icons user-icon">account_circle</i>
+        <span class="user-name" id="loggedUserName">Cargando...</span>
+        <i class="material-icons arrow-icon">expand_more</i>
+      </div>
+      
+      <div class="user-dropdown-menu" id="userDropdownMenu">
+        <div class="user-profile-info">
+          <h4 id="dropdownUserName">Cargando...</h4>
+          <span id="dropdownUserEmail">-</span>
+          <span id="dropdownUserRole">-</span>
         </div>
-    </header>
+        
+        <div class="dropdown-divider"></div>
+        
+        <a href="#" class="dropdown-item" onclick="logout()">
+          <i class="material-icons">logout</i>
+          <span>Cerrar Sesión</span>
+        </a>
+      </div>
+    </div>
+  </header>
 
   <main class="main-content">
     <div class="container">
       <h2 class="title">Gestión de Roles</h2>
           
-       <!-- Contenedor de búsqueda -->
-    <div class="search-container">
-      <div class="search-box">
-        <input type="text" id="searchInput" placeholder="Buscar rol...">
-        <button onclick="searchRole()"><i class="material-icons">search</i></button>
+      <!-- Contenedor de búsqueda -->
+      <div class="search-container">
+        <div class="search-box">
+          <input type="text" id="searchInput" placeholder="Buscar rol...">
+          <button onclick="searchRole()"><i class="material-icons">search</i></button>
+        </div>
       </div>
-    </div>
 
-    <!-- Tabla de usuarios -->
-    <section class="table-card">
-      <div class="card-header card-header-flex">
-        <h3>Lista de Roles</h3>
-        <button type="button" class="add-button" id="mobileAddButton">
-          <i class="material-icons">add</i> Añadir
-        </button>
-      </div>
-        
+      <!-- Tabla de roles -->
+      <section class="table-card">
+        <div class="card-header card-header-flex">
+          <h3>Lista de Roles</h3>
+          <button type="button" class="add-button" id="mobileAddButton">
+            <i class="material-icons">add</i> Añadir
+          </button>
+        </div>
+          
         <div class="card-body">
-        <div class="table-responsive">
-          <table class="users-table">
+          <div class="table-responsive">
+            <table class="users-table">
               <thead>
                 <tr>
                   <th>ID</th>
                   <th>Nombre</th>
-                  <th>Descripción</th>
                   <th>Permisos</th>
                   <th>Estado</th>
                   <th>Acciones</th>
@@ -136,82 +134,325 @@
         </div>
       </section>
       
-          <!-- Formulario de Creación de Rol -->
-    <div id="roleModal" class="modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 id="formTitle">Registrar Rol</h3>
-          <button class="modal-close" onclick="closeModal('roleModal')">&times;</button>
-        </div>
-        
-        <div class="modal-body">
-          <form id="roleForm" novalidate>
-            <div class="form-row">
-              <div class="form-field">
-                <input type="text" class="field-element" id="name" placeholder="Nombre del rol">
-                <div class="error-message" id="name-error">El campo es obligatorio.</div>
-              </div>
-              <div class="form-field">
-                <input type="text" class="field-element" id="description" placeholder="Descripción">
-                <div class="error-message" id="description-error">El campo es obligatorio.</div>
-              </div>
-            </div>
-            
-            <div class="form-row">
-              <div class="form-field full-width">
-                <h4>Permisos</h4>
-                <div class="permissions-container" id="permissionsContainer">
-                  <!-- Permisos cargados dinámicamente -->
+      <!-- Formulario de Creación de Rol -->
+      <div id="roleModal" class="modal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3 id="formTitle">Registrar Rol</h3>
+            <button class="modal-close" onclick="closeModal('roleModal')">&times;</button>
+          </div>
+          
+          <div class="modal-body">
+            <form id="roleForm" novalidate>
+              <div class="form-row">
+                <div class="form-field">
+                  <input type="text" class="field-element roles-field-element" id="name" placeholder="Nombre del rol">
+                  <div class="error-message roles-error-message" id="name-error">El campo es obligatorio.</div>
                 </div>
-                <div class="error-message" id="permissions-error">Debe seleccionar al menos un permiso.</div>
               </div>
-            </div>
-            
-            <div class="controls-container">
-              <button type="button" class="action-button" id="createRoleButton">Crear</button>
-            </div>
-          </form>
+              
+              <div class="form-row">
+                <div class="form-field full-width">
+                  <h4>Permisos</h4>
+                  <div class="permissions-container" id="permissionsContainer">
+                    <!-- Acciones de permisos -->
+                    <div class="roles-permissions-actions">
+                      <button type="button" class="roles-text-button" onclick="selectAllPermissions('permissions')">Seleccionar todos</button>
+                      <button type="button" class="roles-text-button" onclick="deselectAllPermissions('permissions')">Ninguno</button>
+                    </div>
+                    
+                    <!-- Sección Usuarios -->
+                    <div class="roles-permission-section">
+                      <div class="roles-permission-category-header" onclick="togglePermissionCategory('roles-category-usuarios')">
+                        <h5>Usuarios <span id="usuarios-count">(0)</span></h5>
+                        <i class="material-icons roles-category-toggle">expand_more</i>
+                      </div>
+                      <div id="roles-category-usuarios" class="roles-permission-items">
+                        <!-- Los checkboxes se llenarán dinámicamente -->
+                      </div>
+                    </div>
+                    
+                    <!-- Sección Categorías -->
+                    <div class="roles-permission-section">
+                      <div class="roles-permission-category-header" onclick="togglePermissionCategory('roles-category-categorias')">
+                        <h5>Categorías <span id="categorias-count">(0)</span></h5>
+                        <i class="material-icons roles-category-toggle">expand_less</i>
+                      </div>
+                      <div id="roles-category-categorias" class="roles-permission-items" style="display: none;">
+                        <!-- Los checkboxes se llenarán dinámicamente -->
+                      </div>
+                    </div>
+                    
+                    <!-- Sección Proveedores -->
+                    <div class="roles-permission-section">
+                      <div class="roles-permission-category-header" onclick="togglePermissionCategory('roles-category-proveedores')">
+                        <h5>Proveedores <span id="proveedores-count">(0)</span></h5>
+                        <i class="material-icons roles-category-toggle">expand_less</i>
+                      </div>
+                      <div id="roles-category-proveedores" class="roles-permission-items" style="display: none;">
+                        <!-- Los checkboxes se llenarán dinámicamente -->
+                      </div>
+                    </div>
+                    
+                    <!-- Sección Productos -->
+                    <div class="roles-permission-section">
+                      <div class="roles-permission-category-header" onclick="togglePermissionCategory('roles-category-productos')">
+                        <h5>Productos <span id="productos-count">(0)</span></h5>
+                        <i class="material-icons roles-category-toggle">expand_less</i>
+                      </div>
+                      <div id="roles-category-productos" class="roles-permission-items" style="display: none;">
+                        <!-- Los checkboxes se llenarán dinámicamente -->
+                      </div>
+                    </div>
+                    
+                    <!-- Sección Gestión de Compras -->
+                    <div class="roles-permission-section">
+                      <div class="roles-permission-category-header" onclick="togglePermissionCategory('roles-category-gestion-compras')">
+                        <h5>Gestión de Compras <span id="gestion-compras-count">(0)</span></h5>
+                        <i class="material-icons roles-category-toggle">expand_less</i>
+                      </div>
+                      <div id="roles-category-gestion-compras" class="roles-permission-items" style="display: none;">
+                        <!-- Los checkboxes se llenarán dinámicamente -->
+                      </div>
+                    </div>
+                    
+                    <!-- Sección Clientes -->
+                    <div class="roles-permission-section">
+                      <div class="roles-permission-category-header" onclick="togglePermissionCategory('roles-category-clientes')">
+                        <h5>Clientes <span id="clientes-count">(0)</span></h5>
+                        <i class="material-icons roles-category-toggle">expand_less</i>
+                      </div>
+                      <div id="roles-category-clientes" class="roles-permission-items" style="display: none;">
+                        <!-- Los checkboxes se llenarán dinámicamente -->
+                      </div>
+                    </div>
+                    
+                    <!-- Sección Sucursales -->
+                    <div class="roles-permission-section">
+                      <div class="roles-permission-category-header" onclick="togglePermissionCategory('roles-category-sucursales')">
+                        <h5>Sucursales <span id="sucursales-count">(0)</span></h5>
+                        <i class="material-icons roles-category-toggle">expand_less</i>
+                      </div>
+                      <div id="roles-category-sucursales" class="roles-permission-items" style="display: none;">
+                        <!-- Los checkboxes se llenarán dinámicamente -->
+                      </div>
+                    </div>
+                    
+                    <!-- Sección Gestión de Ventas -->
+                    <div class="roles-permission-section">
+                      <div class="roles-permission-category-header" onclick="togglePermissionCategory('roles-category-gestion-ventas')">
+                        <h5>Gestión de Ventas <span id="gestion-ventas-count">(0)</span></h5>
+                        <i class="material-icons roles-category-toggle">expand_less</i>
+                      </div>
+                      <div id="roles-category-gestion-ventas" class="roles-permission-items" style="display: none;">
+                        <!-- Los checkboxes se llenarán dinámicamente -->
+                      </div>
+                    </div>
+                    
+                    <!-- Sección Roles -->
+                    <div class="roles-permission-section">
+                      <div class="roles-permission-category-header" onclick="togglePermissionCategory('roles-category-roles')">
+                        <h5>Roles <span id="roles-count">(0)</span></h5>
+                        <i class="material-icons roles-category-toggle">expand_less</i>
+                      </div>
+                      <div id="roles-category-roles" class="roles-permission-items" style="display: none;">
+                        <!-- Los checkboxes se llenarán dinámicamente -->
+                      </div>
+                    </div>
+                    
+                    <!-- Sección Permisos -->
+                    <div class="roles-permission-section">
+                      <div class="roles-permission-category-header" onclick="togglePermissionCategory('roles-category-permisos')">
+                        <h5>Permisos <span id="permisos-count">(0)</span></h5>
+                        <i class="material-icons roles-category-toggle">expand_less</i>
+                      </div>
+                      <div id="roles-category-permisos" class="roles-permission-items" style="display: none;">
+                        <!-- Los checkboxes se llenarán dinámicamente -->
+                      </div>
+                    </div>
+                    
+                    <!-- Sección Otros -->
+                    <div class="roles-permission-section">
+                      <div class="roles-permission-category-header" onclick="togglePermissionCategory('roles-category-otros')">
+                        <h5>Otros <span id="otros-count">(0)</span></h5>
+                        <i class="material-icons roles-category-toggle">expand_less</i>
+                      </div>
+                      <div id="roles-category-otros" class="roles-permission-items" style="display: none;">
+                        <!-- Los checkboxes se llenarán dinámicamente -->
+                      </div>
+                    </div>
+                  </div>
+                  <div class="error-message roles-error-message" id="permissions-error">Debe seleccionar al menos un permiso.</div>
+                </div>
+              </div>
+              
+              <div class="controls-container">
+                <button type="button" class="action-button" id="createRoleButton">Registrar</button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
-    </div>
+              
+      <!-- Modal de edición de rol -->
+      <div id="editRoleModal" class="modal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3 id="editFormTitle">Editar rol</h3>
+            <button class="modal-close" onclick="closeModal('editRoleModal')">&times;</button>
+          </div>
           
-    <!-- Modal de edición de rol -->
-    <div id="editRoleModal" class="modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 id="editFormTitle">Editar rol</h3>
-          <button class="modal-close" onclick="closeModal('editRoleModal')">&times;</button>
-        </div>
-        
-        <div class="modal-body">
-          <form id="editRoleForm" novalidate>
-            <input type="hidden" id="editId">
-            
-            <div class="form-row">
-              <div class="form-field">
-                <input type="text" class="field-element" id="editName" placeholder="Nombre del rol">
-                <div class="error-message" id="editName-error">El campo es obligatorio.</div>
-              </div>
-              <div class="form-field">
-                <input type="text" class="field-element" id="editDescription" placeholder="Descripción">
-                <div class="error-message" id="editDescription-error">El campo es obligatorio.</div>
-              </div>
-            </div>
-            
-            <div class="form-row">
-              <div class="form-field full-width">
-                <h4>Permisos</h4>
-                <div class="permissions-container" id="editPermissionsContainer">
-                  <!-- Permisos cargados dinámicamente -->
+          <div class="modal-body">
+            <form id="editRoleForm" novalidate>
+              <input type="hidden" id="editId">
+              
+              <div class="form-row">
+                <div class="form-field">
+                  <input type="text" class="field-element roles-field-element" id="editName" placeholder="Nombre del rol">
+                  <div class="error-message roles-error-message" id="editName-error">El campo es obligatorio.</div>
                 </div>
-                <div class="error-message" id="editPermissions-error">Debe seleccionar al menos un permiso.</div>
               </div>
-            </div>
-            
-            <div class="controls-container">
-              <button type="button" class="action-button" id="updateRoleButton">Actualizar</button>
-            </div>
-          </form>
+              
+              <div class="form-row">
+                <div class="form-field full-width">
+                  <h4>Permisos</h4>
+                  <div class="permissions-container" id="editPermissionsContainer">
+                    <!-- Acciones de permisos -->
+                    <div class="roles-permissions-actions">
+                      <button type="button" class="roles-text-button" onclick="selectAllPermissions('editPermissions')">Seleccionar todos</button>
+                      <button type="button" class="roles-text-button" onclick="deselectAllPermissions('editPermissions')">Ninguno</button>
+                    </div>
+                    
+                    <!-- Sección Usuarios -->
+                    <div class="roles-permission-section">
+                      <div class="roles-permission-category-header" onclick="togglePermissionCategory('roles-edit-category-usuarios')">
+                        <h5>Usuarios <span id="edit-usuarios-count">(0)</span></h5>
+                        <i class="material-icons roles-category-toggle">expand_more</i>
+                      </div>
+                      <div id="roles-edit-category-usuarios" class="roles-permission-items">
+                        <!-- Los checkboxes se llenarán dinámicamente -->
+                      </div>
+                    </div>
+                    
+                    <!-- Sección Categorías -->
+                    <div class="roles-permission-section">
+                      <div class="roles-permission-category-header" onclick="togglePermissionCategory('roles-edit-category-categorias')">
+                        <h5>Categorías <span id="edit-categorias-count">(0)</span></h5>
+                        <i class="material-icons roles-category-toggle">expand_less</i>
+                      </div>
+                      <div id="roles-edit-category-categorias" class="roles-permission-items" style="display: none;">
+                        <!-- Los checkboxes se llenarán dinámicamente -->
+                      </div>
+                    </div>
+                    
+                    <!-- Sección Proveedores -->
+                    <div class="roles-permission-section">
+                      <div class="roles-permission-category-header" onclick="togglePermissionCategory('roles-edit-category-proveedores')">
+                        <h5>Proveedores <span id="edit-proveedores-count">(0)</span></h5>
+                        <i class="material-icons roles-category-toggle">expand_less</i>
+                      </div>
+                      <div id="roles-edit-category-proveedores" class="roles-permission-items" style="display: none;">
+                        <!-- Los checkboxes se llenarán dinámicamente -->
+                      </div>
+                    </div>
+                    
+                    <!-- Sección Productos -->
+                    <div class="roles-permission-section">
+                      <div class="roles-permission-category-header" onclick="togglePermissionCategory('roles-edit-category-productos')">
+                        <h5>Productos <span id="edit-productos-count">(0)</span></h5>
+                        <i class="material-icons roles-category-toggle">expand_less</i>
+                      </div>
+                      <div id="roles-edit-category-productos" class="roles-permission-items" style="display: none;">
+                        <!-- Los checkboxes se llenarán dinámicamente -->
+                      </div>
+                    </div>
+                    
+                    <!-- Sección Gestión de Compras -->
+                    <div class="roles-permission-section">
+                      <div class="roles-permission-category-header" onclick="togglePermissionCategory('roles-edit-category-gestion-compras')">
+                        <h5>Gestión de Compras <span id="edit-gestion-compras-count">(0)</span></h5>
+                        <i class="material-icons roles-category-toggle">expand_less</i>
+                      </div>
+                      <div id="roles-edit-category-gestion-compras" class="roles-permission-items" style="display: none;">
+                        <!-- Los checkboxes se llenarán dinámicamente -->
+                      </div>
+                    </div>
+                    
+                    <!-- Sección Clientes -->
+                    <div class="roles-permission-section">
+                      <div class="roles-permission-category-header" onclick="togglePermissionCategory('roles-edit-category-clientes')">
+                        <h5>Clientes <span id="edit-clientes-count">(0)</span></h5>
+                        <i class="material-icons roles-category-toggle">expand_less</i>
+                      </div>
+                      <div id="roles-edit-category-clientes" class="roles-permission-items" style="display: none;">
+                        <!-- Los checkboxes se llenarán dinámicamente -->
+                      </div>
+                    </div>
+                    
+                    <!-- Sección Sucursales -->
+                    <div class="roles-permission-section">
+                      <div class="roles-permission-category-header" onclick="togglePermissionCategory('roles-edit-category-sucursales')">
+                        <h5>Sucursales <span id="edit-sucursales-count">(0)</span></h5>
+                        <i class="material-icons roles-category-toggle">expand_less</i>
+                      </div>
+                      <div id="roles-edit-category-sucursales" class="roles-permission-items" style="display: none;">
+                        <!-- Los checkboxes se llenarán dinámicamente -->
+                      </div>
+                    </div>
+                    
+                    <!-- Sección Gestión de Ventas -->
+                    <div class="roles-permission-section">
+                      <div class="roles-permission-category-header" onclick="togglePermissionCategory('roles-edit-category-gestion-ventas')">
+                        <h5>Gestión de Ventas <span id="edit-gestion-ventas-count">(0)</span></h5>
+                        <i class="material-icons roles-category-toggle">expand_less</i>
+                      </div>
+                      <div id="roles-edit-category-gestion-ventas" class="roles-permission-items" style="display: none;">
+                        <!-- Los checkboxes se llenarán dinámicamente -->
+                      </div>
+                    </div>
+                    
+                    <!-- Sección Roles -->
+                    <div class="roles-permission-section">
+                      <div class="roles-permission-category-header" onclick="togglePermissionCategory('roles-edit-category-roles')">
+                        <h5>Roles <span id="edit-roles-count">(0)</span></h5>
+                        <i class="material-icons roles-category-toggle">expand_less</i>
+                      </div>
+                      <div id="roles-edit-category-roles" class="roles-permission-items" style="display: none;">
+                        <!-- Los checkboxes se llenarán dinámicamente -->
+                      </div>
+                    </div>
+                    
+                    <!-- Sección Permisos -->
+                    <div class="roles-permission-section">
+                      <div class="roles-permission-category-header" onclick="togglePermissionCategory('roles-edit-category-permisos')">
+                        <h5>Permisos <span id="edit-permisos-count">(0)</span></h5>
+                        <i class="material-icons roles-category-toggle">expand_less</i>
+                      </div>
+                      <div id="roles-edit-category-permisos" class="roles-permission-items" style="display: none;">
+                        <!-- Los checkboxes se llenarán dinámicamente -->
+                      </div>
+                    </div>
+                    
+                    <!-- Sección Otros -->
+                    <div class="roles-permission-section">
+                      <div class="roles-permission-category-header" onclick="togglePermissionCategory('roles-edit-category-otros')">
+                        <h5>Otros <span id="edit-otros-count">(0)</span></h5>
+                        <i class="material-icons roles-category-toggle">expand_less</i>
+                      </div>
+                      <div id="roles-edit-category-otros" class="roles-permission-items" style="display: none;">
+                        <!-- Los checkboxes se llenarán dinámicamente -->
+                      </div>
+                    </div>
+                  </div>
+                  <div class="error-message roles-error-message" id="editPermissions-error">Debe seleccionar al menos un permiso.</div>
+                </div>
+              </div>
+              
+              <div class="controls-container">
+                <button type="button" class="action-button" id="updateRoleButton">Actualizar</button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </div>
@@ -222,11 +463,10 @@
   <script src="js/permission.js"></script>
   <script src="js/profile.js"></script>
 
-   <script>
-  document.addEventListener('DOMContentLoaded', function() {
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
       const userHeader = new UserHeaderIntegrated('dashboardHeader');
-  });
+    });
   </script>
-
 </body>
 </html>

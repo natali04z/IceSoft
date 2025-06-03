@@ -1,14 +1,20 @@
 const API_URL = "https://backend-yy4o.onrender.com/api/roles";
   
-// Variables globales para roles y paginación
 let allRoles = [];
 let originalRoles = [];
 let currentPage = 1;
 const rowsPerPage = 10;
 
-// ===== FUNCIONES DE VALIDACIÓN =====
+function getDisplayNameForRole(roleName) {
+  const roleTranslations = {
+    "admin": "Administrador",
+    "assistant": "Asistente",
+    "employee": "Empleado"
+  };
+  
+  return roleTranslations[roleName] || roleName;
+}
 
-// Función para validar un campo y mostrar error
 function validateField(fieldId, errorMessage) {
   const field = document.getElementById(fieldId);
   const errorElement = document.getElementById(`${fieldId}-error`);
@@ -16,16 +22,15 @@ function validateField(fieldId, errorMessage) {
   if (!field.value.trim()) {
     errorElement.textContent = errorMessage || "El campo es obligatorio.";
     errorElement.style.display = "block";
-    field.classList.add("input-error");
+    field.classList.add("roles-input-error");
     return false;
   } else {
     errorElement.style.display = "none";
-    field.classList.remove("input-error");
+    field.classList.remove("roles-input-error");
     return true;
   }
 }
 
-// Validar permisos seleccionados
 function validatePermissions(formId) {
   const form = document.getElementById(formId);
   const permissionsName = formId === 'roleForm' ? 'permissions' : 'editPermissions';
@@ -43,24 +48,22 @@ function validatePermissions(formId) {
   }
 }
 
-// Limpiar mensajes de error
 function clearValidationErrors(formId) {
   const form = document.getElementById(formId);
   if (!form) return;
   
-  const errorElements = form.querySelectorAll('.error-message');
-  const inputElements = form.querySelectorAll('.field-element');
+  const errorElements = form.querySelectorAll('.roles-error-message');
+  const inputElements = form.querySelectorAll('.roles-field-element');
   
   errorElements.forEach(element => {
     element.style.display = "none";
   });
   
   inputElements.forEach(element => {
-    element.classList.remove("input-error");
+    element.classList.remove("roles-input-error");
   });
 }
 
-// Desactivar validación nativa del navegador en los formularios
 function disableNativeBrowserValidation() {
   const roleForm = document.getElementById("roleForm");
   if (roleForm) {
@@ -85,9 +88,36 @@ function disableNativeBrowserValidation() {
   }
 }
 
-// ===== FUNCIONES DE UTILIDAD =====
+function isAdminRole(roleId) {
+  const role = allRoles.find(r => (r._id || r.id) === roleId) || 
+               originalRoles.find(r => (r._id || r.id) === roleId);
+  return role && role.name === 'admin';
+}
 
-// Obtener permisos de usuario
+function isDefaultRole(roleId) {
+  const role = allRoles.find(r => (r._id || r.id) === roleId) || 
+               originalRoles.find(r => (r._id || r.id) === roleId);
+  
+  if (role) {
+    const isDefault = role.isDefault || ['admin', 'assistant', 'employee'].includes(role.name);
+    return {
+      isDefault: isDefault,
+      name: role.name,
+      role: role
+    };
+  }
+  
+  return { isDefault: false };
+}
+
+function preventEventPropagation(event) {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+  }
+}
+
 function getUserPermissions() {
   try {
     const userInfo = localStorage.getItem('userInfo');
@@ -101,7 +131,6 @@ function getUserPermissions() {
   }
 }
 
-// Abrir modal
 function openModal(modalId) {
   const modal = document.getElementById(modalId);
   if (!modal) {
@@ -123,7 +152,6 @@ function openModal(modalId) {
   }
 }
 
-// Cerrar modal
 function closeModal(modalId) {
   const modal = document.getElementById(modalId);
   if (!modal) {
@@ -154,20 +182,18 @@ const checkAuth = () => {
   return true;
 };
 
-// ===== FUNCIONES DE FORMATEO =====
-
-// Formatear los permisos para mostrarlos en la tabla
 function formatPermissions(permissions, roleId) {
   if (!permissions || permissions.length === 0) return '-';
   
-  return `<button class="view-details-btn" onclick="showPermissionsDetails('${roleId}')">
+  return `<button class="roles-view-details-btn" onclick="event.stopPropagation(); showPermissionsDetails('${roleId}', event)">
             <i class="material-icons">visibility</i> 
             Ver ${permissions.length} permisos
           </button>`;
 }
 
-// Mostrar modal con detalles de permisos
-function showPermissionsDetails(roleId) {
+function showPermissionsDetails(roleId, event) {
+  preventEventPropagation(event);
+  
   try {
     const role = allRoles.find(r => r._id === roleId);
     if (!role || !role.permissions) {
@@ -175,159 +201,181 @@ function showPermissionsDetails(roleId) {
       return;
     }
     
-    let permissionsHTML = '';
-    let permissionCount = 0;
+    const groupedPermissions = {};
+    let totalPermissions = 0;
     
-    if (role.permissions.length > 0 && typeof role.permissions[0] === 'object') {
-      const groupedPermissions = {};
-      
+    if (role.permissions.length > 0) {
       role.permissions.forEach(perm => {
-        const category = perm.code ? perm.code.split('_')[0] : 'otros';
-        if (!groupedPermissions[category]) {
-          groupedPermissions[category] = [];
+        totalPermissions++;
+        
+        let category = 'otros';
+        let permissionName = '';
+        let permissionCode = '';
+        
+        if (typeof perm === 'object' && perm !== null) {
+          permissionName = perm.name || 'Sin nombre';
+          permissionCode = perm.code || '';
+          
+          if (perm.code) {
+            const codeParts = perm.code.split('_');
+            category = codeParts[0] || 'otros';
+          }
+        } else if (typeof perm === 'string') {
+          permissionCode = perm;
+          permissionName = perm;
+          const codeParts = perm.split('_');
+          category = codeParts[0] || 'otros';
         }
-        groupedPermissions[category].push(perm);
-        permissionCount++;
+        
+        let categoryName = 'Otros';
+        
+        if (permissionCode.includes('usuario') || permissionCode.includes('user')) {
+          categoryName = 'Usuarios';
+        } else if (permissionCode.includes('categories') || permissionCode.includes('categoria') || permissionCode.includes('category')) {
+          categoryName = 'Categorías';
+        } else if (permissionCode.includes('proveedor') || permissionCode.includes('supplier') || permissionCode.includes('provider')) {
+          categoryName = 'Proveedores';
+        } else if (permissionCode.includes('producto') || permissionCode.includes('product')) {
+          categoryName = 'Productos';
+        } else if (permissionCode.includes('compra') || permissionCode.includes('purchase')) {
+          categoryName = 'Gestión de Compras';
+        } else if (permissionCode.includes('cliente') || permissionCode.includes('client') || permissionCode.includes('customer')) {
+          categoryName = 'Clientes';
+        } else if (permissionCode.includes('sucursal') || permissionCode.includes('branch')) {
+          categoryName = 'Sucursales';
+        } else if (permissionCode.includes('venta') || permissionCode.includes('sale')) {
+          categoryName = 'Gestión de Ventas';
+        } else if (permissionCode.includes('role') || permissionCode.includes('rol')) {
+          categoryName = 'Roles';
+        } else if (permissionCode.includes('permiso') || permissionCode.includes('permission')) {
+          categoryName = 'Permisos';
+        }
+        
+        if (!groupedPermissions[categoryName]) {
+          groupedPermissions[categoryName] = [];
+        }
+        
+        groupedPermissions[categoryName].push({
+          name: permissionName,
+          code: permissionCode
+        });
       });
-      
-      for (const category in groupedPermissions) {
-        const perms = groupedPermissions[category];
+    }
+    
+    let permissionsHTML = '';
+    const moduleCount = Object.keys(groupedPermissions).length;
+    
+    if (moduleCount === 0) {
+      permissionsHTML = `
+        <div class="roles-no-permissions">
+          <i class="material-icons">info</i>
+          <p>Este rol no tiene permisos asignados</p>
+        </div>
+      `;
+    } else {
+      for (const [categoryName, perms] of Object.entries(groupedPermissions)) {
+        const categoryId = `roles-view-category-${categoryName.toLowerCase().replace(/\s+/g, '-')}`;
+        
         permissionsHTML += `
-          <div class="permission-category">
-            <h4>${category.charAt(0).toUpperCase() + category.slice(1)}</h4>
-            <ul class="permission-list">
-              ${perms.map(p => `<li>${p.name} (${p.code})</li>`).join('')}
-            </ul>
+          <div class="roles-permission-section-view">
+            <div class="roles-permission-category-header-view" onclick="toggleViewPermissionCategory('${categoryId}')">
+              <h5>${categoryName} <span>(${perms.length})</span></h5>
+              <i class="material-icons roles-category-toggle">expand_less</i>
+            </div>
+            <div id="${categoryId}" class="roles-permission-items-view" style="display: block;">
+              ${perms.map(p => `
+                <div class="roles-permission-item-view">
+                  <i class="material-icons roles-permission-icon">check_circle</i>
+                  <div class="roles-permission-info">
+                    <span class="roles-permission-name">${p.name}</span>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
           </div>
         `;
       }
-    } else {
-      permissionsHTML = `
-        <div class="permission-category">
-          <h4>Permisos</h4>
-          <p>${role.permissions.length} permisos asignados</p>
-        </div>
-      `;
-      permissionCount = role.permissions.length;
     }
     
+    const displayRoleName = getDisplayNameForRole(role.name);
+    
     Swal.fire({
-      title: `Permisos de ${role.name}`,
+      // Sin título aquí
       html: `
-        <div class="permissions-details-container">
-          <p class="permissions-count">Total: ${permissionCount} permisos</p>
-          <div class="permissions-grid">
-            ${permissionsHTML}
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3>Permisos de ${displayRoleName}</h3>
+            <button type="button" class="modal-close" onclick="Swal.close()">
+              <i class="material-icons">close</i>
+            </button>
+          </div>
+          <div class="modal-body">
+            <div class="roles-permissions-container-view">
+              ${permissionsHTML}
+            </div>
           </div>
         </div>
       `,
-      width: '600px',
-      showCloseButton: true,
+      width: '500px',
+      showCloseButton: false,
       showConfirmButton: false,
       allowOutsideClick: false,
       allowEscapeKey: true,
       customClass: {
-        container: 'permissions-modal-container',
-        popup: 'permissions-modal-popup',
-        content: 'permissions-modal-content',
-        closeButton: 'permissions-modal-close'
+        container: 'roles-permissions-view-modal-container',
+        popup: 'roles-permissions-view-modal-popup'
+      },
+      didOpen: () => {
+        // Eliminar completamente todos los paddings y margins
+        const popup = Swal.getPopup();
+        if (popup) {
+          popup.style.setProperty('padding', '0', 'important');
+          popup.style.setProperty('margin', '0', 'important');
+          popup.style.setProperty('border-radius', '8px', 'important');
+          
+          // Eliminar padding del contenedor HTML
+          const htmlContainer = popup.querySelector('.swal2-html-container');
+          if (htmlContainer) {
+            htmlContainer.style.setProperty('padding', '0', 'important');
+            htmlContainer.style.setProperty('margin', '0', 'important');
+            htmlContainer.style.setProperty('overflow', 'hidden', 'important');
+          }
+          
+          // Eliminar padding del contenedor principal
+          const container = popup.querySelector('.modal-content');
+          if (container) {
+            container.style.setProperty('margin', '0', 'important');
+            container.style.setProperty('width', '100%', 'important');
+          }
+        }
       }
     });
     
-    const styleId = 'permissions-details-styles';
-    if (!document.getElementById(styleId)) {
-      const style = document.createElement('style');
-      style.id = styleId;
-      style.innerHTML = `
-        .permissions-modal-popup {
-          max-width: 90vw;
-          padding-top: 15px;
-        }
-        
-        .permissions-modal-close {
-          position: absolute;
-          top: 8px;
-          right: 8px;
-          font-size: 20px;
-          color: #666;
-          opacity: 0.8;
-          transition: opacity 0.2s;
-        }
-        
-        .permissions-modal-close:hover {
-          opacity: 1;
-          color: #333;
-        }
-        
-        .permissions-details-container {
-          text-align: left;
-          padding: 5px 0;
-        }
-        
-        .permissions-count {
-          margin-bottom: 15px;
-          font-weight: bold;
-          color: #333;
-        }
-        
-        .permissions-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-          gap: 12px;
-          max-height: 60vh;
-          overflow-y: auto;
-          padding-right: 5px;
-        }
-        
-        .permission-category {
-          background: #f7f9fc;
-          border-radius: 6px;
-          padding: 8px 12px;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-        
-        .permission-category h4 {
-          margin-top: 0;
-          margin-bottom: 8px;
-          color: #333;
-          border-bottom: 1px solid #e0e4e9;
-          padding-bottom: 5px;
-          font-size: 14px;
-        }
-        
-        .permission-list {
-          list-style: none;
-          padding: 0;
-          margin: 0;
-          font-size: 13px;
-        }
-        
-        .permission-list li {
-          padding: 3px 0;
-          border-bottom: 1px solid #f0f0f0;
-        }
-        
-        .permission-list li:last-child {
-          border-bottom: none;
-        }
-        
-        @media (max-width: 768px) {
-          .permissions-grid {
-            grid-template-columns: 1fr;
-          }
-        }
-      `;
-      document.head.appendChild(style);
-    }
   } catch (err) {
     console.error("Error al mostrar detalles de permisos:", err);
     showError("Error al cargar los detalles de permisos");
   }
 }
 
-// ===== FUNCIONES DE RENDERIZADO (Estructura mejorada) =====
+function toggleViewPermissionCategory(categoryId) {
+  const category = document.getElementById(categoryId);
+  if (!category) return;
+  
+  const header = category.previousElementSibling;
+  const icon = header ? header.querySelector('.roles-category-toggle') : null;
+  
+  const isCurrentlyVisible = category.style.display === 'block' || 
+                            (!category.style.display && getComputedStyle(category).display !== 'none');
+  
+  if (isCurrentlyVisible) {
+    category.style.display = 'none';
+    if (icon) icon.textContent = 'expand_more';
+  } else {
+    category.style.display = 'block';
+    if (icon) icon.textContent = 'expand_less';
+  }
+}
 
-// Renderizar tabla de roles con la estructura mejorada
 const renderRolesTable = (page = 1) => {
   const tbody = document.getElementById("roleTableBody");
   
@@ -341,7 +389,7 @@ const renderRolesTable = (page = 1) => {
   if (!allRoles || allRoles.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="6" class="text-center">
+        <td colspan="5" class="text-center">
           No hay roles disponibles
         </td>
       </tr>
@@ -356,6 +404,7 @@ const renderRolesTable = (page = 1) => {
 
   const userPermissions = getUserPermissions();
   const canEditRoles = userPermissions.includes("edit_roles");
+  const canDeleteRoles = userPermissions.includes("delete_roles");
   
   let tableContent = '';
 
@@ -365,25 +414,30 @@ const renderRolesTable = (page = 1) => {
       const displayId = role.id || roleId || `Ro${String(index + 1).padStart(2, '0')}`;
       const status = role.status || "active";
       
+      const isAdmin = role.name === 'admin';
+      const isAdminClass = isAdmin ? 'role-admin' : '';
+      const adminBadge = isAdmin ? '<span class="admin-badge"></span>' : '';
+      
+      const displayRoleName = getDisplayNameForRole(role.name || '');
+      
       tableContent += `
-        <tr data-roleid="${roleId}" data-index="${index}">
+        <tr data-roleid="${roleId}" data-index="${index}" class="${isAdminClass}">
           <td class="id-column">${displayId}</td>
-          <td>${role.name || ''}</td>
-          <td>${role.description || '-'}</td>
+          <td>${displayRoleName} ${adminBadge}</td>
           <td>${formatPermissions(role.permissions, roleId)}</td>
           <td>
             <label class="switch">
               <input type="checkbox" ${status === "active" ? "checked" : ""} 
-                ${canEditRoles && role.name !== "admin" ? `onchange="updateRoleStatus('${roleId}', this.checked ? 'active' : 'inactive')"` : 'disabled'}>
+                ${canEditRoles && !isAdmin ? `onchange="updateRoleStatus('${roleId}', this.checked ? 'active' : 'inactive')"` : 'disabled'}>
               <span class="slider round"></span>
             </label>
           </td>
           <td>
             <div class="action-buttons">
-              <button onclick="fillEditForm('${roleId}')" class="icon-button edit-button" title="Editar" ${canEditRoles && role.name !== "admin" ? '' : 'disabled'}>
+              <button onclick="fillEditForm('${roleId}')" class="icon-button edit-button" title="Editar rol">
                 <i class="material-icons">edit</i>
               </button>
-              <button onclick="deleteRole('${roleId}')" class="icon-button delete-button" title="Eliminar" ${userPermissions.includes("delete_roles") && !role.isDefault ? '' : 'disabled'}>
+              <button onclick="deleteRole('${roleId}')" class="icon-button delete-button" title="Eliminar rol">
                 <i class="material-icons">delete</i>
               </button>
             </div>
@@ -393,7 +447,7 @@ const renderRolesTable = (page = 1) => {
     } catch (error) {
       tableContent += `
         <tr>
-          <td colspan="6" class="text-center text-danger">
+          <td colspan="5" class="text-center text-danger">
             Error al renderizar este rol: ${error.message}
           </td>
         </tr>
@@ -405,7 +459,6 @@ const renderRolesTable = (page = 1) => {
   renderPaginationControls();
 };
 
-// Renderizar controles de paginación con la estructura mejorada
 const renderPaginationControls = () => {
   if (!allRoles || allRoles.length === 0) {
     return;
@@ -452,15 +505,11 @@ const renderPaginationControls = () => {
   }
 };
 
-// Cambiar de página
 const changePage = (page) => {
   currentPage = page;
   renderRolesTable(currentPage);
 };
 
-// ===== FUNCIONES DE CARGA DE DATOS =====
-
-// Cargar roles sin indicador de carga
 const loadRolesInternal = async () => {
   try {
     const token = localStorage.getItem("token");
@@ -507,7 +556,7 @@ const loadRolesInternal = async () => {
       if (tbody && (!tbody.children.length || tbody.innerHTML.trim() === '')) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="6" class="text-center">
+            <td colspan="5" class="text-center">
               No se encontraron roles. Puede que necesite agregar un nuevo rol o revisar su conexión.
             </td>
           </tr>
@@ -522,12 +571,11 @@ const loadRolesInternal = async () => {
   }
 };
 
-// Listar roles con indicador de carga (solo para carga inicial)
 const listRoles = async () => {
   try {
     const token = localStorage.getItem("token");
     if (!token) {
-      showError("Token no encontrado. Inicie sesión nuevamente.");
+      showError("Inicie sesión nuevamente.");
       return;
     }
  
@@ -573,7 +621,7 @@ const listRoles = async () => {
       if (tbody && (!tbody.children.length || tbody.innerHTML.trim() === '')) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="6" class="text-center">
+            <td colspan="5" class="text-center">
               No se encontraron roles. Puede que necesite agregar un nuevo rol o revisar su conexión.
             </td>
           </tr>
@@ -589,12 +637,11 @@ const listRoles = async () => {
   }
 };
 
-// Cargar permisos para el formulario
 const loadPermissionsForForm = async () => {
   try {
     const token = localStorage.getItem("token");
     if (!token) {
-      showError("Token no encontrado. Inicie sesión nuevamente.");
+      showError("Inicie sesión nuevamente.");
       return;
     }
     
@@ -610,230 +657,56 @@ const loadPermissionsForForm = async () => {
     
     if (res.ok) {
       const permissions = data.permissions || data;
-      console.log("Permisos cargados:", permissions);
       
-      const permissionsContainer = document.getElementById("permissionsContainer");
-      const editPermissionsContainer = document.getElementById("editPermissionsContainer");
-      
-      const groupedPermissions = {};
+      const groupedPermissions = {
+        'usuarios': [],
+        'categorias': [],
+        'proveedores': [],
+        'productos': [],
+        'gestion-compras': [],
+        'clientes': [],
+        'sucursales': [],
+        'gestion-ventas': [],
+        'roles': [],
+        'permisos': [],
+        'otros': []
+      };
       
       permissions.forEach(permission => {
         if (permission.status !== "active") return;
         
-        const category = permission.code ? permission.code.split('_')[0] : 
-                        (permission.name ? permission.name.split(' ')[0].toLowerCase() : 'otros');
+        const permissionCode = permission.code || '';
         
-        if (!groupedPermissions[category]) {
-          groupedPermissions[category] = [];
+        let categoryName = 'otros';
+        
+        if (permissionCode.includes('usuario') || permissionCode.includes('user')) {
+          categoryName = 'usuarios';
+        } else if (permissionCode.includes('categories') || permissionCode.includes('categoria') || permissionCode.includes('category')) {
+          categoryName = 'categorias';
+        } else if (permissionCode.includes('proveedor') || permissionCode.includes('supplier') || permissionCode.includes('provider')) {
+          categoryName = 'proveedores';
+        } else if (permissionCode.includes('producto') || permissionCode.includes('product')) {
+          categoryName = 'productos';
+        } else if (permissionCode.includes('compra') || permissionCode.includes('purchase')) {
+          categoryName = 'gestion-compras';
+        } else if (permissionCode.includes('cliente') || permissionCode.includes('client') || permissionCode.includes('customer')) {
+          categoryName = 'clientes';
+        } else if (permissionCode.includes('sucursal') || permissionCode.includes('branch')) {
+          categoryName = 'sucursales';
+        } else if (permissionCode.includes('venta') || permissionCode.includes('sale')) {
+          categoryName = 'gestion-ventas';
+        } else if (permissionCode.includes('role') || permissionCode.includes('rol')) {
+          categoryName = 'roles';
+        } else if (permissionCode.includes('permiso') || permissionCode.includes('permission')) {
+          categoryName = 'permisos';
         }
-        groupedPermissions[category].push(permission);
+        
+        groupedPermissions[categoryName].push(permission);
       });
+
+      fillPermissionsInForm('roles-category-', 'permissions', groupedPermissions);
+      fillPermissionsInForm('roles-edit-category-', 'editPermissions', groupedPermissions);
       
-      // Renderizar los permisos agrupados en el formulario de creación
-      if (permissionsContainer) {
-        permissionsContainer.innerHTML = "";
-        
-        for (const category in groupedPermissions) {
-          const perms = groupedPermissions[category];
-          const categoryId = `category-${category}`;
-          
-          const isFirstCategory = Object.keys(groupedPermissions)[0] === category;
-          
-          permissionsContainer.innerHTML += `
-            <div class="permission-section">
-              <div class="permission-category-header" onclick="togglePermissionCategory('${categoryId}')">
-                <h5>${category.charAt(0).toUpperCase() + category.slice(1)} <span>(${perms.length})</span></h5>
-                <i class="material-icons category-toggle">${isFirstCategory ? 'expand_more' : 'expand_less'}</i>
-              </div>
-              <div id="${categoryId}" class="permission-items" style="${isFirstCategory ? '' : 'display: none;'}">
-                ${perms.map(permission => `
-                  <div class="checkbox-container">
-                    <input type="checkbox" id="perm-${permission._id}" value="${permission._id}" name="permissions">
-                    <label for="perm-${permission._id}" title="${permission.name} (${permission.code})">${permission.name}</label>
-                  </div>
-                `).join('')}
-              </div>
-            </div>
-          `;
-        }
-        
-        permissionsContainer.innerHTML = `
-          <div class="permissions-actions">
-            <button type="button" class="text-button" onclick="selectAllPermissions('permissions')">Seleccionar todos</button>
-            <button type="button" class="text-button" onclick="deselectAllPermissions('permissions')">Ninguno</button>
-          </div>
-        ` + permissionsContainer.innerHTML;
-      }
-      
-      // Renderizar los permisos agrupados en el formulario de edición
-      if (editPermissionsContainer) {
-        editPermissionsContainer.innerHTML = "";
-        
-        for (const category in groupedPermissions) {
-          const perms = groupedPermissions[category];
-          const categoryId = `edit-category-${category}`;
-          
-          const isFirstCategory = Object.keys(groupedPermissions)[0] === category;
-          
-          editPermissionsContainer.innerHTML += `
-            <div class="permission-section">
-              <div class="permission-category-header" onclick="togglePermissionCategory('${categoryId}')">
-                <h5>${category.charAt(0).toUpperCase() + category.slice(1)} <span>(${perms.length})</span></h5>
-                <i class="material-icons category-toggle">${isFirstCategory ? 'expand_more' : 'expand_less'}</i>
-              </div>
-              <div id="${categoryId}" class="permission-items" style="${isFirstCategory ? '' : 'display: none;'}">
-                ${perms.map(permission => `
-                  <div class="checkbox-container">
-                    <input type="checkbox" id="edit-${permission._id}" value="${permission._id}" name="editPermissions">
-                    <label for="edit-${permission._id}" title="${permission.name} (${permission.code})">${permission.name}</label>
-                  </div>
-                `).join('')}
-              </div>
-            </div>
-          `;
-        }
-        
-        editPermissionsContainer.innerHTML = `
-          <div class="permissions-actions">
-            <button type="button" class="text-button" onclick="selectAllPermissions('editPermissions')">Seleccionar todos</button>
-            <button type="button" class="text-button" onclick="deselectAllPermissions('editPermissions')">Ninguno</button>
-          </div>
-        ` + editPermissionsContainer.innerHTML;
-      }
-      
-      // Inyectar estilos CSS para las secciones de permisos
-      const styleId = 'permission-styles';
-      if (!document.getElementById(styleId)) {
-        const style = document.createElement('style');
-        style.id = styleId;
-        style.innerHTML = `
-          .permissions-container {
-            max-height: 300px;
-            overflow-y: auto;
-            border: 1px solid #e0e4e9;
-            border-radius: 6px;
-            padding: 10px;
-            margin-bottom: 10px;
-          }
-          
-          .permission-section {
-            margin-bottom: 6px;
-            border: 1px solid #e8eaed;
-            border-radius: 6px;
-            overflow: hidden;
-          }
-          
-          .permission-category-header {
-            padding: 8px 12px;
-            background-color: #f7f9fc;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-          }
-          
-          .permission-category-header h5 {
-            margin: 0;
-            font-size: 14px;
-            color: #333;
-          }
-          
-          .permission-category-header h5 span {
-            color: #6c757d;
-            font-size: 12px;
-            font-weight: normal;
-          }
-          
-          .permission-items {
-            padding: 8px 12px;
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-            gap: 5px;
-            background: #fff;
-            max-height: 180px;
-            overflow-y: auto;
-          }
-          
-          .checkbox-container {
-            margin-bottom: 4px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-          }
-          
-          .checkbox-container label {
-            font-size: 13px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            display: inline-block;
-            max-width: calc(100% - 25px);
-            vertical-align: middle;
-          }
-          
-          .permissions-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            margin-bottom: 6px;
-          }
-          
-          .text-button {
-            background: none;
-            border: none;
-            color: #2962ff;
-            cursor: pointer;
-            font-size: 12px;
-            text-decoration: underline;
-            padding: 3px;
-          }
-          
-          .text-button:hover {
-            color: #0039cb;
-          }
-          
-          .view-details-btn {
-            background: none;
-            border: none;
-            color: #2962ff;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-size: 13px;
-            padding: 3px 5px;
-            border-radius: 4px;
-          }
-          
-          .view-details-btn:hover {
-            background-color: rgba(41, 98, 255, 0.1);
-          }
-          
-          .view-details-btn i {
-            font-size: 16px;
-          }
-          
-          .modal-content {
-            max-width: 700px;
-            max-height: 80vh;
-            overflow-y: auto;
-          }
-          
-          .form-field {
-            margin-bottom: 12px;
-          }
-          
-          .form-row {
-            margin-bottom: 10px;
-          }
-          
-          input[type="checkbox"] {
-            margin-right: 5px;
-            vertical-align: middle;
-          }
-        `;
-        document.head.appendChild(style);
-      }
     } else {
       showError(data.message || "Error al cargar permisos.");
     }
@@ -843,13 +716,34 @@ const loadPermissionsForForm = async () => {
   }
 };
 
-// ===== FUNCIONES AUXILIARES PARA PERMISOS =====
+function fillPermissionsInForm(categoryPrefix, inputName, groupedPermissions) {
+  const categories = ['usuarios', 'categorias', 'proveedores', 'productos', 'gestion-compras', 'clientes', 'sucursales', 'gestion-ventas', 'roles', 'permisos', 'otros'];
+  
+  categories.forEach(category => {
+    const container = document.getElementById(`${categoryPrefix}${category}`);
+    const countElement = document.getElementById(`${inputName === 'permissions' ? '' : 'edit-'}${category}-count`);
+    
+    if (container && groupedPermissions[category]) {
+      const permissions = groupedPermissions[category];
+      
+      if (countElement) {
+        countElement.textContent = `(${permissions.length})`;
+      }
+      
+      container.innerHTML = permissions.map(permission => `
+        <div class="roles-checkbox-container">
+          <input type="checkbox" id="${inputName === 'permissions' ? 'perm' : 'edit'}-${permission._id}" value="${permission._id}" name="${inputName}">
+          <label for="${inputName === 'permissions' ? 'perm' : 'edit'}-${permission._id}">${permission.name}</label>
+        </div>
+      `).join('');
+    }
+  });
+}
 
-// Función para alternar la visibilidad de una categoría de permisos
 function togglePermissionCategory(categoryId) {
   const category = document.getElementById(categoryId);
   const header = category.previousElementSibling;
-  const icon = header.querySelector('.category-toggle');
+  const icon = header.querySelector('.roles-category-toggle');
   
   if (category.style.display === 'none') {
     category.style.display = 'grid';
@@ -860,7 +754,6 @@ function togglePermissionCategory(categoryId) {
   }
 }
 
-// Función para seleccionar todos los permisos
 function selectAllPermissions(name) {
   const checkboxes = document.querySelectorAll(`input[name="${name}"]`);
   checkboxes.forEach(checkbox => {
@@ -868,7 +761,6 @@ function selectAllPermissions(name) {
   });
 }
 
-// Función para deseleccionar todos los permisos
 function deselectAllPermissions(name) {
   const checkboxes = document.querySelectorAll(`input[name="${name}"]`);
   checkboxes.forEach(checkbox => {
@@ -876,63 +768,42 @@ function deselectAllPermissions(name) {
   });
 }
 
-// Función específica para marcar los permisos en el formulario
 function marcarPermisosEnFormulario(permisos) {
+  const allCheckboxes = document.querySelectorAll('input[name="editPermissions"]');
+  
+  allCheckboxes.forEach(checkbox => checkbox.checked = false);
+  
   if (!permisos || !Array.isArray(permisos) || permisos.length === 0) {
-    console.warn("No hay permisos para marcar o formato incorrecto");
     return;
   }
   
-  console.log("Iniciando marcado de permisos. Total permisos a marcar:", permisos.length);
-  
-  const allCheckboxes = document.querySelectorAll('input[name="editPermissions"]');
-  allCheckboxes.forEach(checkbox => {
-    checkbox.checked = false;
-  });
-  
-  console.log("Total checkboxes encontrados:", allCheckboxes.length);
-  
   const permisosIds = new Set();
   permisos.forEach(perm => {
-    if (typeof perm === 'object' && perm !== null && perm._id) {
-      permisosIds.add(perm._id);
-      console.log(`Permiso a marcar (objeto): ${perm._id}`);
+    if (typeof perm === 'object' && perm !== null) {
+      if (perm._id) permisosIds.add(perm._id);
+      if (perm.id) permisosIds.add(perm.id);
     } else if (typeof perm === 'string') {
       permisosIds.add(perm);
-      console.log(`Permiso a marcar (string): ${perm}`);
     }
   });
   
-  console.log("IDs de permisos a marcar:", Array.from(permisosIds));
-  
-  let permisosEncontrados = 0;
   allCheckboxes.forEach(checkbox => {
-    const permissionId = checkbox.value;
-    console.log(`Verificando checkbox: id=${checkbox.id}, value=${permissionId}`);
-    
-    if (permisosIds.has(permissionId)) {
+    if (permisosIds.has(checkbox.value)) {
       checkbox.checked = true;
-      permisosEncontrados++;
-      console.log(`✓ Checkbox marcado: ${checkbox.id} (${permissionId})`);
       
-      const categoryItem = checkbox.closest('.permission-items');
+      const categoryItem = checkbox.closest('.roles-permission-items');
       if (categoryItem && categoryItem.style.display === 'none') {
         categoryItem.style.display = 'grid';
         const header = categoryItem.previousElementSibling;
         if (header) {
-          const icon = header.querySelector('.category-toggle');
+          const icon = header.querySelector('.roles-category-toggle');
           if (icon) icon.textContent = 'expand_more';
         }
       }
     }
   });
-  
-  console.log(`Permisos marcados: ${permisosEncontrados} de ${permisosIds.size} esperados`);
 }
 
-// ===== FUNCIONES DE OPERACIONES CRUD =====
-
-// Registrar rol
 const registerRole = async () => {
   const token = localStorage.getItem("token");
   if (!token) {
@@ -988,7 +859,6 @@ const registerRole = async () => {
   }
 };
 
-// Llenar formulario de edición
 const fillEditForm = async (id) => {
   const token = localStorage.getItem("token");
   if (!token) {
@@ -999,43 +869,56 @@ const fillEditForm = async (id) => {
   try {
     clearValidationErrors('editRoleForm');
     
-    const res = await fetch(`${API_URL}/${id}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
-      }
-    });
+    let role = allRoles.find(r => (r._id || r.id) === id);
+    
+    if (!role) {
+      const res = await fetch(`${API_URL}/${id}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        }
+      });
 
-    if (!res.ok) {
-      const data = await res.json();
-      showError(data.message || "Error al cargar los datos del rol.");
+      if (!res.ok) {
+        const errorData = await res.json();
+        showError(errorData.message || "Error al cargar los datos del rol.");
+        return;
+      }
+
+      const responseData = await res.json();
+      role = responseData.role || responseData;
+    }
+
+    if (!role || !(role._id || role.id)) {
+      showError("Error: datos del rol no encontrados.");
       return;
     }
 
-    const role = await res.json();
+    if (role.name === 'admin') {
+      showValidation('El rol Administrador no puede ser editado porque es utilizado internamente por el sistema.');
+      return;
+    }
 
-    const editIdElement = document.getElementById("editId");
-    const editNameElement = document.getElementById("editName");
-    const editDescriptionElement = document.getElementById("editDescription");
+    document.getElementById("editId").value = role._id || role.id;
+    document.getElementById("editName").value = getDisplayNameForRole(role.name || "");
     
-    if (editIdElement) editIdElement.value = role._id;
-    if (editNameElement) editNameElement.value = role.name || "";
-    if (editDescriptionElement) editDescriptionElement.value = role.description || "";
+    const editDescriptionElement = document.getElementById("editDescription");
+    if (editDescriptionElement) {
+      editDescriptionElement.value = role.description || "";
+    }
     
     openModal('editRoleModal');
     
     setTimeout(() => {
-      marcarPermisosEnFormulario(role.permissions);
-    }, 300);
+      marcarPermisosEnFormulario(role.permissions || []);
+    }, 100);
     
   } catch (err) {
-    console.error("Error al cargar el rol:", err);
-    showError(`Ocurrió un error: ${err.message || err}`);
+    showError(`Error al cargar el rol: ${err.message || err}`);
   }
 };
 
-// Actualizar rol
 const updateRole = async () => {
   const token = localStorage.getItem("token");
   if (!token) {
@@ -1092,16 +975,30 @@ const updateRole = async () => {
   }
 };
 
-// Actualizar estado de rol
-const updateRoleStatus = async (id, status) => {
+const updateRoleStatus = async (id, newStatus) => {
   const token = localStorage.getItem("token");
   if (!token) {
     showError("Token no encontrado. Inicie sesión nuevamente.");
     return;
   }
+  
+  const role = allRoles.find(r => (r._id || r.id) === id) || originalRoles.find(r => (r._id || r.id) === id);
+  
+  if (role && role.name === 'admin' && newStatus === 'inactive') {
+    showValidation('El rol Administrador no puede ser desactivado porque es utilizado internamente por el sistema.');
+    
+    setTimeout(() => {
+      const switchElement = document.querySelector(`tr[data-roleid="${id}"] input[type="checkbox"]`);
+      if (switchElement) {
+        switchElement.checked = true;
+      }
+    }, 100);
+    
+    return;
+  }
 
   const switchElement = document.querySelector(`tr[data-roleid="${id}"] input[type="checkbox"]`);
-  
+
   try {
     const res = await fetch(`${API_URL}/${id}/status`, {
       method: "PATCH",
@@ -1109,7 +1006,7 @@ const updateRoleStatus = async (id, status) => {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`
       },
-      body: JSON.stringify({ status })
+      body: JSON.stringify({ status: newStatus })
     });
 
     let data;
@@ -1121,28 +1018,28 @@ const updateRoleStatus = async (id, status) => {
     }
     
     if (res.ok) {
-      showSuccess(`Rol ${status === 'active' ? 'activado' : 'desactivado'} correctamente.`);
+      showSuccess(`Rol ${newStatus === 'active' ? 'activado' : 'desactivado'} correctamente.`);
       
       if (switchElement) {
-        switchElement.checked = status === 'active';
+        switchElement.checked = newStatus === 'active';
       }
       
-      const roleIndex = allRoles.findIndex(r => r._id === id);
+      const roleIndex = allRoles.findIndex(r => (r._id || r.id) === id);
       if (roleIndex !== -1) {
-        allRoles[roleIndex].status = status;
+        allRoles[roleIndex].status = newStatus;
       }
       
-      const originalIndex = originalRoles.findIndex(r => r._id === id);
+      const originalIndex = originalRoles.findIndex(r => (r._id || r.id) === id);
       if (originalIndex !== -1) {
-        originalRoles[originalIndex].status = status;
+        originalRoles[originalIndex].status = newStatus;
       }
       
     } else {
-      let errorMsg = data.message || `Error al ${status === 'active' ? 'activar' : 'desactivar'} el rol (${res.status})`;
+      let errorMsg = data.message || `Error al ${newStatus === 'active' ? 'activar' : 'desactivar'} el rol (${res.status})`;
       showError(errorMsg);
 
       if (switchElement) {
-        switchElement.checked = status !== 'active';
+        switchElement.checked = newStatus !== 'active';
       }
     }
   } catch (err) {
@@ -1150,17 +1047,33 @@ const updateRoleStatus = async (id, status) => {
     showError(`Ocurrió un error de red: ${err.message || err}`);
     
     if (switchElement) {
-      switchElement.checked = status !== 'active';
+      switchElement.checked = newStatus !== 'active';
     }
   }
 };
 
-// Eliminar rol
+const toggleRoleStatus = updateRoleStatus;
+
 const deleteRole = async (id) => {
   const token = localStorage.getItem("token");
   if (!token) {
-    showError("Token no encontrado. Inicie sesión nuevamente.");
+    showError("Inicie sesión nuevamente.");
     return;
+  }
+
+  const role = allRoles.find(r => (r._id || r.id) === id) || originalRoles.find(r => (r._id || r.id) === id);
+  
+  if (role) {
+    if (role.name === 'admin') {
+      showValidation('El rol Administrador no puede ser eliminado del sistema.');
+      return;
+    }
+    
+    if (role.isDefault || ['assistant', 'employee'].includes(role.name)) {
+      const roleName = getDisplayNameForRole(role.name);
+      showValidation(`El rol ${roleName} es predeterminado del sistema y no puede ser eliminado.`);
+      return;
+    }
   }
 
   const confirmed = await showConfirm({ 
@@ -1185,15 +1098,27 @@ const deleteRole = async (id) => {
       loadRolesInternal();
     } else {
       const data = await res.json();
-      showError(data.message || "No se pudo eliminar el rol");
+      
+      if (data.message === "Cannot delete default roles") {
+        const roleName = role ? getDisplayNameForRole(role.name) : 'este rol';
+        showValidation(`El rol ${roleName} es predeterminado del sistema y no puede ser eliminado.`);
+      } else if (data.message && data.message.includes("assigned to users")) {
+        const userCount = data.usersCount || 'algunos';
+        showError(`No se puede eliminar el rol porque está asignado a ${userCount} usuario(s). Primero debe reasignar o eliminar esos usuarios.`);
+      } else if (data.message === "Role not found") {
+        showError("El rol que intenta eliminar no existe.");
+      } else if (data.message === "Invalid role ID format") {
+        showError("ID de rol inválido.");
+      } else {
+        showError(data.message || "Error desconocido al eliminar el rol.");
+      }
     }
   } catch (err) {
     console.error("Error al eliminar rol:", err);
-    showError("Error al eliminar rol: " + (err.message || err));
+    showError("Error de conexión al eliminar el rol. Verifique su conexión a internet.");
   }
 };
 
-// Buscar rol
 const searchRole = () => {
   const searchInput = document.getElementById("searchInput");
   
@@ -1214,10 +1139,11 @@ const searchRole = () => {
   } else {
     allRoles = originalRoles.filter(r => {
       const nameMatch = r.name && r.name.toLowerCase().includes(term);
+      const displayNameMatch = getDisplayNameForRole(r.name || '').toLowerCase().includes(term);
       const idMatch = (r.id || r._id) && (r.id || r._id).toLowerCase().includes(term);
       const descriptionMatch = r.description && r.description.toLowerCase().includes(term);
       
-      return nameMatch || idMatch || descriptionMatch;
+      return nameMatch || displayNameMatch || idMatch || descriptionMatch;
     });
   }
   
@@ -1225,24 +1151,21 @@ const searchRole = () => {
   renderRolesTable(currentPage);
 };
 
-// ===== FUNCIONES DE UTILIDAD ADICIONALES =====
-
-// Función para mostrar alertas
 function showAlert(message, type) {
-  let alertContainer = document.getElementById("alertContainer");
+  let alertContainer = document.getElementById("rolesAlertContainer");
   if (!alertContainer) {
     alertContainer = document.createElement("div");
-    alertContainer.id = "alertContainer";
-    alertContainer.className = "alert-container";
+    alertContainer.id = "rolesAlertContainer";
+    alertContainer.className = "roles-alert-container";
     document.body.appendChild(alertContainer);
   }
   
   const alertElement = document.createElement("div");
-  alertElement.className = `alert alert-${type}`;
+  alertElement.className = `roles-alert roles-alert-${type}`;
   alertElement.textContent = message;
   
   const closeButton = document.createElement("span");
-  closeButton.className = "alert-close";
+  closeButton.className = "roles-alert-close";
   closeButton.innerHTML = "&times;";
   closeButton.onclick = function() {
     alertContainer.removeChild(alertElement);
@@ -1258,23 +1181,14 @@ function showAlert(message, type) {
   }, 5000);
 }
 
-// Función para mostrar error
-function showError(message, type = "error") {
-  showAlert(message, type);
-}
-
-// ===== FUNCIONES DE INICIALIZACIÓN =====
-
 function initializeValidationEvents() {
   disableNativeBrowserValidation();
   
-  // Validación en tiempo real - Formulario de registro
   const nameField = document.getElementById("name");
   if (nameField) {
     nameField.addEventListener("blur", () => validateField("name", "El nombre es obligatorio."));
   }
   
-  // Validación en tiempo real - Formulario de edición
   const editNameField = document.getElementById("editName");
   if (editNameField) {
     editNameField.addEventListener("blur", () => validateField("editName", "El nombre es obligatorio."));
@@ -1346,21 +1260,31 @@ function initializeListPage() {
   }
 }
 
-// ===== EVENTOS AL CARGAR EL DOM =====
-
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   if (!checkAuth()) return;
   
   initializeValidationEvents();
-  initializeListPage();
+  
+  try {
+    await loadPermissionsForForm();
+  } catch (error) {
+    console.error("Error cargando permisos:", error);
+  }
+  
+  try {
+    await initializeListPage();
+  } catch (error) {
+    console.error("Error inicializando página:", error);
+  }
 });
 
-// ===== FUNCIONES GLOBALES =====
-
+window.getDisplayNameForRole = getDisplayNameForRole;
 window.validateField = validateField;
 window.validatePermissions = validatePermissions;
 window.clearValidationErrors = clearValidationErrors;
 window.disableNativeBrowserValidation = disableNativeBrowserValidation;
+window.isAdminRole = isAdminRole;
+window.isDefaultRole = isDefaultRole;
 window.fillEditForm = fillEditForm;
 window.updateRoleStatus = updateRoleStatus;
 window.deleteRole = deleteRole;
@@ -1372,3 +1296,9 @@ window.togglePermissionCategory = togglePermissionCategory;
 window.selectAllPermissions = selectAllPermissions;
 window.deselectAllPermissions = deselectAllPermissions;
 window.hideLoadingIndicator = hideLoadingIndicator;
+window.showLoadingIndicator = showLoadingIndicator;
+window.toggleViewPermissionCategory = toggleViewPermissionCategory;
+window.preventEventPropagation = preventEventPropagation;
+window.toggleRoleStatus = toggleRoleStatus;
+window.showValidation = showValidation;
+window.showConfirm = showConfirm;
