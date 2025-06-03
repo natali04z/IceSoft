@@ -74,6 +74,11 @@ function validateField(fieldId, errorMessage) {
   const field = document.getElementById(fieldId);
   const errorElement = document.getElementById(`${fieldId}-error`);
   
+  if (!field || !errorElement) {
+    console.warn(`Elemento no encontrado: ${fieldId} o ${fieldId}-error`);
+    return false;
+  }
+  
   if (!field.value.trim()) {
     errorElement.textContent = errorMessage || "El campo es obligatorio.";
     errorElement.style.display = "block";
@@ -91,6 +96,11 @@ function validateEmail(fieldId) {
   const field = document.getElementById(fieldId);
   const errorElement = document.getElementById(`${fieldId}-error`);
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  
+  if (!field || !errorElement) {
+    console.warn(`Elemento no encontrado: ${fieldId} o ${fieldId}-error`);
+    return false;
+  }
   
   if (!field.value.trim()) {
     errorElement.textContent = "El correo es obligatorio.";
@@ -113,6 +123,11 @@ function validateEmail(fieldId) {
 function validatePhone(fieldId) {
   const field = document.getElementById(fieldId);
   const errorElement = document.getElementById(`${fieldId}-error`);
+  
+  if (!field || !errorElement) {
+    console.warn(`Elemento no encontrado: ${fieldId} o ${fieldId}-error`);
+    return false;
+  }
   
   if (!field.value.trim()) {
     errorElement.textContent = "El teléfono es obligatorio.";
@@ -159,15 +174,17 @@ function setupPhoneNumberValidation() {
   
   // Validación para teléfonos (solo números)
   phoneInputs.forEach(input => {
-    input.addEventListener('keypress', function(e) {
-      if (!/^\d$/.test(e.key) && !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key)) {
-        e.preventDefault();
-      }
-    });
-    
-    input.addEventListener('input', function() {
-      this.value = this.value.replace(/\D/g, '');
-    });
+    if (input) {
+      input.addEventListener('keypress', function(e) {
+        if (!/^\d$/.test(e.key) && !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key)) {
+          e.preventDefault();
+        }
+      });
+      
+      input.addEventListener('input', function() {
+        this.value = this.value.replace(/\D/g, '');
+      });
+    }
   });
 }
 
@@ -198,6 +215,33 @@ function disableNativeBrowserValidation() {
 }
 
 // ===== FUNCIONES DE UTILIDAD =====
+
+/**
+ * Verifica si un cliente es predeterminado
+ * @param {string} customerId - ID del cliente a verificar
+ * @returns {boolean} true si es cliente predeterminado
+ */
+function isDefaultCustomer(customerId) {
+  // Buscar en allCustomers primero
+  const customerInAll = allCustomers.find(c => (c.id || c._id) === customerId);
+  if (customerInAll && customerInAll.isDefault) {
+    return true;
+  }
+  
+  // Buscar en originalCustomers como respaldo
+  const customerInOriginal = originalCustomers.find(c => (c.id || c._id) === customerId);
+  if (customerInOriginal && customerInOriginal.isDefault) {
+    return true;
+  }
+  
+  // Verificar en el DOM si tiene la clase especial
+  const row = document.querySelector(`tr[data-customerid="${customerId}"]`);
+  if (row && row.classList.contains('customer-default')) {
+    return true;
+  }
+  
+  return false;
+}
 
 function getUserPermissions() {
   try {
@@ -236,10 +280,6 @@ function closeModal(modalId) {
   modal.style.display = "none";
 }
 
-function hideLoadingIndicator() {
-  Swal.close();
-}
-
 // Función para mostrar alertas más específicas
 function showAlert({ type = 'info', title, message, icon = 'info' }) {
   if (typeof Swal !== 'undefined') {
@@ -262,7 +302,7 @@ const formatDate = (dateString) => {
   return formatDateForDisplay(dateString);
 };
 
-// ===== FUNCIONES DE RENDERIZADO (Estructura mejorada) =====
+// ===== FUNCIONES DE RENDERIZADO (Estructura mejorada con protección cliente predeterminado) =====
 
 const renderCustomersTable = (page = 1) => {
   const tbody = document.getElementById("customerTableBody");
@@ -291,6 +331,7 @@ const renderCustomersTable = (page = 1) => {
 
   const userPermissions = getUserPermissions();
   const canEditCustomers = userPermissions.includes("edit_customers");
+  const canDeleteCustomers = userPermissions.includes("delete_customers");
   
   let tableContent = '';
 
@@ -299,12 +340,13 @@ const renderCustomersTable = (page = 1) => {
       const customerId = customer.id || customer._id || "";
       const displayId = customer.id || customerId || `Cu${String(index + 1).padStart(2, '0')}`;
       
-      // Agregar clase CSS para cliente predeterminado
-      const isDefaultClass = customer.isDefault ? 'customer-default' : '';
-      const defaultBadge = customer.isDefault ? '<span class="default-badge">Predeterminado</span>' : '';
+      const isDefault = customer.isDefault === true;
+      
+      const isDefaultClass = isDefault ? 'customer-default' : '';
+      const defaultBadge = isDefault ? '<span class="default-badge">Predeterminado</span>' : '';
       const status = customer.status || "active";
       
-      // ✅ NUEVA IMPLEMENTACIÓN - usando la función helper para formatear fecha
+      // Formatear fecha
       const createdDate = formatDate(customer.createdAt);
       
       tableContent += `
@@ -317,16 +359,16 @@ const renderCustomersTable = (page = 1) => {
           <td>
             <label class="switch">
               <input type="checkbox" ${status === "active" ? "checked" : ""} 
-                ${canEditCustomers && !customer.isDefault ? `onchange="updateCustomerStatus('${customerId}', this.checked ? 'active' : 'inactive')"` : 'disabled'}>
+                onchange="updateCustomerStatus('${customerId}', this.checked ? 'active' : 'inactive')">
               <span class="slider round"></span>
             </label>
           </td>
           <td>
             <div class="action-buttons">
-              <button onclick="fillEditForm('${customerId}')" class="icon-button edit-button" title="Editar cliente" ${canEditCustomers && !customer.isDefault ? '' : 'disabled'}>
+              <button onclick="fillEditForm('${customerId}')" class="icon-button edit-button" title="Editar cliente">
                 <i class="material-icons">edit</i>
               </button>
-              <button onclick="deleteCustomer('${customerId}')" class="icon-button delete-button" title="Eliminar cliente" ${userPermissions.includes("delete_customers") && !customer.isDefault ? '' : 'disabled'}>
+              <button onclick="deleteCustomer('${customerId}')" class="icon-button delete-button" title="Eliminar cliente">
                 <i class="material-icons">delete</i>
               </button>
             </div>
@@ -451,8 +493,7 @@ const loadCustomersInternal = async () => {
     if (!Array.isArray(customers)) {
       customers = [];
     }
-    
-    // ✅ NUEVA IMPLEMENTACIÓN - procesamiento de fechas mejorado
+
     customers = customers.map(customer => {
       let adaptedCustomer = {...customer};
       
@@ -460,14 +501,14 @@ const loadCustomersInternal = async () => {
         return {};
       }
       
-      // Normalizar campos de fecha
+      
       if (adaptedCustomer.created_at === undefined && adaptedCustomer.createdAt !== undefined) {
         adaptedCustomer.created_at = adaptedCustomer.createdAt;
       } else if (adaptedCustomer.createdAt === undefined && adaptedCustomer.created_at !== undefined) {
         adaptedCustomer.createdAt = adaptedCustomer.created_at;
       }
       
-      // Asegurar que tiene un estado por defecto
+      
       if (adaptedCustomer.status === undefined) {
         adaptedCustomer.status = "active";
       }
@@ -493,6 +534,7 @@ const loadCustomersInternal = async () => {
     }
   } catch (err) {
     showError("Error al listar clientes");
+    console.error("Error in loadCustomersInternal:", err);
   }
 };
 
@@ -533,7 +575,6 @@ const listCustomers = async () => {
     
     let customers = [];
     
-    // Manejar diferentes estructuras de respuesta
     if (data && data.success && data.data) {
       customers = data.data;
     } else if (data && typeof data === 'object' && data.customers) {
@@ -555,7 +596,6 @@ const listCustomers = async () => {
       customers = [];
     }
     
-    // ✅ NUEVA IMPLEMENTACIÓN - procesamiento de fechas mejorado
     customers = customers.map(customer => {
       let adaptedCustomer = {...customer};
       
@@ -563,14 +603,12 @@ const listCustomers = async () => {
         return {};
       }
       
-      // Normalizar campos de fecha
       if (adaptedCustomer.created_at === undefined && adaptedCustomer.createdAt !== undefined) {
         adaptedCustomer.created_at = adaptedCustomer.createdAt;
       } else if (adaptedCustomer.createdAt === undefined && adaptedCustomer.created_at !== undefined) {
         adaptedCustomer.createdAt = adaptedCustomer.created_at;
       }
       
-      // Asegurar que tiene un estado por defecto
       if (adaptedCustomer.status === undefined) {
         adaptedCustomer.status = "active";
       }
@@ -597,10 +635,11 @@ const listCustomers = async () => {
   } catch (err) {
     hideLoadingIndicator();
     showError("Error al listar clientes");
+    console.error("Error in listCustomers:", err);
   }
 };
 
-// ===== FUNCIONES DE OPERACIONES CRUD =====
+// ===== FUNCIONES DE OPERACIONES CRUD CON PROTECCIÓN CLIENTE PREDETERMINADO =====
 
 const registerCustomer = async () => {
   const token = localStorage.getItem("token");
@@ -624,6 +663,8 @@ const registerCustomer = async () => {
   const phone = document.getElementById("phone").value.trim();
 
   try {
+    showLoadingIndicator();
+    
     const res = await fetch(API_CUSTOMERS, {
       method: "POST",
       headers: {
@@ -638,10 +679,12 @@ const registerCustomer = async () => {
       })
     });
     
+    hideLoadingIndicator();
+    
     const data = await res.json();
     
     if (res.status === 201 || res.ok) {
-      showSuccess('El cliente ha sido registrado');
+      showSuccess('El cliente ha sido registrado exitosamente');
       closeModal('registerModal');
       
       const customerForm = document.getElementById("customerForm");
@@ -654,7 +697,9 @@ const registerCustomer = async () => {
       showError(data.message || "No se pudo registrar el cliente.");
     }
   } catch (err) {
-    showError("Error al registrar cliente.");
+    hideLoadingIndicator();
+    showError("Error al registrar cliente. Intente nuevamente.");
+    console.error("Error in registerCustomer:", err);
   }
 };
 
@@ -668,6 +713,8 @@ const fillEditForm = async (id) => {
   try {
     clearValidationErrors('editForm');
     
+    showLoadingIndicator();
+    
     const res = await fetch(`${API_CUSTOMERS}/${id}`, {
       method: "GET",
       headers: {
@@ -675,6 +722,8 @@ const fillEditForm = async (id) => {
         Authorization: `Bearer ${token}`,
       },
     });
+
+    hideLoadingIndicator();
 
     if (!res.ok) {
       const data = await res.json();
@@ -685,8 +734,9 @@ const fillEditForm = async (id) => {
     const data = await res.json();
     const customer = data.data || data;
     
+    // ✅ VALIDACIÓN: Prevenir edición del cliente predeterminado
     if (customer.isDefault) {
-      showInfo('Este es el cliente predeterminado del sistema. No puede ser editado ya que es necesario para el funcionamiento interno de la aplicación.');
+      showValidation('El cliente predeterminado no puede ser editado.');
       return;
     }
 
@@ -707,7 +757,9 @@ const fillEditForm = async (id) => {
 
     openModal("editModal");
   } catch (err) {
+    hideLoadingIndicator();
     showError("Error al cargar el cliente.");
+    console.error("Error in fillEditForm:", err);
   }
 };
 
@@ -738,6 +790,8 @@ const updateCustomer = async (event) => {
   const phone = document.getElementById("editPhone").value.trim();
 
   try {
+    showLoadingIndicator();
+    
     const res = await fetch(`${API_CUSTOMERS}/${customerId}`, {
       method: "PUT",
       headers: {
@@ -752,10 +806,12 @@ const updateCustomer = async (event) => {
       }),
     });
 
+    hideLoadingIndicator();
+    
     const data = await res.json();
 
     if (res.ok) {
-      showSuccess('El cliente ha sido actualizado');
+      showSuccess('El cliente ha sido actualizado exitosamente');
       closeModal("editModal");
       
       const editForm = document.getElementById("editForm");
@@ -768,10 +824,13 @@ const updateCustomer = async (event) => {
       showError(data.message || "No se pudo actualizar el cliente.");
     }
   } catch (err) {
-    showError("Error al actualizar cliente");
+    hideLoadingIndicator();
+    showError("Error al actualizar cliente. Intente nuevamente.");
+    console.error("Error in updateCustomer:", err);
   }
 };
 
+// ✅ PROTECCIÓN CLIENTE PREDETERMINADO - Estado no se puede cambiar
 const updateCustomerStatus = async (id, newStatus) => {
   const token = localStorage.getItem("token");
   if (!token) {
@@ -779,12 +838,16 @@ const updateCustomerStatus = async (id, newStatus) => {
     return;
   }
   
-  const customer = allCustomers.find(c => (c.id || c._id) === id);
-  if (customer && customer.isDefault && newStatus === 'inactive') {
-    showInfo('Este cliente predeterminado no puede ser desactivado ya que es utilizado internamente por el sistema para operaciones críticas.');
+  // Verificar si es cliente predeterminado ANTES de hacer cualquier cambio
+  if (isDefaultCustomer(id) && newStatus === 'inactive') {
+    showValidation('El cliente predeterminado no puede ser desactivado porque es utilizado internamente por el sistema.');
+    
+    // Revertir el switch inmediatamente
     setTimeout(() => {
       const switchElement = document.querySelector(`tr[data-customerid="${id}"] input[type="checkbox"]`);
-      if (switchElement) switchElement.checked = true;
+      if (switchElement) {
+        switchElement.checked = true;
+      }
     }, 100);
     
     return;
@@ -793,6 +856,8 @@ const updateCustomerStatus = async (id, newStatus) => {
   const switchElement = document.querySelector(`tr[data-customerid="${id}"] input[type="checkbox"]`);
 
   try {
+    showLoadingIndicator();
+    
     const res = await fetch(`${API_CUSTOMERS}/${id}/status`, {
       method: "PATCH",
       headers: {
@@ -802,6 +867,8 @@ const updateCustomerStatus = async (id, newStatus) => {
       body: JSON.stringify({ status: newStatus }),
     });
 
+    hideLoadingIndicator();
+    
     let data;
     try {
       data = await res.json();
@@ -810,7 +877,7 @@ const updateCustomerStatus = async (id, newStatus) => {
     }
 
     if (res.ok) {
-      showSuccess(`El cliente ha sido ${newStatus === 'active' ? 'activado' : 'desactivado'}`);
+      showSuccess(`El cliente ha sido ${newStatus === 'active' ? 'activado' : 'desactivado'} exitosamente`);
       
       if (switchElement) {
         switchElement.checked = newStatus === 'active';
@@ -839,7 +906,9 @@ const updateCustomerStatus = async (id, newStatus) => {
       }
     }
   } catch (err) {
-    showError("Error al actualizar estado del cliente");
+    hideLoadingIndicator();
+    showError("Error al actualizar estado del cliente. Intente nuevamente.");
+    console.error("Error in updateCustomerStatus:", err);
     
     if (switchElement) {
       switchElement.checked = newStatus !== 'active';
@@ -854,9 +923,8 @@ const deleteCustomer = async (id) => {
     return;
   }
     
-  const customer = allCustomers.find(c => (c.id || c._id) === id);
-  if (customer && customer.isDefault) {
-    showInfo('El cliente predeterminado no puede ser eliminado del sistema.');
+  if (isDefaultCustomer(id)) {
+    showValidation('El cliente predeterminado no puede ser eliminado del sistema.');
     return;
   }
   
@@ -870,6 +938,8 @@ const deleteCustomer = async (id) => {
   if (!confirmed) return;
 
   try {
+    showLoadingIndicator();
+    
     const res = await fetch(`${API_CUSTOMERS}/${id}`, {
       method: "DELETE",
       headers: {
@@ -877,16 +947,20 @@ const deleteCustomer = async (id) => {
       }
     });
     
+    hideLoadingIndicator();
+    
     const data = await res.json();
     
     if (res.ok) {
-      showSuccess('El cliente ha sido eliminado');
+      showSuccess('El cliente ha sido eliminado exitosamente');
       loadCustomersInternal();
     } else {
       showError(data.message || "No se pudo eliminar el cliente");
     }
   } catch (err) {
-    showError("Error al eliminar cliente");
+    hideLoadingIndicator();
+    showError("Error al eliminar cliente. Intente nuevamente.");
+    console.error("Error in deleteCustomer:", err);
   }
 };
 
@@ -921,14 +995,19 @@ const searchCustomer = () => {
 const checkAuth = () => {
   const token = localStorage.getItem("token");
   if (!token) {
-    Swal.fire({
-      icon: 'error',
-      title: 'No autorizado',
-      text: 'Debe iniciar sesión para acceder a esta página',
-      confirmButtonText: 'Ir a login'
-    }).then(() => {
+    if (typeof Swal !== 'undefined') {
+      Swal.fire({
+        icon: 'error',
+        title: 'No autorizado',
+        text: 'Debe iniciar sesión para acceder a esta página',
+        confirmButtonText: 'Ir a login'
+      }).then(() => {
+        window.location.href = 'index.html';
+      });
+    } else {
+      alert('Debe iniciar sesión para acceder a esta página');
       window.location.href = 'index.html';
-    });
+    }
     return false;
   }
   return true;
@@ -995,6 +1074,7 @@ function initializeValidationEvents() {
 function initializeListPage() {
   const customerTableBody = document.getElementById("customerTableBody");
   if (!customerTableBody) {
+    console.warn("Elemento customerTableBody no encontrado");
     return;
   }
   
@@ -1002,6 +1082,7 @@ function initializeListPage() {
     listCustomers();
   } catch (err) {
     showError("Error al inicializar la página");
+    console.error("Error in initializeListPage:", err);
   }
   
   // Configurar botones y eventos
@@ -1036,6 +1117,8 @@ function initializeListPage() {
 // ===== EVENTOS AL CARGAR EL DOM =====
 
 document.addEventListener("DOMContentLoaded", () => {
+  console.log("DOM loaded, initializing...");
+  
   if (!checkAuth()) return;
   
   initializeValidationEvents();
@@ -1049,6 +1132,7 @@ window.validateEmail = validateEmail;
 window.validatePhone = validatePhone;
 window.clearValidationErrors = clearValidationErrors;
 window.disableNativeBrowserValidation = disableNativeBrowserValidation;
+window.isDefaultCustomer = isDefaultCustomer;
 window.fillEditForm = fillEditForm;
 window.deleteCustomer = deleteCustomer;
 window.updateCustomerStatus = updateCustomerStatus;
@@ -1057,4 +1141,11 @@ window.closeModal = closeModal;
 window.searchCustomer = searchCustomer;
 window.updateCustomer = updateCustomer;
 window.hideLoadingIndicator = hideLoadingIndicator;
+window.showLoadingIndicator = showLoadingIndicator;
+window.showError = showError;
+window.showSuccess = showSuccess;
+window.showInfo = showInfo;
+window.showConfirm = showConfirm;
+window.showValidation = showValidation;
 window.changePage = changePage;
+window.renderCustomersTable = renderCustomersTable;

@@ -200,7 +200,7 @@ const renderPermissionsTable = (page = 1) => {
   if (!allPermissions || allPermissions.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="6" class="text-center">
+        <td colspan="5" class="text-center">
           No hay permisos disponibles
         </td>
       </tr>
@@ -228,7 +228,6 @@ const renderPermissionsTable = (page = 1) => {
         <tr data-permissionid="${permissionId}" data-index="${index}">
           <td class="id-column">${displayId}</td>
           <td>${permission.name || ''}</td>
-          <td>${permission.code || ''}</td>
           <td>${permission.description || '-'}</td>
           <td>
             <label class="switch">
@@ -252,7 +251,7 @@ const renderPermissionsTable = (page = 1) => {
     } catch (error) {
       tableContent += `
         <tr>
-          <td colspan="6" class="text-center text-danger">
+          <td colspan="5" class="text-center text-danger">
             Error al renderizar este permiso: ${error.message}
           </td>
         </tr>
@@ -366,7 +365,7 @@ const loadPermissionsInternal = async () => {
       if (tbody && (!tbody.children.length || tbody.innerHTML.trim() === '')) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="6" class="text-center">
+            <td colspan="5" class="text-center">
               No se encontraron permisos. Puede que necesite agregar un nuevo permiso o revisar su conexión.
             </td>
           </tr>
@@ -431,7 +430,7 @@ const listPermissions = async () => {
       if (tbody && (!tbody.children.length || tbody.innerHTML.trim() === '')) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="6" class="text-center">
+            <td colspan="5" class="text-center">
               No se encontraron permisos. Puede que necesite agregar un nuevo permiso o revisar su conexión.
             </td>
           </tr>
@@ -457,14 +456,12 @@ const registerPermission = async () => {
   }
   
   const nameValid = validateField("name", "El nombre es obligatorio.");
-  const codeValid = validateField("code", "El código es obligatorio.");
   
-  if (!nameValid || !codeValid) {
+  if (!nameValid) {
     return;
   }
   
   const name = document.getElementById("name").value.trim();
-  const code = document.getElementById("code").value.trim();
   const description = document.getElementById("description") ? document.getElementById("description").value.trim() : "";
 
   try { 
@@ -474,7 +471,7 @@ const registerPermission = async () => {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`
       },
-      body: JSON.stringify({ name, code, description })
+      body: JSON.stringify({ name, description })
     });
     
     const data = await res.json();
@@ -527,13 +524,11 @@ const fillEditForm = async (id) => {
 
     const editIdElement = document.getElementById("editId");
     const editNameElement = document.getElementById("editName");
-    const editCodeElement = document.getElementById("editCode");
     const editDescriptionElement = document.getElementById("editDescription");
     const editStatusElement = document.getElementById("editStatus");
     
     if (editIdElement) editIdElement.value = permission._id;
     if (editNameElement) editNameElement.value = permission.name || "";
-    if (editCodeElement) editCodeElement.value = permission.code || "";
     if (editDescriptionElement) editDescriptionElement.value = permission.description || "";
     if (editStatusElement) editStatusElement.value = permission.status || "active";
 
@@ -552,15 +547,13 @@ const updatePermission = async () => {
   }
 
   const nameValid = validateField("editName", "El nombre es obligatorio.");
-  const codeValid = validateField("editCode", "El código es obligatorio.");
   
-  if (!nameValid || !codeValid) {
+  if (!nameValid) {
     return;
   }
 
   const id = document.getElementById("editId").value;
   const name = document.getElementById("editName").value.trim();
-  const code = document.getElementById("editCode").value.trim();
   const description = document.getElementById("editDescription") ? document.getElementById("editDescription").value.trim() : "";
 
   try {
@@ -570,7 +563,7 @@ const updatePermission = async () => {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`
       },
-      body: JSON.stringify({ name, code, description })
+      body: JSON.stringify({ name, description })
     });
 
     const data = await res.json();
@@ -715,11 +708,10 @@ const searchPermission = () => {
   } else {
     allPermissions = originalPermissions.filter(p => {
       const nameMatch = p.name && p.name.toLowerCase().includes(term);
-      const codeMatch = p.code && p.code.toLowerCase().includes(term);
       const descriptionMatch = p.description && p.description.toLowerCase().includes(term);
       const idMatch = (p.id || p._id) && (p.id || p._id).toLowerCase().includes(term);
       
-      return nameMatch || codeMatch || descriptionMatch || idMatch;
+      return nameMatch || descriptionMatch || idMatch;
     });
   }
   
@@ -776,20 +768,10 @@ function initializeValidationEvents() {
     nameField.addEventListener("blur", () => validateField("name", "El nombre es obligatorio."));
   }
   
-  const codeField = document.getElementById("code");
-  if (codeField) {
-    codeField.addEventListener("blur", () => validateField("code", "El código es obligatorio."));
-  }
-  
   // Validación en tiempo real - Formulario de edición
   const editNameField = document.getElementById("editName");
   if (editNameField) {
     editNameField.addEventListener("blur", () => validateField("editName", "El nombre es obligatorio."));
-  }
-  
-  const editCodeField = document.getElementById("editCode");
-  if (editCodeField) {
-    editCodeField.addEventListener("blur", () => validateField("editCode", "El código es obligatorio."));
   }
 
   const editForm = document.getElementById("editForm");
