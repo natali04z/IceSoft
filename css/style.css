@@ -317,7 +317,7 @@ body.menu-collapsed .navLateral {
 
 .menu-principal a.active .arrow,
 .rotate-arrow {
-    transform: rotate(90deg);
+    transform: rotate(180deg);
     color: var(--text-white);
 }
 
@@ -1791,7 +1791,6 @@ input:checked + .slider:before {
     outline: none;
   }
   
-  /* Mensajes de error compactos */
   .error-message {
     font-size: 12px;
     color: #dc3545;
@@ -1803,7 +1802,6 @@ input:checked + .slider:before {
     border-color: #dc3545 !important;
   }
   
-  /* Botones con color personalizado */
   .recovery-actions {
     margin-top: 22px;
   }
@@ -2012,6 +2010,8 @@ input:checked + .slider:before {
       font-size: 16px;
     }
   }
+
+  /*)===============================================================0*/
   
   /* Estilos para formularios */
   .form-row {
@@ -2173,7 +2173,7 @@ body {
 
 /* Panel izquierdo - Formulario */
 .purchase-modal-left {
-    flex: 1;
+    flex: 0.6;
     padding: 32px;
     border-right: 1px solid #e9ecef;
     background: #ffffff;
@@ -2181,7 +2181,7 @@ body {
 
 /* Panel derecho - Tabla de productos */
 .purchase-modal-right {
-    flex: 1.5;
+    flex: 1.6;
     padding: 32px;
     background: #fafbfc;
 }
@@ -3581,4 +3581,35 @@ h3 {
   display: block;
   word-wrap: break-word;
   line-height: 1.4;
+}
+
+/*=======================================================*/
+.title-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.title-icon-button {
+  padding: 4px;
+  min-width: auto;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.title-icon-button:hover {
+  color: #333537;
+  background-color: rgba(36, 32, 32, 0.255);
+  transform: scale(1.1);
+}
+
+.title-icon-button .material-icons {
+  font-size: 1.5em;
 }
