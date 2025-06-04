@@ -1050,13 +1050,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         });
     });
-
-    // Cerrar modal al hacer clic fuera
-    window.addEventListener('click', function(event) {
-        if (event.target.classList.contains('modal')) {
-            event.target.style.display = 'none';
-        }
-    });
 });
 
 // Exportar funciones globales
