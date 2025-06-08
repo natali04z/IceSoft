@@ -240,6 +240,14 @@ function hideLoadingIndicator() {
   Swal.close();
 }
 
+// Función para agregar espacio extra a la columna del NIT
+function addSpaceToNitColumn() {
+  const nitCells = document.querySelectorAll('#providerTableBody tr td:nth-child(2)');
+  nitCells.forEach(cell => {
+    cell.style.padding = '30x 22px';
+  });
+}
+
 // ===== FUNCIONES DE RENDERIZADO Y PAGINACIÓN =====
 
 // Función principal de renderizado con paginado
@@ -325,6 +333,10 @@ const renderProvidersTable = (page = 1) => {
   });
   
   tbody.innerHTML = tableContent;
+  
+  // Agregar espacio extra a la columna del NIT después de renderizar
+  addSpaceToNitColumn();
+  
   renderPaginationControls();
 };
 
@@ -892,6 +904,7 @@ document.addEventListener("DOMContentLoaded", () => {
     email.addEventListener("blur", () => validateEmail("email"));
   }
 
+  // Validación para formulario de edición
   const editNit = document.getElementById("editNit");
   if (editNit) {
     editNit.addEventListener("blur", () => validateNIT("editNit"));

@@ -984,13 +984,15 @@ const updateRoleStatus = async (id, newStatus) => {
   
   const role = allRoles.find(r => (r._id || r.id) === id) || originalRoles.find(r => (r._id || r.id) === id);
   
-  if (role && role.name === 'admin' && newStatus === 'inactive') {
-    showValidation('El rol Administrador no puede ser desactivado porque es utilizado internamente por el sistema.');
+  // Validación para el rol administrador - no puede ser desactivado
+  if (role && role.name === 'admin') {
+    showValidation('El rol Administrador no puede ser modificado porque es utilizado internamente por el sistema.');
     
+    // Revertir el switch a su estado anterior
     setTimeout(() => {
       const switchElement = document.querySelector(`tr[data-roleid="${id}"] input[type="checkbox"]`);
       if (switchElement) {
-        switchElement.checked = true;
+        switchElement.checked = true; // El admin siempre debe estar activo
       }
     }, 100);
     
