@@ -4074,3 +4074,59 @@ body.menu-collapsed .main-content {
         width: 100vw !important;
     }
 }
+
+    .header-buttons {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .export-button {
+      background-color: var(--blue);
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-weight: 500;
+      transition: background-color 0.3s ease;
+      min-width: 120px;
+      height: 40px;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    .export-button:hover {
+      background-color: #0b5ed7;
+    }
+
+    .export-button i {
+      font-size: 18px;
+    }
+
+    /* Asegurar que el botón añadir tenga el mismo tamaño */
+    .header-buttons .add-button {
+      min-width: 120px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      font-size: 14px;
+    }
+
+    @media (max-width: 768px) {
+      .header-buttons {
+        flex-direction: column;
+        gap: 5px;
+      }
+      
+      .export-button,
+      .header-buttons .add-button {
+        width: 100%;
+        justify-content: center;
+      }
+    }

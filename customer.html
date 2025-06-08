@@ -7,11 +7,14 @@
   <link rel="icon" href="assets/icesoft.png" type="image/png">
   <link rel="stylesheet" href="css/style.css">
   <script src="js/alerts.js"></script>
+  <script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.materialdesignicons.com/6.5.95/css/materialdesignicons.min.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  
 </head>
 <body class="dashboard-page">
   <section class="navLateral">
@@ -60,34 +63,33 @@
     </div>
   </section>
 
-<header class="dashboard-header">
-        <button class="open-menu-btn btn-menu">
-            <i class="material-icons">menu</i>
-        </button>
-            <div class="userProfileSection" id="dashboardHeader">
-                <div class="user-info" id="userDropdownToggle">
-                    <i class="material-icons user-icon">account_circle</i>
-                    <span class="user-name" id="loggedUserName">Cargando...</span>
-                    <i class="material-icons arrow-icon">expand_more</i>
-                </div>
-                
-                <div class="user-dropdown-menu" id="userDropdownMenu">
-                    <div class="user-profile-info">
-                        <h4 id="dropdownUserName">Cargando...</h4>
-                        <span id="dropdownUserEmail">-</span>
-                        <span id="dropdownUserRole">-</span>
-                    </div>
-                    
-                    <div class="dropdown-divider"></div>
-                    
-                    <a href="#" class="dropdown-item" onclick="logout()">
-                        <i class="material-icons">logout</i>
-                        <span>Cerrar Sesión</span>
-                    </a>
-                </div>
-            </div>
+  <header class="dashboard-header">
+    <button class="open-menu-btn btn-menu">
+      <i class="material-icons">menu</i>
+    </button>
+    <div class="userProfileSection" id="dashboardHeader">
+      <div class="user-info" id="userDropdownToggle">
+        <i class="material-icons user-icon">account_circle</i>
+        <span class="user-name" id="loggedUserName">Cargando...</span>
+        <i class="material-icons arrow-icon">expand_more</i>
+      </div>
+      
+      <div class="user-dropdown-menu" id="userDropdownMenu">
+        <div class="user-profile-info">
+          <h4 id="dropdownUserName">Cargando...</h4>
+          <span id="dropdownUserEmail">-</span>
+          <span id="dropdownUserRole">-</span>
         </div>
-    </header>
+        
+        <div class="dropdown-divider"></div>
+        
+        <a href="#" class="dropdown-item" onclick="logout()">
+          <i class="material-icons">logout</i>
+          <span>Cerrar Sesión</span>
+        </a>
+      </div>
+    </div>
+  </header>
 
   <main class="main-content">
     <div class="container">
@@ -101,13 +103,18 @@
         </div>
       </div>
   
-      <!-- Tabla de Clientes -->
+      <!-- Tabla de Clientes CON BOTÓN DE EXPORTAR -->
       <section class="table-card">
         <div class="card-header card-header-flex">
           <h3>Listado de Clientes</h3>
-          <button type="button" class="add-button" id="mobileAddButton">
-            <i class="material-icons">add</i> Añadir
-          </button>
+          <div class="header-buttons">
+            <button type="button" class="export-button add-button" onclick="showCustomersExportModal()">
+              <i class="material-icons">file_download</i> Exportar
+            </button>
+            <button type="button" class="add-button" id="mobileAddButton">
+              <i class="material-icons">add</i> Añadir
+            </button>
+          </div>
         </div>
         <div class="card-body">
           <div class="table-responsive">
@@ -135,95 +142,96 @@
         </div>
       </section>
   
-<!-- Modal de Registro de Cliente -->
-<div id="registerModal" class="modal">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h3 id="formTitle">Registrar Cliente</h3>
-      <button class="modal-close" onclick="closeModal('registerModal')">&times;</button>
-    </div>
-    <div class="modal-body">
-      <form id="customerForm" novalidate>
-        <div class="form-row">
-          <div class="form-field">
-            <label for="name">Nombre</label>
-            <input type="text" class="field-element" id="name">
-            <div class="error-message" id="name-error">El campo es obligatorio.</div>
+      <!-- Modal de Registro de Cliente -->
+      <div id="registerModal" class="modal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3 id="formTitle">Registrar Cliente</h3>
+            <button class="modal-close" onclick="closeModal('registerModal')">&times;</button>
           </div>
-          <div class="form-field">
-            <label for="lastname">Apellido</label>
-            <input type="text" class="field-element" id="lastname">
-            <div class="error-message" id="lastname-error">El campo es obligatorio.</div>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-field">
-            <label for="phone">Teléfono</label>
-            <input type="tel" class="field-element" id="phone" inputmode="numeric" onkeypress="return /[0-9]/i.test(event.key)">
-            <div class="error-message" id="phone-error">El campo es obligatorio.</div>
-          </div>
-          <div class="form-field"></div> <!-- Div vacío para ocupar la otra mitad -->
-        </div>
-        <div class="form-field">
-          <label for="email">Correo</label>
-          <input type="email" class="field-element" id="email">
-          <div class="error-message" id="email-error">El campo es obligatorio.</div>
-        </div>
-        
-        <div class="controls-container">
-          <button type="button" class="action-button" id="registerButton">Registrar</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
-    <!-- Modal de Edición de Cliente -->
-    <div id="editModal" class="modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 id="editFormTitle">Editar Cliente</h3>
-          <button class="modal-close" onclick="closeModal('editModal')">&times;</button>
-        </div>
-        <div class="modal-body">
-          <form id="editForm" novalidate>
-            <input type="hidden" id="editId">
-            
-            <div class="form-row">
-              <div class="form-field">
-                <label for="name">Nombre</label>
-                <input type="name" class="field-element" id="editName">
-                <div class="error-message" id="editName-error">El campo es obligatorio.</div>
+          <div class="modal-body">
+            <form id="customerForm" novalidate>
+              <div class="form-row">
+                <div class="form-field">
+                  <label for="name">Nombre</label>
+                  <input type="text" class="field-element" id="name">
+                  <div class="error-message" id="name-error">El campo es obligatorio.</div>
+                </div>
+                <div class="form-field">
+                  <label for="lastname">Apellido</label>
+                  <input type="text" class="field-element" id="lastname">
+                  <div class="error-message" id="lastname-error">El campo es obligatorio.</div>
+                </div>
               </div>
-              <div class="form-field">
-                <label for="lastname">Apellido</label>
-                <input type="lastname" class="field-element" id="editLastname">
-                <div class="error-message" id="editLastname-error">El campo es obligatorio.</div>
+              <div class="form-row">
+                <div class="form-field">
+                  <label for="phone">Teléfono</label>
+                  <input type="tel" class="field-element" id="phone" inputmode="numeric" onkeypress="return /[0-9]/i.test(event.key)">
+                  <div class="error-message" id="phone-error">El campo es obligatorio.</div>
+                </div>
+                <div class="form-field"></div> <!-- Div vacío para ocupar la otra mitad -->
               </div>
-            </div>
-            <div class="form-field">
-              <label for="phone">Teléfono</label>
-              <input type="tel" class="field-element" id="editPhone" inputmode="numeric" onkeypress="return /[0-9]/i.test(event.key)">
-              <div class="error-message" id="editPhone-error">El campo es obligatorio.</div>
-            </div>
-            <div class="form-row">
               <div class="form-field">
                 <label for="email">Correo</label>
-                <input type="email" class="field-element" id="editEmail">
-                <div class="error-message" id="editEmail-error">El campo es obligatorio.</div>
+                <input type="email" class="field-element" id="email">
+                <div class="error-message" id="email-error">El campo es obligatorio.</div>
               </div>
-            </div>
-            
-            <div id="isDefaultContainer" class="form-row default-container">
-              <div class="default-badge">
-                Cliente predeterminado
+              
+              <div class="controls-container">
+                <button type="button" class="action-button" id="registerButton">Registrar</button>
               </div>
-            </div>
-            
-            <div class="controls-container">
-              <button type="button" class="action-button" id="updateButton">Actualizar</button>
-            </div>
-          </form>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal de Edición de Cliente -->
+      <div id="editModal" class="modal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3 id="editFormTitle">Editar Cliente</h3>
+            <button class="modal-close" onclick="closeModal('editModal')">&times;</button>
+          </div>
+          <div class="modal-body">
+            <form id="editForm" novalidate>
+              <input type="hidden" id="editId">
+              
+              <div class="form-row">
+                <div class="form-field">
+                  <label for="name">Nombre</label>
+                  <input type="name" class="field-element" id="editName">
+                  <div class="error-message" id="editName-error">El campo es obligatorio.</div>
+                </div>
+                <div class="form-field">
+                  <label for="lastname">Apellido</label>
+                  <input type="lastname" class="field-element" id="editLastname">
+                  <div class="error-message" id="editLastname-error">El campo es obligatorio.</div>
+                </div>
+              </div>
+              <div class="form-field">
+                <label for="phone">Teléfono</label>
+                <input type="tel" class="field-element" id="editPhone" inputmode="numeric" onkeypress="return /[0-9]/i.test(event.key)">
+                <div class="error-message" id="editPhone-error">El campo es obligatorio.</div>
+              </div>
+              <div class="form-row">
+                <div class="form-field">
+                  <label for="email">Correo</label>
+                  <input type="email" class="field-element" id="editEmail">
+                  <div class="error-message" id="editEmail-error">El campo es obligatorio.</div>
+                </div>
+              </div>
+              
+              <div id="isDefaultContainer" class="form-row default-container">
+                <div class="default-badge">
+                  Cliente predeterminado
+                </div>
+              </div>
+              
+              <div class="controls-container">
+                <button type="button" class="action-button" id="updateButton">Actualizar</button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </div>
@@ -231,14 +239,13 @@
 
   <script src="js/menu.js"></script>
   <script src="js/customer.js"></script>
+  <script src="js/customer-export.js"></script>
   <script src="js/profile.js"></script>
 
-   <script>
-  document.addEventListener('DOMContentLoaded', function() {
-      const userHeader = new UserHeaderIntegrated('dashboardHeader');
-  });
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const userHeader = new UserHeaderIntegrated('dashboardHeader');
+    });
   </script>
 </body>
 </html>
-
- 
