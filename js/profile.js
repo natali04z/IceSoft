@@ -25,15 +25,16 @@ class UserHeaderIntegrated {
         await this.loadUserProfile();
     }
 
-    // Renderizar SOLO el perfil de usuario (SIN botón de menú)
+    // Renderizar SOLO el perfil de usuario (SIN botón de menú) - SOLO NOMBRE
     render() {
         this.container.innerHTML = `
             <div class="uhi-user-dropdown-container">
                 <div class="uhi-user-info" id="userDropdownToggle">
-                    <div class="uhi-user-avatar" id="userAvatar">U</div>
+                    <div class="uhi-user-avatar" id="userAvatar">
+                        <i class="material-icons" style="font-size: 24px;">person</i>
+                    </div>
                     <div class="uhi-user-details">
                         <span class="uhi-user-name" id="loggedUserName">Cargando...</span>
-                        <span class="uhi-user-role" id="userRoleBadge">-</span>
                     </div>
                      <i class="material-icons uhi-arrow-icon" id="arrowIcon">expand_more</i>
                 </div>
@@ -47,7 +48,6 @@ class UserHeaderIntegrated {
                                 <h3 id="dropdownUserName">Cargando...</h3>
                                 <div class="uhi-user-badges">
                                     <span class="uhi-badge uhi-badge-role" id="dropdownUserRole">-</span>
-                                    <span class="uhi-badge uhi-badge-status" id="dropdownUserStatus">-</span>
                                 </div>
                             </div>
                         </div>
@@ -170,26 +170,21 @@ class UserHeaderIntegrated {
     updateUserInterface() {
         const userDisplay = this.getUserDisplayInfo();
 
-        // Actualizar elementos del header
-        document.getElementById('userAvatar').textContent = userDisplay.initials;
+        // Actualizar elementos del header - SOLO NOMBRE (icono fijo)
         document.getElementById('loggedUserName').textContent = userDisplay.fullName;
-        document.getElementById('userRoleBadge').textContent = userDisplay.roleName;
         
-        // Actualizar elementos del dropdown
+        // Actualizar elementos del dropdown - INICIALES en avatar grande
         document.getElementById('dropdownAvatar').textContent = userDisplay.initials;
         document.getElementById('dropdownUserName').textContent = userDisplay.fullName;
         document.getElementById('dropdownUserRole').textContent = userDisplay.roleName;
-        document.getElementById('dropdownUserStatus').textContent = userDisplay.statusText;
         document.getElementById('dropdownUserPhone').textContent = this.userInfo.contact_number || 'No disponible';
         document.getElementById('dropdownUserEmail').textContent = this.userInfo.email || 'No disponible';
         document.getElementById('dropdownUserStatusText').textContent = userDisplay.statusText;
 
         // Actualizar clases de badges
         const roleBadge = document.getElementById('dropdownUserRole');
-        const statusBadge = document.getElementById('dropdownUserStatus');
         
         roleBadge.className = `uhi-badge uhi-badge-role ${userDisplay.roleClass}`;
-        statusBadge.className = `uhi-badge uhi-badge-status ${userDisplay.statusClass}`;
     }
 
     getUserDisplayInfo() {

@@ -81,7 +81,7 @@ function handleAuthError(error, response = null) {
             error.message.includes('Unauthorized')));
 
     if (isAuthError) {
-        showError('Su sesión ha expirado. Por favor, inicie sesión nuevamente.').then(() => {
+        showError('inicie sesión nuevamente.').then(() => {
             localStorage.removeItem('token');
             localStorage.removeItem('authToken');
             window.location.href = 'index.html';
@@ -260,7 +260,6 @@ const changePage = (page) => {
   renderBranchesTable(currentPage);
 };
 
-// Cargar sucursales sin indicador de carga (para actualizaciones internas)
 const loadBranchesInternal = async () => {
   try {
     const token = getAuthToken();
@@ -280,7 +279,6 @@ const loadBranchesInternal = async () => {
       // El controller devuelve: { success: true, branches: [...] }
       originalBranches = data.branches || [];
       
-      // Verificar si originalBranches es un array válido
       if (!Array.isArray(originalBranches)) {
         originalBranches = [];
       }
@@ -353,7 +351,7 @@ const listBranches = async () => {
         `;
       }
     } else {
-      showError(data.message || "No se pudo listar las sucursales.");
+      showError("No se pudo listar las sucursales.");
     }
   } catch (err) {
     hideLoadingIndicator();
@@ -432,7 +430,7 @@ const registerBranch = async () => {
 
       // Manejo de errores específicos del controller
       if (response.status === 409) {
-        showError(errorData.message || 'Ya existe una sucursal con este nombre');
+        showError('Ya existe una sucursal con este nombre');
         return;
       }
 
@@ -442,15 +440,13 @@ const registerBranch = async () => {
         return;
       }
 
-      throw new Error(errorData.message || 'Error al registrar la sucursal');
+      throw new Error('Error al registrar la sucursal');
     }
 
-    const result = await response.json();
-    console.log('Sucursal creada:', result);
+    const result = await response.json()
     
-    // El controller devuelve: { success: true, message: "Branch created successfully", branch: {...} }
     if (result.success) {
-      showSuccess(result.message || 'Sucursal registrada correctamente');
+      showSuccess('Sucursal registrada correctamente');
       closeModal('registerModal');
 
       const branchForm = document.getElementById("branchForm");
@@ -690,8 +686,6 @@ const updateBranchStatus = async (id, status) => {
   }
   
   try {
-    console.log('=== TOGGLE BRANCH STATUS ===');
-    console.log('ID:', id, 'Status:', status);
 
     // Validar que el status sea válido
     if (!status || !["active", "inactive"].includes(status)) {
@@ -778,9 +772,7 @@ const updateBranchStatus = async (id, status) => {
       throw new Error(data.message || `Error ${response.status}: ${response.statusText}`);
     }
 
-    console.log('Status updated successfully:', data);
-    
-    // Manejar diferentes estructuras de respuesta
+  
     if (data.success || response.status === 200) {
       // Actualizar estado local
       const index = allBranches.findIndex(b => (b.id === id) || (b._id === id));
@@ -789,7 +781,7 @@ const updateBranchStatus = async (id, status) => {
         renderBranchesTable(currentPage);
       }
 
-      showSuccess(data.message || `La sucursal ha sido ${status === 'active' ? 'activada' : 'desactivada'}`);
+      showSuccess(`La sucursal ha sido ${status === 'active' ? 'activada' : 'desactivada'}`);
     } else {
       throw new Error('Respuesta inesperada del servidor');
     }
@@ -803,7 +795,7 @@ const updateBranchStatus = async (id, status) => {
 
     // Revertir el estado en la UI
     renderBranchesTable(currentPage);
-    showError(error.message || 'No se pudo actualizar el estado de la sucursal');
+    showError('No se pudo actualizar el estado de la sucursal');
   }
 };
 
@@ -833,14 +825,12 @@ const deleteBranch = async (id) => {
         return;
       }
 
-      const errorData = await response.json().catch(() => ({ message: 'Error desconocido' }));
-
       if (response.status === 404) {
-        showError(errorData.message || 'Sucursal no encontrada');
+        showError('Sucursal no encontrada');
         return;
       }
 
-      throw new Error(errorData.message || 'Error al eliminar la sucursal');
+      throw new Error('Error al eliminar la sucursal');
     }
     
     const data = await response.json();
@@ -848,7 +838,7 @@ const deleteBranch = async (id) => {
     
     // El controller devuelve: { success: true, message: "Branch deleted successfully" }
     if (data.success) {
-      showSuccess(data.message || 'La sucursal ha sido eliminada');
+      showSuccess('La sucursal ha sido eliminada');
       loadBranchesInternal();
     }
   } catch (err) {

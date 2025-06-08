@@ -74,10 +74,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       saveSubmenusState();
       
-      // Control de scroll con múltiples verificaciones
-      setTimeout(() => controlMenuScroll(), 100);
-      setTimeout(() => controlMenuScroll(), 300);
-      setTimeout(() => controlMenuScroll(), 500);
+      // CAMBIO: Una sola llamada en lugar de múltiples
+      setTimeout(() => controlMenuScroll(), 200);
     });
   });
 
@@ -147,13 +145,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     navLateral.classList.remove('navLateral-show');
   }
 
-  // Verificación periódica del scroll
-  setInterval(() => {
-    const hasOpenSubmenus = document.querySelectorAll('.show-submenu').length > 0;
-    if (hasOpenSubmenus) {
-      controlMenuScroll();
-    }
-  }, 2000);
+  // ELIMINADO: La verificación periódica que causaba titileos
+  // setInterval(() => {
+  //   const hasOpenSubmenus = document.querySelectorAll('.show-submenu').length > 0;
+  //   if (hasOpenSubmenus) {
+  //     controlMenuScroll();
+  //   }
+  // }, 2000);
 });
 
 // Controlar scroll del menú
@@ -189,18 +187,18 @@ function controlMenuScroll() {
       navLateral.style.height = '';
     }
     
-    // Verificación adicional
-    setTimeout(() => {
-      const finalMenuHeight = navLateral.clientHeight;
-      const finalContentHeight = navBody.scrollHeight;
-      
-      if (finalContentHeight > finalMenuHeight && navLateral.style.overflowY !== 'auto') {
-        navLateral.style.overflowY = 'auto';
-        navLateral.classList.add('has-scroll');
-        navLateral.style.maxHeight = '100vh';
-        navLateral.style.height = '100vh';
-      }
-    }, 100);
+    // ELIMINADO: La verificación adicional que causaba titileos
+    // setTimeout(() => {
+    //   const finalMenuHeight = navLateral.clientHeight;
+    //   const finalContentHeight = navBody.scrollHeight;
+    //   
+    //   if (finalContentHeight > finalMenuHeight && navLateral.style.overflowY !== 'auto') {
+    //     navLateral.style.overflowY = 'auto';
+    //     navLateral.classList.add('has-scroll');
+    //     navLateral.style.maxHeight = '100vh';
+    //     navLateral.style.height = '100vh';
+    //   }
+    // }, 100);
   });
 }
 
@@ -285,10 +283,8 @@ function restoreSubmenusState() {
       }
     });
     
-    // Control de scroll con múltiples verificaciones
-    setTimeout(() => controlMenuScroll(), 100);
-    setTimeout(() => controlMenuScroll(), 300);
-    setTimeout(() => controlMenuScroll(), 600);
+    // CAMBIO: Una sola llamada en lugar de múltiples
+    setTimeout(() => controlMenuScroll(), 400);
   }
 }
 

@@ -1,6 +1,7 @@
 const API_SALES = "https://backend-yy4o.onrender.com/api/sales";
 const API_PRODUCTS = "https://backend-yy4o.onrender.com/api/products";
 const API_CUSTOMERS = "https://backend-yy4o.onrender.com/api/customers";
+const API_BRANCHES = "https://backend-yy4o.onrender.com/api/branches";
 
 // ===== VARIABLES GLOBALES =====
 let allSales = [];
@@ -10,6 +11,7 @@ const rowsPerPage = 10;
 let productItems = [];
 let productIdToNameMap = {};
 let customerIdToNameMap = {};
+let branchIdToNameMap = {};
 
 const isRegisterPage = window.location.pathname.includes('sale-register.html');
 const isListPage = !isRegisterPage;
@@ -169,6 +171,22 @@ function validateCustomer(fieldId) {
   
   if (!field.value) {
     errorElement.textContent = "Debe seleccionar un cliente.";
+    errorElement.style.display = "block";
+    field.classList.add("input-error");
+    return false;
+  } else {
+    errorElement.style.display = "none";
+    field.classList.remove("input-error");
+    return true;
+  }
+}
+
+function validateBranch(fieldId) {
+  const field = document.getElementById(fieldId);
+  const errorElement = document.getElementById(`${fieldId}-error`);
+  
+  if (!field.value) {
+    errorElement.textContent = "Debe seleccionar una sucursal.";
     errorElement.style.display = "block";
     field.classList.add("input-error");
     return false;
@@ -350,6 +368,11 @@ const getCustomerNameById = (customerId) => {
   return customerIdToNameMap[customerId] || "Cliente no encontrado";
 };
 
+const getBranchNameById = (branchId) => {
+  if (!branchId) return "Sucursal desconocida";
+  return branchIdToNameMap[branchId] || "Sucursal no encontrada";
+};
+
 const getStatusBadge = (status) => {
   const badges = {
     'processing': '<span class="status-badge processing">Procesando</span>',
@@ -487,6 +510,7 @@ const loadSalesInternal = async () => {
     
     await loadProducts();
     await loadCustomers();
+    await loadBranches();
     
     renderSalesTable(currentPage);
     
@@ -494,7 +518,7 @@ const loadSalesInternal = async () => {
     if (tbody && (!tbody.children.length || tbody.innerHTML.trim() === '')) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="6" class="text-center">
+          <td colspan="7" class="text-center">
             No se encontraron ventas. Puede que necesite agregar una nueva venta o revisar su conexión.
           </td>
         </tr>
@@ -625,6 +649,7 @@ const listSales = async () => {
     
     await loadProducts();
     await loadCustomers();
+    await loadBranches();
     
     renderSalesTable(currentPage);
     
@@ -632,7 +657,7 @@ const listSales = async () => {
     if (tbody && (!tbody.children.length || tbody.innerHTML.trim() === '')) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="6" class="text-center">
+          <td colspan="7" class="text-center">
             No se encontraron ventas. Puede que necesite agregar una nueva venta o revisar su conexión.
           </td>
         </tr>
@@ -845,6 +870,102 @@ const loadCustomers = async () => {
   }
 };
 
+const loadBranches = async () => {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      showError("Inicie sesión nuevamente.");
+      return;
+    }
+    
+    const res = await fetch(API_BRANCHES, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      }
+    });
+    
+    if (!res.ok) {
+      const data = await res.json();
+      showError("No se pudo listar las sucursales: " + (data.message || "Error desconocido"));
+      return;
+    }
+    
+    let data;
+    try {
+      data = await res.json();
+    } catch (error) {
+      showError("Error al procesar la respuesta de sucursales");
+      return;
+    }
+    
+    let branches = [];
+    
+    if (data && typeof data === 'object' && data.branches) {
+      branches = data.branches;
+    } else if (data && typeof data === 'object' && data.success && data.branches) {
+      branches = data.branches;
+    } else if (Array.isArray(data)) {
+      branches = data;
+    } else if (data && typeof data === 'object') {
+      const arrayProps = Object.keys(data).filter(key => Array.isArray(data[key]));
+      if (arrayProps.length > 0) {
+        branches = data[arrayProps[0]];
+      }
+    }
+    
+    if (!Array.isArray(branches)) {
+      branches = [];
+    }
+    
+    const branchSelect = document.getElementById("branch");
+    const editBranchSelect = document.getElementById("editBranch");
+    
+    if (branchSelect) {
+      branchSelect.innerHTML = `<option value="" disabled selected hidden>Seleccionar sucursal</option>`;
+    }
+    
+    if (editBranchSelect) {
+      editBranchSelect.innerHTML = `<option value="" disabled selected hidden>Seleccionar sucursal</option>`;
+    }
+    
+    branchIdToNameMap = {};
+    
+    if (branches.length === 0) {
+      if (branchSelect) {
+        branchSelect.innerHTML += `<option value="" disabled>No hay sucursales disponibles</option>`;
+      }
+      if (editBranchSelect) {
+        editBranchSelect.innerHTML += `<option value="" disabled>No hay sucursales disponibles</option>`;
+      }
+      return;
+    }
+    
+    branches.forEach(branch => {
+      if (!branch || typeof branch !== 'object') {
+        return;
+      }
+      
+      const branchId = branch._id || branch.id;
+      const branchName = branch.name || 'Sin nombre';
+      const branchAddress = branch.address || '';
+      const displayName = branchAddress ? `${branchName} - ${branchAddress}` : branchName;
+      
+      if (branchId && branch.status === 'active') {
+        branchIdToNameMap[branchId] = displayName;
+        
+        const option = `<option value="${branchId}">${displayName}</option>`;
+        if (branchSelect) branchSelect.innerHTML += option;
+        if (editBranchSelect) editBranchSelect.innerHTML += option;
+      }
+    });
+    
+  } catch (err) {
+    showError("Error al listar las sucursales: " + (err.message || err));
+  }
+};
+
 // ===== FUNCIONES DE RENDERIZADO =====
 
 const renderSalesTable = (page = 1) => {
@@ -859,7 +980,7 @@ const renderSalesTable = (page = 1) => {
   if (!allSales || allSales.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="6" class="text-center">
+        <td colspan="7" class="text-center">
           No hay ventas disponibles
         </td>
       </tr>
@@ -898,6 +1019,15 @@ const renderSalesTable = (page = 1) => {
         }
       }
       
+      let branchName = "Sin Sucursal";
+      if (sale.branch) {
+        if (typeof sale.branch === 'object' && sale.branch.name) {
+          branchName = sale.branch.address ? `${sale.branch.name} - ${sale.branch.address}` : sale.branch.name;
+        } else {
+          branchName = getBranchNameById(sale.branch);
+        }
+      }
+      
       const salesDate = sale.sales_date || sale.fecha_venta || sale.salesDate;
       const status = sale.status || sale.estado || "processing";
       const formattedTotal = sale.formattedTotal || formatCurrency(sale.total);
@@ -933,6 +1063,7 @@ const renderSalesTable = (page = 1) => {
         <tr data-id="${saleId}" data-index="${index}">
           <td class="id-column">${displayId}</td>
           <td>${customerName}</td>
+          <td>${branchName}</td>
           <td>${formatDate(salesDate)}</td>
           <td>${formattedTotal}</td>
           <td class="status-column">
@@ -943,9 +1074,6 @@ const renderSalesTable = (page = 1) => {
               <button onclick="viewSaleDetails('${saleId}')" class="icon-button view-button" title="Ver detalles">
                 <i class="material-icons">visibility</i>
               </button>
-              <button onclick="deleteSale('${saleId}')" class="icon-button delete-button" title="Eliminar" ${canDelete ? '' : 'disabled'}>
-                <i class="material-icons">delete</i>
-              </button>
             </div>
           </td>
         </tr>
@@ -953,7 +1081,7 @@ const renderSalesTable = (page = 1) => {
     } catch (error) {
       tableContent += `
         <tr>
-          <td colspan="6" class="text-center text-danger">
+          <td colspan="7" class="text-center text-danger">
             Error al renderizar esta venta: ${error.message}
           </td>
         </tr>
@@ -1211,6 +1339,15 @@ const viewSaleDetails = async (id) => {
       }
     }
     
+    let branchName = "Sin Sucursal";
+    if (sale.branch) {
+      if (typeof sale.branch === 'object' && sale.branch.name) {
+        branchName = sale.branch.address ? `${sale.branch.name} - ${sale.branch.address}` : sale.branch.name;
+      } else {
+        branchName = getBranchNameById(sale.branch);
+      }
+    }
+    
     const salesDate = formatDate(sale.sales_date || sale.fecha_venta || sale.salesDate);
     const totalFormatted = formatCurrency(sale.total);
     const status = sale.status || sale.estado || "processing";
@@ -1326,6 +1463,10 @@ const viewSaleDetails = async (id) => {
                     <span class="info-value">${customerName}</span>
                   </div>
                   <div class="info-row">
+                    <span class="info-label">Sucursal</span>
+                    <span class="info-value">${branchName}</span>
+                  </div>
+                  <div class="info-row">
                     <span class="info-label">Fecha</span>
                     <span class="info-value">${salesDate}</span>
                   </div>
@@ -1373,9 +1514,10 @@ const registerSale = async () => {
   }
   
   const customerValid = validateCustomer("customer");
+  const branchValid = validateBranch("branch");
   const dateValid = validateDate("salesDate");
   
-  if (!customerValid || !dateValid) {
+  if (!customerValid || !branchValid || !dateValid) {
     return;
   }
   
@@ -1391,9 +1533,11 @@ const registerSale = async () => {
   }
   
   const customerSelect = document.getElementById("customer");
+  const branchSelect = document.getElementById("branch");
   const salesDateInput = document.getElementById("salesDate");
   
   const customerId = customerSelect.value;
+  const branchId = branchSelect.value;
   const salesDate = salesDateInput.value;
 
   // Preparar los productos en el formato correcto
@@ -1406,6 +1550,7 @@ const registerSale = async () => {
   try {
     const payload = {
       customer: customerId,
+      branch: branchId,
       products: formattedProducts,
       sales_date: salesDate
     };
@@ -1618,6 +1763,11 @@ const searchSale = () => {
         (typeof s.customer === 'string' && customerIdToNameMap[s.customer] && customerIdToNameMap[s.customer].toLowerCase().includes(term)) ||
         (typeof s.cliente === 'string' && customerIdToNameMap[s.cliente] && customerIdToNameMap[s.cliente].toLowerCase().includes(term));
       
+      const branchMatch = 
+        (s.branch?.name && s.branch.name.toLowerCase().includes(term)) ||
+        (s.branch?.address && s.branch.address.toLowerCase().includes(term)) ||
+        (typeof s.branch === 'string' && branchIdToNameMap[s.branch] && branchIdToNameMap[s.branch].toLowerCase().includes(term));
+      
       const productsMatch = 
         (s.products && Array.isArray(s.products) && s.products.some(item => {
           if (item.product?.name) {
@@ -1642,6 +1792,7 @@ const searchSale = () => {
       
       return (
         customerMatch || 
+        branchMatch ||
         productsMatch ||
         statusMatch ||
         (s.id && s.id.toLowerCase().includes(term))
@@ -1671,6 +1822,11 @@ function initializeValidationEvents() {
   const customerSelect = document.getElementById("customer");
   if (customerSelect) {
     customerSelect.addEventListener("change", () => validateCustomer("customer"));
+  }
+  
+  const branchSelect = document.getElementById("branch");
+  if (branchSelect) {
+    branchSelect.addEventListener("change", () => validateBranch("branch"));
   }
   
   const salesDateInput = document.getElementById("salesDate");
@@ -1780,6 +1936,7 @@ function initializeRegisterPage() {
   try {
     loadProducts();
     loadCustomers();
+    loadBranches();
   } catch (err) {
     showError("Error al cargar datos iniciales. Por favor, recargue la página.");
   }
@@ -1824,6 +1981,7 @@ window.validateField = validateField;
 window.validateQuantity = validateQuantity;
 window.validatePrice = validatePrice;
 window.validateCustomer = validateCustomer;
+window.validateBranch = validateBranch;
 window.validateProduct = validateProduct;
 window.validateDate = validateDate;
 window.clearValidationErrors = clearValidationErrors;

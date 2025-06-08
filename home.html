@@ -3,11 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ICESOFT</title>
+  <title>ICESOFT - Dashboard</title>
   <link rel="icon" href="assets/icesoft.png" type="image/png">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/dashboard.css">
   <script src="js/alerts.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.materialdesignicons.com/6.5.95/css/materialdesignicons.min.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
 </head>
@@ -24,7 +26,7 @@
         <span class="logo-text">ICESOFT</span>
       </div>
 
-            <nav>
+      <nav>
         <ul class="menu-principal">
           <li><a href="home.html"><i class="material-icons">dashboard</i><span>DASHBOARD</span></a></li>
           <li class="divider-menu-h"></li>
@@ -58,190 +60,176 @@
           </li>
         </ul>
       </nav>
-
+    </div>
   </section>
 
-<header class="dashboard-header">
-        <button class="open-menu-btn btn-menu">
-            <i class="material-icons">menu</i>
-        </button>
-            <div class="userProfileSection" id="dashboardHeader">
-                <div class="user-info" id="userDropdownToggle">
-                    <i class="material-icons user-icon">account_circle</i>
-                    <span class="user-name" id="loggedUserName">Cargando...</span>
-                    <i class="material-icons arrow-icon">expand_more</i>
-                </div>
-                
-                <div class="user-dropdown-menu" id="userDropdownMenu">
-                    <div class="user-profile-info">
-                        <h4 id="dropdownUserName">Cargando...</h4>
-                        <span id="dropdownUserEmail">-</span>
-                        <span id="dropdownUserRole">-</span>
-                    </div>
-                    
-                    <div class="dropdown-divider"></div>
-                    
-                    <a href="#" class="dropdown-item" onclick="logout()">
-                        <i class="material-icons">logout</i>
-                        <span>Cerrar Sesión</span>
-                    </a>
-                </div>
-            </div>
-        </div>
-    </header>
-
-html
-
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ICESOFT - Dashboard</title>
-    <link rel="icon" href="assets/icesoft.png" type="image/png">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/dashboard.css">
-</head>
-<body>
-    <div class="dashboard-container">
-        <!-- Header del Dashboard -->
-        <div class="dashboard-header">
-        </div>
-
-        <!-- Widgets Container -->
-        <div class="widgets-container">
-            <!-- Widget de Ventas -->
-            <div class="widget">
-                <div class="widget-title">Resumen de Ventas</div>
-                <div class="stats">
-                    <div class="stat-item">
-                        <div class="stat-value">$24,500</div>
-                        <div class="stat-label">Este mes</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value">42</div>
-                        <div class="stat-label">Transacciones</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value">18%</div>
-                        <div class="stat-label">Crecimiento</div>
-                    </div>
-                </div>
-                <div class="chart-container">
-                    <svg width="100%" height="100%" viewBox="0 0 400 120">
-                        <!-- Línea de tendencia -->
-                        <polyline
-                            points="0,100 50,85 100,90 150,75 200,60 250,45 300,35 350,25 400,15"
-                            fill="none"
-                            stroke="#3498db"
-                            stroke-width="3"
-                            stroke-linecap="round"
-                        />
-                        <!-- Área bajo la curva -->
-                        <path
-                            d="M0,100 50,85 100,90 150,75 200,60 250,45 300,35 350,25 400,15 L400,120 L0,120 Z"
-                            fill="url(#salesGradient)"
-                            opacity="0.3"
-                        />
-                        <!-- Gradiente para el área -->
-                        <defs>
-                            <linearGradient id="salesGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                                <stop offset="0%" style="stop-color:#3498db;stop-opacity:0.8" />
-                                <stop offset="100%" style="stop-color:#3498db;stop-opacity:0.1" />
-                            </linearGradient>
-                        </defs>
-                        <!-- Puntos de datos -->
-                        <circle cx="50" cy="85" r="4" fill="#3498db" opacity="0.8"/>
-                        <circle cx="150" cy="75" r="4" fill="#3498db" opacity="0.8"/>
-                        <circle cx="250" cy="45" r="4" fill="#3498db" opacity="0.8"/>
-                        <circle cx="350" cy="25" r="4" fill="#3498db" opacity="0.8"/>
-                    </svg>
-                </div>
-            </div>
-            
-            <!-- Widget de Compras -->
-            <div class="widget">
-                <div class="widget-title">Resumen de Compras</div>
-                <div class="stats">
-                    <div class="stat-item">
-                        <div class="stat-value">$18,320</div>
-                        <div class="stat-label">Este mes</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value">28</div>
-                        <div class="stat-label">Órdenes</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value">5%</div>
-                        <div class="stat-label">Reducción</div>
-                    </div>
-                </div>
-                <div class="chart-container">
-                    <svg width="100%" height="100%" viewBox="0 0 400 120">
-                        <!-- Barras del gráfico -->
-                        <rect x="30" y="30" width="35" height="90" fill="#e74c3c" opacity="0.8" rx="4"/>
-                        <rect x="85" y="45" width="35" height="75" fill="#e74c3c" opacity="0.8" rx="4"/>
-                        <rect x="140" y="55" width="35" height="65" fill="#e74c3c" opacity="0.8" rx="4"/>
-                        <rect x="195" y="40" width="35" height="80" fill="#e74c3c" opacity="0.8" rx="4"/>
-                        <rect x="250" y="50" width="35" height="70" fill="#e74c3c" opacity="0.8" rx="4"/>
-                        <rect x="305" y="35" width="35" height="85" fill="#e74c3c" opacity="0.8" rx="4"/>
-                    </svg>
-                </div>
-            </div>
+  <!-- Header del Dashboard -->
+  <header class="dashboard-header">
+    <button class="open-menu-btn btn-menu">
+        <i class="material-icons">menu</i>
+    </button>
+    <div class="userProfileSection" id="dashboardHeader">
+        <div class="user-info" id="userDropdownToggle">
+            <i class="material-icons user-icon">account_circle</i>
+            <span class="user-name" id="loggedUserName">Cargando...</span>
+            <i class="material-icons arrow-icon">expand_more</i>
         </div>
         
-        <!-- Widget de Actividad Reciente -->
-        <div class="recent-activity">
-            <div class="widget-title">Actividad Reciente</div>
-            
-            <div class="activity-item">
-                <div class="activity-icon">💰</div>
-                <div class="activity-details">
-                    <div class="activity-title">Nueva venta registrada - Cliente: Empresa ABC</div>
-                    <div class="activity-time">Hace 10 minutos</div>
-                </div>
-                <div class="status-indicator status-success"></div>
+        <div class="user-dropdown-menu" id="userDropdownMenu">
+            <div class="user-profile-info">
+                <h4 id="dropdownUserName">Cargando...</h4>
+                <span id="dropdownUserEmail">-</span>
+                <span id="dropdownUserRole">-</span>
             </div>
             
-            <div class="activity-item">
-                <div class="activity-icon">🛒</div>
-                <div class="activity-details">
-                    <div class="activity-title">Compra realizada - Proveedor: Suministros XYZ</div>
-                    <div class="activity-time">Hace 2 horas</div>
-                </div>
-                <div class="status-indicator status-warning"></div>
-            </div>
+            <div class="dropdown-divider"></div>
             
-            <div class="activity-item">
-                <div class="activity-icon">👤</div>
-                <div class="activity-details">
-                    <div class="activity-title">Nuevo cliente registrado - Empresa DEF</div>
-                    <div class="activity-time">Hace 5 horas</div>
-                </div>
-                <div class="status-indicator status-info"></div>
-            </div>
-            
-            <div class="activity-item">
-                <div class="activity-icon">📋</div>
-                <div class="activity-details">
-                    <div class="activity-title">Actualización de inventario - 15 productos</div>
-                    <div class="activity-time">Hace 1 día</div>
-                </div>
-                <div class="status-indicator status-success"></div>
-            </div>
+            <a href="#" class="dropdown-item" onclick="logout()">
+                <i class="material-icons">logout</i>
+                <span>Cerrar Sesión</span>
+            </a>
         </div>
     </div>
+  </header>
 
-    <script src="js/dashboard.js"></script>
-</body>
+  <!-- Contenido Principal del Dashboard -->
+  <main class="main-content">
+    <div class="container">
+      <h2 class="title">Dashboard</h2>
+      
+      <!-- Widgets Container -->
+      <div class="widgets-container">
+          <!-- Widget de Ventas -->
+          <div class="widget">
+              <div class="widget-title">Resumen de Ventas</div>
+              <div class="stats">
+                  <div class="stat-item">
+                      <div class="stat-value">$24,500</div>
+                      <div class="stat-label">Este mes</div>
+                  </div>
+                  <div class="stat-item">
+                      <div class="stat-value">42</div>
+                      <div class="stat-label">Transacciones</div>
+                  </div>
+                  <div class="stat-item">
+                      <div class="stat-value">18%</div>
+                      <div class="stat-label">Crecimiento</div>
+                  </div>
+              </div>
+              <div class="chart-container">
+                  <svg width="100%" height="100%" viewBox="0 0 400 120">
+                      <!-- Línea de tendencia -->
+                      <polyline
+                          points="0,100 50,85 100,90 150,75 200,60 250,45 300,35 350,25 400,15"
+                          fill="none"
+                          stroke="#3498db"
+                          stroke-width="3"
+                          stroke-linecap="round"
+                      />
+                      <!-- Área bajo la curva -->
+                      <path
+                          d="M0,100 50,85 100,90 150,75 200,60 250,45 300,35 350,25 400,15 L400,120 L0,120 Z"
+                          fill="url(#salesGradient)"
+                          opacity="0.3"
+                      />
+                      <!-- Gradiente para el área -->
+                      <defs>
+                          <linearGradient id="salesGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                              <stop offset="0%" style="stop-color:#3498db;stop-opacity:0.8" />
+                              <stop offset="100%" style="stop-color:#3498db;stop-opacity:0.1" />
+                          </linearGradient>
+                      </defs>
+                      <!-- Puntos de datos -->
+                      <circle cx="50" cy="85" r="4" fill="#3498db" opacity="0.8"/>
+                      <circle cx="150" cy="75" r="4" fill="#3498db" opacity="0.8"/>
+                      <circle cx="250" cy="45" r="4" fill="#3498db" opacity="0.8"/>
+                      <circle cx="350" cy="25" r="4" fill="#3498db" opacity="0.8"/>
+                  </svg>
+              </div>
+          </div>
+          
+          <!-- Widget de Compras -->
+          <div class="widget">
+              <div class="widget-title">Resumen de Compras</div>
+              <div class="stats">
+                  <div class="stat-item">
+                      <div class="stat-value">$18,320</div>
+                      <div class="stat-label">Este mes</div>
+                  </div>
+                  <div class="stat-item">
+                      <div class="stat-value">28</div>
+                      <div class="stat-label">Órdenes</div>
+                  </div>
+                  <div class="stat-item">
+                      <div class="stat-value">5%</div>
+                      <div class="stat-label">Reducción</div>
+                  </div>
+              </div>
+              <div class="chart-container">
+                  <svg width="100%" height="100%" viewBox="0 0 400 120">
+                      <!-- Barras del gráfico -->
+                      <rect x="30" y="30" width="35" height="90" fill="#e74c3c" opacity="0.8" rx="4"/>
+                      <rect x="85" y="45" width="35" height="75" fill="#e74c3c" opacity="0.8" rx="4"/>
+                      <rect x="140" y="55" width="35" height="65" fill="#e74c3c" opacity="0.8" rx="4"/>
+                      <rect x="195" y="40" width="35" height="80" fill="#e74c3c" opacity="0.8" rx="4"/>
+                      <rect x="250" y="50" width="35" height="70" fill="#e74c3c" opacity="0.8" rx="4"/>
+                      <rect x="305" y="35" width="35" height="85" fill="#e74c3c" opacity="0.8" rx="4"/>
+                  </svg>
+              </div>
+          </div>
+      </div>
+      
+      <!-- Widget de Actividad Reciente -->
+      <div class="recent-activity">
+          <div class="widget-title">Actividad Reciente</div>
+          
+          <div class="activity-item">
+              <div class="activity-icon">💰</div>
+              <div class="activity-details">
+                  <div class="activity-title">Nueva venta registrada - Cliente: Empresa ABC</div>
+                  <div class="activity-time">Hace 10 minutos</div>
+              </div>
+              <div class="status-indicator status-success"></div>
+          </div>
+          
+          <div class="activity-item">
+              <div class="activity-icon">🛒</div>
+              <div class="activity-details">
+                  <div class="activity-title">Compra realizada - Proveedor: Suministros XYZ</div>
+                  <div class="activity-time">Hace 2 horas</div>
+              </div>
+              <div class="status-indicator status-warning"></div>
+          </div>
+          
+          <div class="activity-item">
+              <div class="activity-icon">👤</div>
+              <div class="activity-details">
+                  <div class="activity-title">Nuevo cliente registrado - Empresa DEF</div>
+                  <div class="activity-time">Hace 5 horas</div>
+              </div>
+              <div class="status-indicator status-info"></div>
+          </div>
+          
+          <div class="activity-item">
+              <div class="activity-icon">📋</div>
+              <div class="activity-details">
+                  <div class="activity-title">Actualización de inventario - 15 productos</div>
+                  <div class="activity-time">Hace 1 día</div>
+              </div>
+              <div class="status-indicator status-success"></div>
+          </div>
+      </div>
+    </div>
+  </main>
 
   <script src="js/menu.js"></script>
   <script src="js/profile.js"></script>
+  <script src="js/dashboard.js"></script>
 
-   <script>
-  document.addEventListener('DOMContentLoaded', function() {
-      const userHeader = new UserHeaderIntegrated('dashboardHeader');
-  });
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const userHeader = new UserHeaderIntegrated('dashboardHeader');
+    });
   </script>
 </body>
 </html>
