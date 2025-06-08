@@ -1,4 +1,4 @@
-// ===== MÓDULO DE EXPORTACIONES PARA VENTAS - VERSIÓN COMPLETA MEJORADA =====
+// ===== MÓDULO DE EXPORTACIONES PARA VENTAS - VERSIÓN COMPLETA MEJORADA CON SUCURSALES =====
 
 // Función para cargar las librerías necesarias
 function loadExportLibraries() {
@@ -50,8 +50,8 @@ function loadExportLibraries() {
   });
 }
 
-// Función para obtener datos de ventas con filtros
-function getFilteredSalesData(searchTerm = '', dateFrom = '', dateTo = '', customerFilter = '', statusFilter = '') {
+// Función para obtener datos de ventas con filtros actualizados con sucursales
+function getFilteredSalesData(searchTerm = '', dateFrom = '', dateTo = '', customerFilter = '', branchFilter = '', statusFilter = '') {
   let filteredSales = [...originalSales];
 
   // Filtro por término de búsqueda
@@ -65,6 +65,11 @@ function getFilteredSalesData(searchTerm = '', dateFrom = '', dateTo = '', custo
         (s.cliente?.lastname && s.cliente.lastname.toLowerCase().includes(term)) ||
         (typeof s.customer === 'string' && customerIdToNameMap[s.customer] && customerIdToNameMap[s.customer].toLowerCase().includes(term)) ||
         (typeof s.cliente === 'string' && customerIdToNameMap[s.cliente] && customerIdToNameMap[s.cliente].toLowerCase().includes(term));
+      
+      const branchMatch = 
+        (s.branch?.name && s.branch.name.toLowerCase().includes(term)) ||
+        (s.branch?.address && s.branch.address.toLowerCase().includes(term)) ||
+        (typeof s.branch === 'string' && branchIdToNameMap[s.branch] && branchIdToNameMap[s.branch].toLowerCase().includes(term));
       
       const productsMatch = 
         (s.products && Array.isArray(s.products) && s.products.some(item => {
@@ -84,7 +89,7 @@ function getFilteredSalesData(searchTerm = '', dateFrom = '', dateTo = '', custo
           return false;
         }));
       
-      return customerMatch || productsMatch || (s.id && s.id.toLowerCase().includes(term));
+      return customerMatch || branchMatch || productsMatch || (s.id && s.id.toLowerCase().includes(term));
     });
   }
 
@@ -109,6 +114,14 @@ function getFilteredSalesData(searchTerm = '', dateFrom = '', dateTo = '', custo
     });
   }
 
+  // Filtro por sucursal
+  if (branchFilter) {
+    filteredSales = filteredSales.filter(s => {
+      const branchId = s.branch?._id || s.branch;
+      return branchId === branchFilter;
+    });
+  }
+
   // Filtro por estado
   if (statusFilter) {
     filteredSales = filteredSales.filter(s => {
@@ -120,7 +133,7 @@ function getFilteredSalesData(searchTerm = '', dateFrom = '', dateTo = '', custo
   return filteredSales;
 }
 
-// Función para preparar datos para exportación
+// Función para preparar datos para exportación con sucursales
 function prepareExportData(sales) {
   return sales.map((sale, index) => {
     const saleId = sale._id || "";
@@ -138,6 +151,15 @@ function prepareExportData(sales) {
         customerName = `${sale.cliente.name} ${sale.cliente.lastname || ''}`.trim();
       } else {
         customerName = getCustomerNameById(sale.cliente);
+      }
+    }
+    
+    let branchName = "Sin Sucursal";
+    if (sale.branch) {
+      if (typeof sale.branch === 'object' && sale.branch.name) {
+        branchName = sale.branch.address ? `${sale.branch.name} - ${sale.branch.address}` : sale.branch.name;
+      } else {
+        branchName = getBranchNameById(sale.branch);
       }
     }
     
@@ -182,6 +204,7 @@ function prepareExportData(sales) {
     return {
       id: displayId,
       cliente: customerName,
+      sucursal: branchName,
       fecha: formatDate(salesDate),
       productos: productsList,
       cantidad: totalQuantity,
@@ -196,7 +219,7 @@ function prepareExportData(sales) {
   });
 }
 
-// ===== EXPORTACIÓN A PDF MEJORADA =====
+// ===== EXPORTACIÓN A PDF MEJORADA CON SUCURSALES =====
 async function exportToPDF(filters = {}) {
   try {
     showLoadingIndicator();
@@ -231,6 +254,7 @@ async function exportToPDF(filters = {}) {
       filters.dateFrom,
       filters.dateTo,
       filters.customerFilter,
+      filters.branchFilter,
       filters.statusFilter
     );
     
@@ -271,7 +295,7 @@ async function exportToPDF(filters = {}) {
     doc.setTextColor(0, 0, 0);
     
     // Filtros aplicados
-    if (filters.searchTerm || filters.dateFrom || filters.dateTo || filters.customerFilter || filters.statusFilter) {
+    if (filters.searchTerm || filters.dateFrom || filters.dateTo || filters.customerFilter || filters.branchFilter || filters.statusFilter) {
       doc.setFont('helvetica', 'bold');
       doc.text('FILTROS APLICADOS:', margin, yPosition);
       yPosition += 10;
@@ -289,6 +313,11 @@ async function exportToPDF(filters = {}) {
       if (filters.customerFilter) {
         const customerName = getCustomerNameById(filters.customerFilter) || 'Cliente no encontrado';
         doc.text(`• Cliente: ${customerName}`, margin + 5, yPosition);
+        yPosition += 8;
+      }
+      if (filters.branchFilter) {
+        const branchName = getBranchNameById(filters.branchFilter) || 'Sucursal no encontrada';
+        doc.text(`• Sucursal: ${branchName}`, margin + 5, yPosition);
         yPosition += 8;
       }
       if (filters.statusFilter) {
@@ -325,17 +354,18 @@ async function exportToPDF(filters = {}) {
     doc.text(`Total general: ${formatCurrency(totalAmount)}`, margin, yPosition);
     yPosition += 25;
     
-    // TABLA PRINCIPAL DE VENTAS
+    // TABLA PRINCIPAL DE VENTAS CON SUCURSAL
     if (exportData.length > 0) {
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
       doc.text('DETALLE DE VENTAS', margin, yPosition);
       yPosition += 15;
       
-      // Preparar datos para la tabla
+      // Preparar datos para la tabla incluyendo sucursal
       const tableData = exportData.map((sale) => [
         sale.id || '',
         sale.cliente || '',
+        sale.sucursal || '',
         sale.fecha || '',
         sale.productos || '',
         sale.cantidad || 0,
@@ -343,16 +373,16 @@ async function exportToPDF(filters = {}) {
         sale.estado || ''
       ]);
       
-      // Configurar tabla con autoTable - COLUMNAS OPTIMIZADAS
+      // Configurar tabla con autoTable - COLUMNAS OPTIMIZADAS CON SUCURSAL
       doc.autoTable({
         startY: yPosition,
-        head: [['ID', 'Cliente', 'Fecha', 'Productos', 'Cantidad', 'Total', 'Estado']],
+        head: [['ID', 'Cliente', 'Sucursal', 'Fecha', 'Productos', 'Cant.', 'Total', 'Estado']],
         body: tableData,
         theme: 'striped',
         styles: {
-          fontSize: 8,
+          fontSize: 7,
           font: 'helvetica',
-          cellPadding: 4,
+          cellPadding: 3,
           valign: 'middle',
           halign: 'center',
           lineColor: [200, 200, 200],
@@ -362,44 +392,49 @@ async function exportToPDF(filters = {}) {
           fillColor: [27, 43, 64],
           textColor: [255, 255, 255],
           fontStyle: 'bold',
-          fontSize: 9,
+          fontSize: 8,
           halign: 'center',
           valign: 'middle'
         },
         columnStyles: {
           0: { 
-            cellWidth: 15, 
+            cellWidth: 12, 
             halign: 'center',
             valign: 'middle'
           },
           1: { 
-            cellWidth: 35, 
+            cellWidth: 30, 
             halign: 'left',
             valign: 'middle'
           },
           2: { 
-            cellWidth: 20, 
-            halign: 'center',
+            cellWidth: 25, 
+            halign: 'left',
             valign: 'middle'
           },
           3: { 
-            cellWidth: 35, 
-            halign: 'left',
-            valign: 'top',
-            fontSize: 7
-          },
-          4: { 
-            cellWidth: 25, 
+            cellWidth: 18, 
             halign: 'center',
             valign: 'middle'
           },
+          4: { 
+            cellWidth: 30, 
+            halign: 'left',
+            valign: 'top',
+            fontSize: 6
+          },
           5: { 
-            cellWidth: 25, 
-            halign: 'right',
+            cellWidth: 15, 
+            halign: 'center',
             valign: 'middle'
           },
           6: { 
-            cellWidth: 25, 
+            cellWidth: 20, 
+            halign: 'right',
+            valign: 'middle'
+          },
+          7: { 
+            cellWidth: 20, 
             halign: 'center',
             valign: 'middle'
           }
@@ -412,16 +447,16 @@ async function exportToPDF(filters = {}) {
         tableLineColor: [200, 200, 200],
         tableLineWidth: 0.1,
         didParseCell: function(data) {
-          if (data.column.index === 3 && data.cell.text && data.cell.text.length > 0) {
+          if (data.column.index === 4 && data.cell.text && data.cell.text.length > 0) {
             const lines = data.cell.text.join(' ').split('\n');
             if (lines.length > 1) {
-              data.cell.styles.minCellHeight = lines.length * 8;
+              data.cell.styles.minCellHeight = lines.length * 7;
             }
           }
         },
         margin: { 
-          left: (pageWidth - 180) / 2,
-          right: (pageWidth - 180) / 2
+          left: (pageWidth - 170) / 2,
+          right: (pageWidth - 170) / 2
         }
       });
       
@@ -475,7 +510,7 @@ async function exportToPDF(filters = {}) {
   }
 }
 
-// ===== EXPORTACIÓN A EXCEL CON DISEÑO VISUAL MEJORADO =====
+// ===== EXPORTACIÓN A EXCEL CON DISEÑO VISUAL MEJORADO Y SUCURSALES =====
 async function exportToExcel(filters = {}) {
   try {
     showLoadingIndicator();
@@ -487,6 +522,7 @@ async function exportToExcel(filters = {}) {
       filters.dateFrom,
       filters.dateTo,
       filters.customerFilter,
+      filters.branchFilter,
       filters.statusFilter
     );
     
@@ -502,29 +538,32 @@ async function exportToExcel(filters = {}) {
     const summaryData = [];
     
     // ENCABEZADO PRINCIPAL
-    summaryData.push(['REPORTE DE VENTAS - ICESOFT', '', '', '']);
-    summaryData.push(['RESUMEN EJECUTIVO', '', '', '']);
-    summaryData.push(['', '', '', '']);
+    summaryData.push(['REPORTE DE VENTAS - ICESOFT', '', '', '', '']);
+    summaryData.push(['RESUMEN EJECUTIVO', '', '', '', '']);
+    summaryData.push(['', '', '', '', '']);
     
     // INFORMACIÓN GENERAL EN FORMATO DE TABLA
-    summaryData.push(['INFORMACIÓN GENERAL', '', '', '']);
-    summaryData.push(['Sistema:', 'ICESOFT - Gestión Empresarial', '', '']);
-    summaryData.push(['Fecha de generación:', currentDate.toLocaleDateString('es-ES'), '', '']);
-    summaryData.push(['Hora de generación:', currentDate.toLocaleTimeString('es-ES'), '', '']);
-    summaryData.push(['Total de registros:', exportData.length, '', '']);
-    summaryData.push(['', '', '', '']);
+    summaryData.push(['INFORMACIÓN GENERAL', '', '', '', '']);
+    summaryData.push(['Sistema:', 'ICESOFT - Gestión Empresarial', '', '', '']);
+    summaryData.push(['Fecha de generación:', currentDate.toLocaleDateString('es-ES'), '', '', '']);
+    summaryData.push(['Hora de generación:', currentDate.toLocaleTimeString('es-ES'), '', '', '']);
+    summaryData.push(['Total de registros:', exportData.length, '', '', '']);
+    summaryData.push(['', '', '', '', '']);
     
     // FILTROS APLICADOS
-    summaryData.push(['FILTROS APLICADOS', '', '', '']);
+    summaryData.push(['FILTROS APLICADOS', '', '', '', '']);
     if (filters.searchTerm) {
-      summaryData.push(['Término de búsqueda:', filters.searchTerm, '', '']);
+      summaryData.push(['Término de búsqueda:', filters.searchTerm, '', '', '']);
     }
     if (filters.dateFrom || filters.dateTo) {
       const dateRange = `${filters.dateFrom || 'Sin límite'} - ${filters.dateTo || 'Sin límite'}`;
-      summaryData.push(['Rango de fechas:', dateRange, '', '']);
+      summaryData.push(['Rango de fechas:', dateRange, '', '', '']);
     }
     if (filters.customerFilter) {
-      summaryData.push(['Cliente:', getCustomerNameById(filters.customerFilter), '', '']);
+      summaryData.push(['Cliente:', getCustomerNameById(filters.customerFilter), '', '', '']);
+    }
+    if (filters.branchFilter) {
+      summaryData.push(['Sucursal:', getBranchNameById(filters.branchFilter), '', '', '']);
     }
     if (filters.statusFilter) {
       const statusNames = {
@@ -532,18 +571,18 @@ async function exportToExcel(filters = {}) {
         'completed': 'Completada',
         'cancelled': 'Cancelada'
       };
-      summaryData.push(['Estado:', statusNames[filters.statusFilter] || filters.statusFilter, '', '']);
+      summaryData.push(['Estado:', statusNames[filters.statusFilter] || filters.statusFilter, '', '', '']);
     }
-    summaryData.push(['', '', '', '']);
+    summaryData.push(['', '', '', '', '']);
     
     // RESUMEN FINANCIERO CON FORMATO DESTACADO
     const totalAmount = exportData.reduce((sum, item) => sum + item.total, 0);
     const avgAmount = totalAmount / (exportData.length || 1);
     
-    summaryData.push(['RESUMEN FINANCIERO', '', '', '']);
-    summaryData.push(['Total General:', '', formatCurrency(totalAmount), '']);
-    summaryData.push(['Promedio por Venta:', '', formatCurrency(avgAmount), '']);
-    summaryData.push(['', '', '', '']);
+    summaryData.push(['RESUMEN FINANCIERO', '', '', '', '']);
+    summaryData.push(['Total General:', '', formatCurrency(totalAmount), '', '']);
+    summaryData.push(['Promedio por Venta:', '', formatCurrency(avgAmount), '', '']);
+    summaryData.push(['', '', '', '', '']);
     
     // ESTADÍSTICAS POR ESTADO
     const completedCount = exportData.filter(item => item.estado === 'Completada').length;
@@ -551,13 +590,13 @@ async function exportToExcel(filters = {}) {
     const processingCount = exportData.filter(item => item.estado === 'Procesando').length;
     const completionRate = ((completedCount / exportData.length) * 100).toFixed(1);
     
-    summaryData.push(['ESTADÍSTICAS POR ESTADO', '', '', '']);
-    summaryData.push(['Estado', 'Cantidad', 'Porcentaje', '']);
-    summaryData.push(['Procesando', processingCount, `${((processingCount / exportData.length) * 100).toFixed(1)}%`, '']);
-    summaryData.push(['Completadas', completedCount, `${((completedCount / exportData.length) * 100).toFixed(1)}%`, '']);
-    summaryData.push(['Canceladas', cancelledCount, `${((cancelledCount / exportData.length) * 100).toFixed(1)}%`, '']);
-    summaryData.push(['', '', '', '']);
-    summaryData.push(['TASA DE ÉXITO:', '', `${completionRate}%`, '']);
+    summaryData.push(['ESTADÍSTICAS POR ESTADO', '', '', '', '']);
+    summaryData.push(['Estado', 'Cantidad', 'Porcentaje', '', '']);
+    summaryData.push(['Procesando', processingCount, `${((processingCount / exportData.length) * 100).toFixed(1)}%`, '', '']);
+    summaryData.push(['Completadas', completedCount, `${((completedCount / exportData.length) * 100).toFixed(1)}%`, '', '']);
+    summaryData.push(['Canceladas', cancelledCount, `${((cancelledCount / exportData.length) * 100).toFixed(1)}%`, '', '']);
+    summaryData.push(['', '', '', '', '']);
+    summaryData.push(['TASA DE ÉXITO:', '', `${completionRate}%`, '', '']);
     
     // Crear hoja de resumen
     const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
@@ -567,8 +606,8 @@ async function exportToExcel(filters = {}) {
     
     // Combinar celdas para el título
     summaryWs['!merges'] = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } }, // Título principal
-      { s: { r: 1, c: 0 }, e: { r: 1, c: 3 } }, // Subtítulo
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 4 } }, // Título principal
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 4 } }, // Subtítulo
     ];
     
     // Configurar ancho de columnas
@@ -576,7 +615,8 @@ async function exportToExcel(filters = {}) {
       { width: 25 }, // Columna A - Etiquetas
       { width: 35 }, // Columna B - Valores
       { width: 20 }, // Columna C - Montos/Porcentajes
-      { width: 15 }  // Columna D - Extra
+      { width: 15 }, // Columna D - Extra
+      { width: 15 }  // Columna E - Extra
     ];
     
     XLSX.utils.book_append_sheet(wb, summaryWs, 'Resumen Ejecutivo');
@@ -586,6 +626,7 @@ async function exportToExcel(filters = {}) {
       const detailData = exportData.map((sale, index) => ({
         'ID': sale.id,
         'Cliente': sale.cliente,
+        'Sucursal': sale.sucursal,
         'Fecha': sale.fecha,
         'Productos': sale.productosDetallados,
         'Items': sale.productCount,
@@ -598,10 +639,11 @@ async function exportToExcel(filters = {}) {
       
       const detailWs = XLSX.utils.json_to_sheet(detailData);
       
-      // Configurar ancho de columnas optimizado - COLUMNAS AJUSTADAS
+      // Configurar ancho de columnas optimizado - COLUMNAS AJUSTADAS CON SUCURSAL
       detailWs['!cols'] = [
         { width: 12 }, // ID
         { width: 25 }, // Cliente
+        { width: 20 }, // Sucursal
         { width: 12 }, // Fecha
         { width: 40 }, // Productos
         { width: 8 },  // Items
@@ -614,14 +656,19 @@ async function exportToExcel(filters = {}) {
       XLSX.utils.book_append_sheet(wb, detailWs, 'Datos Principales');
     }
     
-    // ===== HOJA 3: ANÁLISIS POR CLIENTE CON GRÁFICOS VISUALES =====
+    // ===== HOJA 3: ANÁLISIS POR CLIENTE Y SUCURSAL =====
     if (exportData.length > 0) {
-      const customerStats = {};
+      const customerBranchStats = {};
       
       exportData.forEach(sale => {
         const customer = sale.cliente;
-        if (!customerStats[customer]) {
-          customerStats[customer] = {
+        const branch = sale.sucursal;
+        const key = `${customer} - ${branch}`;
+        
+        if (!customerBranchStats[key]) {
+          customerBranchStats[key] = {
+            cliente: customer,
+            sucursal: branch,
             totalVentas: 0,
             montoTotal: 0,
             ventasCompletadas: 0,
@@ -631,37 +678,38 @@ async function exportToExcel(filters = {}) {
           };
         }
         
-        customerStats[customer].totalVentas++;
-        customerStats[customer].montoTotal += sale.total;
+        customerBranchStats[key].totalVentas++;
+        customerBranchStats[key].montoTotal += sale.total;
         
         if (sale.productItems && Array.isArray(sale.productItems)) {
           sale.productItems.forEach(product => {
             const productName = product.product?.name || getProductNameById(product.product?._id || product.product);
-            customerStats[customer].productos.add(productName);
+            customerBranchStats[key].productos.add(productName);
           });
         }
         
         switch(sale.estado) {
           case 'Completada':
-            customerStats[customer].ventasCompletadas++;
+            customerBranchStats[key].ventasCompletadas++;
             break;
           case 'Cancelada':
-            customerStats[customer].ventasCanceladas++;
+            customerBranchStats[key].ventasCanceladas++;
             break;
           case 'Procesando':
-            customerStats[customer].ventasProcesando++;
+            customerBranchStats[key].ventasProcesando++;
             break;
         }
       });
       
       const totalAmount = exportData.reduce((sum, item) => sum + item.total, 0);
       
-      const customerAnalysis = Object.entries(customerStats).map(([customer, stats]) => {
+      const customerBranchAnalysis = Object.entries(customerBranchStats).map(([key, stats]) => {
         const successRate = ((stats.ventasCompletadas / stats.totalVentas) * 100).toFixed(1);
         const participation = ((stats.montoTotal / totalAmount) * 100).toFixed(1);
         
         return {
-          'Cliente': customer,
+          'Cliente': stats.cliente,
+          'Sucursal': stats.sucursal,
           'Total Ventas': stats.totalVentas,
           'Monto Total': stats.montoTotal,
           'Completadas': stats.ventasCompletadas,
@@ -678,13 +726,14 @@ async function exportToExcel(filters = {}) {
       });
       
       // Ordenar por monto total descendente
-      customerAnalysis.sort((a, b) => b['Monto Total'] - a['Monto Total']);
+      customerBranchAnalysis.sort((a, b) => b['Monto Total'] - a['Monto Total']);
       
-      const customerWs = XLSX.utils.json_to_sheet(customerAnalysis);
+      const customerBranchWs = XLSX.utils.json_to_sheet(customerBranchAnalysis);
       
       // Configurar anchos de columna
-      customerWs['!cols'] = [
+      customerBranchWs['!cols'] = [
         { width: 25 }, // Cliente
+        { width: 20 }, // Sucursal
         { width: 12 }, // Total Ventas
         { width: 15 }, // Monto Total
         { width: 12 }, // Completadas
@@ -697,15 +746,104 @@ async function exportToExcel(filters = {}) {
         { width: 15 }  // Calificación
       ];
       
-      XLSX.utils.book_append_sheet(wb, customerWs, 'Análisis Clientes');
+      XLSX.utils.book_append_sheet(wb, customerBranchWs, 'Análisis Cliente-Sucursal');
+    }
+
+    // ===== HOJA 4: ANÁLISIS POR SUCURSAL =====
+    if (exportData.length > 0) {
+      const branchStats = {};
+      
+      exportData.forEach(sale => {
+        const branch = sale.sucursal;
+        if (!branchStats[branch]) {
+          branchStats[branch] = {
+            totalVentas: 0,
+            montoTotal: 0,
+            ventasCompletadas: 0,
+            ventasCanceladas: 0,
+            ventasProcesando: 0,
+            clientes: new Set(),
+            productos: new Set()
+          };
+        }
+        
+        branchStats[branch].totalVentas++;
+        branchStats[branch].montoTotal += sale.total;
+        branchStats[branch].clientes.add(sale.cliente);
+        
+        if (sale.productItems && Array.isArray(sale.productItems)) {
+          sale.productItems.forEach(product => {
+            const productName = product.product?.name || getProductNameById(product.product?._id || product.product);
+            branchStats[branch].productos.add(productName);
+          });
+        }
+        
+        switch(sale.estado) {
+          case 'Completada':
+            branchStats[branch].ventasCompletadas++;
+            break;
+          case 'Cancelada':
+            branchStats[branch].ventasCanceladas++;
+            break;
+          case 'Procesando':
+            branchStats[branch].ventasProcesando++;
+            break;
+        }
+      });
+      
+      const totalAmount = exportData.reduce((sum, item) => sum + item.total, 0);
+      
+      const branchAnalysis = Object.entries(branchStats).map(([branch, stats]) => {
+        const successRate = ((stats.ventasCompletadas / stats.totalVentas) * 100).toFixed(1);
+        const participation = ((stats.montoTotal / totalAmount) * 100).toFixed(1);
+        
+        return {
+          'Sucursal': branch,
+          'Total Ventas': stats.totalVentas,
+          'Monto Total': stats.montoTotal,
+          'Completadas': stats.ventasCompletadas,
+          'Canceladas': stats.ventasCanceladas,
+          'Procesando': stats.ventasProcesando,
+          'Promedio/Venta': Math.round(stats.montoTotal / stats.totalVentas),
+          'Clientes Únicos': stats.clientes.size,
+          'Productos Únicos': stats.productos.size,
+          '% Participación': `${participation}%`,
+          'Tasa Éxito': `${successRate}%`,
+          'Rendimiento': stats.totalVentas > 20 ? 'ALTO' : 
+                        stats.totalVentas > 10 ? 'MEDIO' : 'BAJO'
+        };
+      });
+      
+      // Ordenar por monto total descendente
+      branchAnalysis.sort((a, b) => b['Monto Total'] - a['Monto Total']);
+      
+      const branchWs = XLSX.utils.json_to_sheet(branchAnalysis);
+      
+      // Configurar anchos de columna
+      branchWs['!cols'] = [
+        { width: 20 }, // Sucursal
+        { width: 12 }, // Total Ventas
+        { width: 15 }, // Monto Total
+        { width: 12 }, // Completadas
+        { width: 12 }, // Canceladas
+        { width: 12 }, // Procesando
+        { width: 15 }, // Promedio
+        { width: 15 }, // Clientes Únicos
+        { width: 15 }, // Productos Únicos
+        { width: 15 }, // Participación
+        { width: 12 }, // Tasa Éxito
+        { width: 15 }  // Rendimiento
+      ];
+      
+      XLSX.utils.book_append_sheet(wb, branchWs, 'Análisis por Sucursal');
     }
     
-    // ===== HOJA 4: DASHBOARD DE TENDENCIAS =====
+    // ===== HOJA 5: DASHBOARD DE TENDENCIAS =====
     if (exportData.length > 0) {
       // Crear encabezado del dashboard
       const dashboardData = [];
-      dashboardData.push(['DASHBOARD DE TENDENCIAS TEMPORALES', '', '', '', '', '']);
-      dashboardData.push(['', '', '', '', '', '']);
+      dashboardData.push(['DASHBOARD DE TENDENCIAS TEMPORALES', '', '', '', '', '', '']);
+      dashboardData.push(['', '', '', '', '', '', '']);
       
       // Agregar análisis mensual
       const monthlyStats = {};
@@ -720,18 +858,20 @@ async function exportToExcel(filters = {}) {
             ventas: 0,
             total: 0,
             completadas: 0,
-            canceladas: 0
+            canceladas: 0,
+            sucursales: new Set()
           };
         }
         
         monthlyStats[monthKey].ventas++;
         monthlyStats[monthKey].total += sale.total;
+        monthlyStats[monthKey].sucursales.add(sale.sucursal);
         if (sale.estado === 'Completada') monthlyStats[monthKey].completadas++;
         if (sale.estado === 'Cancelada') monthlyStats[monthKey].canceladas++;
       });
       
       // Encabezados de la tabla
-      dashboardData.push(['Período', 'Ventas', 'Total', 'Completadas', 'Canceladas', 'Tasa Éxito', 'Rendimiento']);
+      dashboardData.push(['Período', 'Ventas', 'Total', 'Completadas', 'Canceladas', 'Sucursales', 'Tasa Éxito', 'Rendimiento']);
       
       const trendsData = Object.entries(monthlyStats)
         .sort(([a], [b]) => a.localeCompare(b))
@@ -747,6 +887,7 @@ async function exportToExcel(filters = {}) {
             stats.total,
             stats.completadas,
             stats.canceladas,
+            stats.sucursales.size,
             `${successRate}%`,
             performance
           ];
@@ -756,17 +897,17 @@ async function exportToExcel(filters = {}) {
       trendsData.forEach(row => dashboardData.push(row));
       
       // Agregar resumen final
-      dashboardData.push(['', '', '', '', '', '', '']);
-      dashboardData.push(['RESUMEN GENERAL', '', '', '', '', '', '']);
+      dashboardData.push(['', '', '', '', '', '', '', '']);
+      dashboardData.push(['RESUMEN GENERAL', '', '', '', '', '', '', '']);
       
       const totalVentas = trendsData.reduce((sum, row) => sum + row[1], 0);
       const totalMonto = trendsData.reduce((sum, row) => sum + row[2], 0);
       const totalCompletadas = trendsData.reduce((sum, row) => sum + row[3], 0);
       const promedioMensual = Math.round(totalVentas / trendsData.length);
       
-      dashboardData.push(['Total Períodos Analizados:', trendsData.length, '', '', '', '', '']);
-      dashboardData.push(['Promedio Ventas/Mes:', promedioMensual, '', '', '', '', '']);
-      dashboardData.push(['Mejor Período:', trendsData.sort((a,b) => b[1] - a[1])[0][0], '', '', '', '', '']);
+      dashboardData.push(['Total Períodos Analizados:', trendsData.length, '', '', '', '', '', '']);
+      dashboardData.push(['Promedio Ventas/Mes:', promedioMensual, '', '', '', '', '', '']);
+      dashboardData.push(['Mejor Período:', trendsData.sort((a,b) => b[1] - a[1])[0][0], '', '', '', '', '', '']);
       
       const trendsWs = XLSX.utils.aoa_to_sheet(dashboardData);
       
@@ -777,13 +918,14 @@ async function exportToExcel(filters = {}) {
         { width: 15 }, // Total
         { width: 12 }, // Completadas
         { width: 12 }, // Canceladas
+        { width: 12 }, // Sucursales
         { width: 12 }, // Tasa Éxito
         { width: 15 }  // Rendimiento
       ];
       
       // Combinar celdas para el título
       trendsWs['!merges'] = [
-        { s: { r: 0, c: 0 }, e: { r: 0, c: 6 } }
+        { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } }
       ];
       
       XLSX.utils.book_append_sheet(wb, trendsWs, 'Tendencias');
@@ -805,7 +947,7 @@ async function exportToExcel(filters = {}) {
   }
 }
 
-// ===== MODAL DE FILTROS PARA EXPORTACIÓN MEJORADO =====
+// ===== MODAL DE FILTROS PARA EXPORTACIÓN MEJORADO CON SUCURSALES =====
 function showExportModal() {
   const modalHtml = `
     <div id="exportModal" class="custom-modal">
@@ -824,6 +966,15 @@ function showExportModal() {
                 </label>
                 <select id="exportCustomerFilter" class="field-element modern-select">
                   <option value="">Todos los clientes</option>
+                </select>
+              </div>
+              
+              <div class="field-group">
+                <label for="exportBranchFilter">
+                  Sucursal:
+                </label>
+                <select id="exportBranchFilter" class="field-element modern-select">
+                  <option value="">Todas las sucursales</option>
                 </select>
               </div>
             </div>
@@ -901,8 +1052,19 @@ function showExportModal() {
     });
   }
   
+  // Cargar sucursales en el select
+  const branchSelect = document.getElementById('exportBranchFilter');
+  if (branchSelect && branchIdToNameMap) {
+    Object.entries(branchIdToNameMap).forEach(([id, name]) => {
+      const option = document.createElement('option');
+      option.value = id;
+      option.textContent = name;
+      branchSelect.appendChild(option);
+    });
+  }
+  
   // Agregar event listeners para actualizar el preview
-  const filterInputs = ['exportSearchTerm', 'exportDateFrom', 'exportDateTo', 'exportCustomerFilter', 'exportStatusFilter'];
+  const filterInputs = ['exportSearchTerm', 'exportDateFrom', 'exportDateTo', 'exportCustomerFilter', 'exportBranchFilter', 'exportStatusFilter'];
   filterInputs.forEach(inputId => {
     const input = document.getElementById(inputId);
     if (input) {
@@ -922,6 +1084,7 @@ function updateExportPreview() {
     filters.dateFrom,
     filters.dateTo,
     filters.customerFilter,
+    filters.branchFilter,
     filters.statusFilter
   );
   
@@ -932,8 +1095,15 @@ function updateExportPreview() {
     const processingCount = filteredSales.filter(s => (s.status || s.estado || 'processing') === 'processing').length;
     const cancelledCount = filteredSales.filter(s => (s.status || s.estado || 'processing') === 'cancelled').length;
     
+    // Contar sucursales únicas
+    const uniqueBranches = new Set();
+    filteredSales.forEach(s => {
+      const branchName = s.branch?.name || getBranchNameById(s.branch) || 'Sin Sucursal';
+      uniqueBranches.add(branchName);
+    });
+    
     previewText.innerHTML = `
-      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; text-align: center;">
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; text-align: center;">
         <div>
           <div style="font-size: 24px; font-weight: bold;">${filteredSales.length}</div>
           <div style="font-size: 12px; opacity: 0.8;">Ventas encontradas</div>
@@ -943,8 +1113,16 @@ function updateExportPreview() {
           <div style="font-size: 12px; opacity: 0.8;">Total general</div>
         </div>
         <div>
+          <div style="font-size: 20px; font-weight: bold;">${uniqueBranches.size}</div>
+          <div style="font-size: 12px; opacity: 0.8;">Sucursales</div>
+        </div>
+        <div>
           <div style="font-size: 20px; font-weight: bold;">${completedCount}</div>
           <div style="font-size: 12px; opacity: 0.8;">Completadas</div>
+        </div>
+        <div>
+          <div style="font-size: 20px; font-weight: bold;">${processingCount}</div>
+          <div style="font-size: 12px; opacity: 0.8;">Procesando</div>
         </div>
         <div>
           <div style="font-size: 20px; font-weight: bold;">${cancelledCount}</div>
@@ -961,6 +1139,7 @@ function getExportFilters() {
     dateFrom: document.getElementById('exportDateFrom')?.value || '',
     dateTo: document.getElementById('exportDateTo')?.value || '',
     customerFilter: document.getElementById('exportCustomerFilter')?.value || '',
+    branchFilter: document.getElementById('exportBranchFilter')?.value || '',
     statusFilter: document.getElementById('exportStatusFilter')?.value || ''
   };
 }
@@ -991,11 +1170,3 @@ window.closeExportModal = closeExportModal;
 window.executeExport = executeExport;
 window.exportToPDF = exportToPDF;
 window.exportToExcel = exportToExcel;
-
-// Agregar estilos al documento
-if (!document.getElementById('export-styles')) {
-  const styleElement = document.createElement('div');
-  styleElement.id = 'export-styles';
-  styleElement.innerHTML = exportStyles;
-  document.head.appendChild(styleElement);
-}

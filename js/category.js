@@ -267,7 +267,7 @@ const loadCategoriesInternal = async () => {
         `;
       }
     } else {
-      showError(data.message || "No se pudo listar las categorías.");
+      showError("No se pudo listar las categorías.");
     }
   } catch (err) {
     showError("Error al listar las categorías.");
@@ -321,7 +321,7 @@ const listCategories = async () => {
         `;
       }
     } else {
-      showError(data.message || "No se pudo listar las categorías.");
+      showError("No se pudo listar las categorías.");
     }
   } catch (err) {
     hideLoadingIndicator();
@@ -371,7 +371,7 @@ const registerCategory = async () => {
       
       loadCategoriesInternal();
     } else {
-      showError(data.message || "No se pudo registrar la categoría.");
+      showError("No se pudo registrar la categoría.");
     }
   } catch (err) {
     showError("Error al registrar la categoría.");
@@ -471,7 +471,7 @@ const updateCategory = async () => {
       
       loadCategoriesInternal();
     } else {
-      showError(data.message || "No se pudo actualizar la categoría.");
+      showError("No se pudo actualizar la categoría.");
     }
   } catch (err) {
     showError("Error al actualizar la categoría.");
@@ -508,7 +508,7 @@ const updateCategoryStatus = async (id, status) => {
       showSuccess(`La categoría ha sido ${status === 'active' ? 'activada' : 'desactivada'}`);
       loadCategoriesInternal();
     } else {
-      let errorMsg = data.message || `No se pudo ${status === 'active' ? 'activar' : 'desactivar'} la categoría.`;
+      let errorMsg = `No se pudo ${status === 'active' ? 'activar' : 'desactivar'} la categoría.`;
       
       if (res.status === 400 && data.message && data.message.includes('active products associated')) {
         showInfo('No se puede desactivar la categoría porque tiene productos activos asociados.');

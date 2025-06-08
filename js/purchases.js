@@ -13,13 +13,6 @@ let providerIdToNameMap = {};
 const isRegisterPage = window.location.pathname.includes('purchase-register.html');
 const isListPage = !isRegisterPage;
 
-// ===== FUNCIONES HELPER PARA FECHAS =====
-
-/**
- * Convierte una fecha a formato YYYY-MM-DD respetando la zona horaria local
- * @param {Date|string} date - Fecha a convertir
- * @returns {string} Fecha en formato YYYY-MM-DD
- */
 function formatLocalDate(date = new Date()) {
   const dateObj = date instanceof Date ? date : new Date(date);
   
@@ -30,51 +23,33 @@ function formatLocalDate(date = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
-/**
- * Obtiene la fecha actual en formato YYYY-MM-DD (zona local)
- * @returns {string} Fecha actual en formato YYYY-MM-DD
- */
 function getTodayLocal() {
   return formatLocalDate(new Date());
 }
 
-/**
- * Formatea fecha para mostrar al usuario (DD/MM/YYYY)
- * @param {Date|string} date - Fecha a formatear
- * @returns {string} Fecha formateada para mostrar
- */
 function formatDateForDisplay(date) {
   if (!date) return "Fecha no disponible";
   
   try {
-    // Si viene en formato YYYY-MM-DD, parsearlo correctamente
     if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
       const [year, month, day] = date.split('-').map(Number);
       const dateObj = new Date(year, month - 1, day);
-      return dateObj.toLocaleDateString('es-CO'); // Formato DD/MM/YYYY
+      return dateObj.toLocaleDateString('es-CO');
     }
     
     const dateObj = date instanceof Date ? date : new Date(date);
-    return dateObj.toLocaleDateString('es-CO'); // Formato DD/MM/YYYY
+    return dateObj.toLocaleDateString('es-CO');
   } catch (e) {
     return date.toString();
   }
 }
 
-/**
- * Convierte fecha de string YYYY-MM-DD a objeto Date (zona local)
- * @param {string} dateString - Fecha en formato YYYY-MM-DD
- * @returns {Date} Objeto Date en zona local
- */
 function parseLocalDate(dateString) {
   if (!dateString) return new Date();
   
-  // Dividir la fecha para evitar problemas de zona horaria
   const [year, month, day] = dateString.split('-').map(Number);
-  return new Date(year, month - 1, day); // month - 1 porque los meses van de 0-11
+  return new Date(year, month - 1, day);
 }
-
-// ===== FUNCIONES DE VALIDACIÓN =====
 
 function validateField(fieldId, errorMessage) {
   const field = document.getElementById(fieldId);
@@ -242,8 +217,6 @@ function disableNativeBrowserValidation() {
   }
 }
 
-// ===== FUNCIONES DE UTILIDAD =====
-
 function getUserPermissions() {
   try {
     const userInfo = localStorage.getItem('userInfo');
@@ -287,7 +260,6 @@ function openModal(modalId) {
     productItems = [];
     updateProductItemsList();
     
-    // ✅ NUEVA IMPLEMENTACIÓN - fecha local sin conversión UTC
     const purchaseDateElement = document.getElementById("purchaseDate");
     if (purchaseDateElement) {
       const todayLocal = getTodayLocal();
@@ -309,9 +281,6 @@ function hideLoadingIndicator() {
   Swal.close();
 }
 
-// ===== FUNCIONES DE FORMATEO =====
-
-// ✅ NUEVA IMPLEMENTACIÓN - usando la función helper para DD/MM/YYYY
 const formatDate = (dateString) => {
   return formatDateForDisplay(dateString);
 };
@@ -330,8 +299,6 @@ const getProviderNameById = (providerId) => {
   if (!providerId) return "Proveedor desconocido";
   return providerIdToNameMap[providerId] || "Proveedor no encontrado";
 };
-
-// ===== FUNCIONES DE CARGA DE DATOS =====
 
 const loadPurchasesInternal = async () => {
   try {
@@ -746,8 +713,6 @@ const loadProviders = async () => {
   }
 };
 
-// ===== FUNCIONES DE RENDERIZADO =====
-
 const renderPurchasesTable = (page = 1) => {
   const tbody = document.getElementById("purchaseTableBody");
   
@@ -775,7 +740,6 @@ const renderPurchasesTable = (page = 1) => {
 
   const userPermissions = getUserPermissions();
   const canEditPurchases = userPermissions.includes("edit_purchases");
-  const canReactivatePurchases = userPermissions.includes("reactivate_purchases");
   
   let tableContent = '';
 
@@ -813,21 +777,14 @@ const renderPurchasesTable = (page = 1) => {
           <td>
             <label class="switch">
               <input type="checkbox" ${status === "active" ? "checked" : ""} 
-                ${canEditPurchases && status === "active" ? `onchange="updatePurchaseStatus('${purchaseId}', this.checked ? 'active' : 'inactive')"` : 'disabled'}>
+                ${canEditPurchases ? `onclick="handleSwitchClick(event, '${purchaseId}', '${status}')"` : 'disabled'}>
               <span class="slider round"></span>
             </label>
-            ${status === "inactive" && canReactivatePurchases ? 
-              `<button onclick="reactivatePurchase('${purchaseId}')" class="reactivate-btn" title="Reactivar compra">
-                <i class="material-icons">refresh</i>
-              </button>` : ''}
           </td>
           <td>
             <div class="action-buttons">
               <button onclick="viewPurchaseDetails('${purchaseId}')" class="icon-button view-button" title="Ver detalles">
                 <i class="material-icons">visibility</i>
-              </button>
-              <button onclick="deletePurchase('${purchaseId}')" class="icon-button delete-button" title="Eliminar" ${userPermissions.includes("delete_purchases") && status === "inactive" ? '' : 'disabled'}>
-                <i class="material-icons">delete</i>
               </button>
             </div>
           </td>
@@ -896,7 +853,13 @@ const changePage = (page) => {
   renderPurchasesTable(currentPage);
 };
 
-// ===== FUNCIONES DE GESTIÓN DE PRODUCTOS =====
+const handleSwitchClick = async (event, purchaseId, currentStatus) => {
+  event.preventDefault();
+  
+  const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+  
+  const success = await updatePurchaseStatus(purchaseId, newStatus);
+};
 
 const addProductItem = () => {
   const productSelect = document.getElementById("product");
@@ -933,17 +896,14 @@ const addProductItem = () => {
   const total = quantity * purchasePrice;
   const productName = productSelect.options[productSelect.selectedIndex].text;
   
-  // Verificar si el producto ya está en la lista
   const existingProductIndex = productItems.findIndex(item => item.product === productId);
   
   if (existingProductIndex >= 0) {
-    // Si ya existe, actualizar cantidad y totales
     productItems[existingProductIndex].quantity += quantity;
     productItems[existingProductIndex].total = productItems[existingProductIndex].quantity * productItems[existingProductIndex].purchase_price;
     
     showSuccess("Producto actualizado en la lista");
   } else {
-    // Si no existe, agregarlo
     productItems.push({
       product: productId,
       quantity: quantity,
@@ -957,13 +917,11 @@ const addProductItem = () => {
   
   updateProductItemsList();
   
-  // Limpiar formulario
   productSelect.selectedIndex = 0;
   quantityInput.value = "1";
   purchasePriceInput.value = "";
   document.getElementById("product-total").textContent = formatCurrency(0);
   
-  // Ocultar errores de validación de la lista de productos
   const productListError = document.getElementById("productItemsList-error");
   if (productListError) {
     productListError.style.display = "none";
@@ -1037,8 +995,6 @@ function updateProductTotal() {
     totalElement.textContent = formatCurrency(total);
   }
 }
-
-// ===== FUNCIONES DE OPERACIONES CRUD =====
 
 const viewPurchaseDetails = async (id) => {
   const token = localStorage.getItem("token");
@@ -1141,19 +1097,25 @@ const viewPurchaseDetails = async (id) => {
       `;
     }
     
-    // Información adicional de deactivación/reactivación
     let additionalInfo = '';
-    if (purchase.status === 'inactive' && purchase.deactivation_reason) {
+    
+    if (status === 'inactive') {
+      const deactivationReason = purchase.deactivation_reason || 'No especificado';
       additionalInfo += `
         <div class="info-row">
           <span class="info-label">Motivo de desactivación</span>
-          <span class="info-value">${purchase.deactivation_reason}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Desactivada el</span>
-          <span class="info-value">${formatDate(purchase.deactivated_at)}</span>
+          <span class="info-value">${deactivationReason}</span>
         </div>
       `;
+      
+      if (purchase.deactivated_at) {
+        additionalInfo += `
+          <div class="info-row">
+            <span class="info-label">Desactivada el</span>
+            <span class="info-value">${formatDate(purchase.deactivated_at)}</span>
+          </div>
+        `;
+      }
     }
     
     if (purchase.reactivation_reason) {
@@ -1162,11 +1124,16 @@ const viewPurchaseDetails = async (id) => {
           <span class="info-label">Motivo de reactivación</span>
           <span class="info-value">${purchase.reactivation_reason}</span>
         </div>
-        <div class="info-row">
-          <span class="info-label">Reactivada el</span>
-          <span class="info-value">${formatDate(purchase.reactivated_at)}</span>
-        </div>
       `;
+      
+      if (purchase.reactivated_at) {
+        additionalInfo += `
+          <div class="info-row">
+            <span class="info-label">Reactivada el</span>
+            <span class="info-value">${formatDate(purchase.reactivated_at)}</span>
+          </div>
+        `;
+      }
     }
     
     const detailsModalHtml = `
@@ -1177,7 +1144,7 @@ const viewPurchaseDetails = async (id) => {
             <button class="modal-close" onclick="closeDetailsModal()">&times;</button>
           </div>
           
-          <div class="custom-modal-body""custom-modal-body">
+          <div class="custom-modal-body">
             <div class="purchase-detail-wrapper">
               <div class="purchase-info-column">
                 <div class="info-group">
@@ -1195,7 +1162,7 @@ const viewPurchaseDetails = async (id) => {
                     <span class="info-value">
                       <label class="switch">
                         <input type="checkbox" ${status === "active" ? "checked" : ""} disabled>
-                        <span class="slider"></span>
+                        <span class="slider round"></span>
                       </label>
                     </span>
                   </div>
@@ -1264,7 +1231,6 @@ const registerPurchase = async () => {
   
   const total = productItems.reduce((sum, item) => sum + item.total, 0);
 
-  // Preparar los productos en el formato correcto
   const formattedProducts = productItems.map(item => ({
     product: item.product,
     quantity: parseInt(item.quantity),
@@ -1338,22 +1304,13 @@ const updatePurchaseStatus = async (id, status) => {
   const token = localStorage.getItem("token");
   if (!token) {
     showError("Inicie sesión nuevamente.");
-    return;
+    return false;
   }
   
   if (status === 'active') {
-    Swal.fire({
-      icon: 'warning',
-      title: 'Acción no permitida',
-      text: 'Las compras no pueden ser reactivadas desde aquí. Use el botón de reactivar específico que requiere motivo.',
-      confirmButtonText: 'Entendido'
-    });
-    
-    loadPurchasesInternal();
-    return;
+    return await reactivatePurchase(id);
   }
   
-  // Solicitar motivo de desactivación
   const { value: reason } = await Swal.fire({
     title: 'Desactivar Compra',
     text: 'Por favor ingrese el motivo de desactivación:',
@@ -1365,6 +1322,8 @@ const updatePurchaseStatus = async (id, status) => {
     showCancelButton: true,
     confirmButtonText: 'Desactivar',
     cancelButtonText: 'Cancelar',
+    allowOutsideClick: false,
+    allowEscapeKey: false,
     inputValidator: (value) => {
       if (!value || value.trim().length === 0) {
         return 'Debe ingresar un motivo para la desactivación';
@@ -1376,8 +1335,7 @@ const updatePurchaseStatus = async (id, status) => {
   });
   
   if (!reason) {
-    loadPurchasesInternal();
-    return;
+    return false;
   }
   
   try {
@@ -1404,30 +1362,29 @@ const updatePurchaseStatus = async (id, status) => {
     if (res.ok) {
       showSuccess('Compra desactivada correctamente y stock revertido.');
       loadPurchasesInternal();
+      return true;
     } else {
       let errorMsg = data.message || `Error al desactivar la compra (${res.status})`;
       if (data.error) {
         errorMsg += `: ${data.error}`;
       }
       showError(errorMsg);
-      loadPurchasesInternal();
+      return false;
     }
   } catch (err) {
     hideLoadingIndicator();
     showError(`Ocurrió un error de red: ${err.message || err}`);
-    loadPurchasesInternal();
+    return false;
   }
 };
 
-// Nueva función para reactivar compras
 const reactivatePurchase = async (id) => {
   const token = localStorage.getItem("token");
   if (!token) {
     showError("Inicie sesión nuevamente.");
-    return;
+    return false;
   }
   
-  // Solicitar motivo de reactivación
   const { value: reason } = await Swal.fire({
     title: 'Reactivar Compra',
     text: 'Por favor ingrese el motivo de reactivación:',
@@ -1439,6 +1396,8 @@ const reactivatePurchase = async (id) => {
     showCancelButton: true,
     confirmButtonText: 'Reactivar',
     cancelButtonText: 'Cancelar',
+    allowOutsideClick: false,
+    allowEscapeKey: false,
     inputValidator: (value) => {
       if (!value || value.trim().length === 0) {
         return 'Debe ingresar un motivo para la reactivación';
@@ -1450,7 +1409,7 @@ const reactivatePurchase = async (id) => {
   });
   
   if (!reason) {
-    return;
+    return false;
   }
   
   try {
@@ -1477,16 +1436,19 @@ const reactivatePurchase = async (id) => {
     if (res.ok) {
       showSuccess('Compra reactivada correctamente y stock restaurado.');
       loadPurchasesInternal();
+      return true;
     } else {
       let errorMsg = data.message || `Error al reactivar la compra (${res.status})`;
       if (data.error) {
         errorMsg += `: ${data.error}`;
       }
       showError(errorMsg);
+      return false;
     }
   } catch (err) {
     hideLoadingIndicator();
     showError(`Ocurrió un error de red: ${err.message || err}`);
+    return false;
   }
 };
 
@@ -1580,8 +1542,6 @@ const searchPurchase = () => {
   renderPurchasesTable(currentPage);
 };
 
-// ===== FUNCIONES DE UTILIDAD ADICIONALES =====
-
 const checkAuth = () => {
   const token = localStorage.getItem("token");
   if (!token) {
@@ -1605,8 +1565,6 @@ const closeDetailsModal = () => {
     modal.remove();
   }
 };
-
-// ===== FUNCIONES DE INICIALIZACIÓN =====
 
 function initializeValidationEvents() {
   disableNativeBrowserValidation();
@@ -1727,7 +1685,6 @@ function initializeRegisterPage() {
     showError("Error al cargar datos iniciales. Por favor, recargue la página.");
   }
   
-  // ✅ NUEVA IMPLEMENTACIÓN - fecha local sin conversión UTC
   const purchaseDateElement = document.getElementById("purchaseDate");
   if (purchaseDateElement) {
     const todayLocal = getTodayLocal();
@@ -1735,7 +1692,6 @@ function initializeRegisterPage() {
     purchaseDateElement.max = todayLocal;
   }
   
-  // Inicializar total en 0
   const totalAmountElement = document.getElementById("totalAmount");
   if (totalAmountElement) {
     totalAmountElement.textContent = formatCurrency(0);
@@ -1746,8 +1702,6 @@ function initializeRegisterPage() {
     productTotalElement.textContent = formatCurrency(0);
   }
 }
-
-// ===== EVENTOS AL CARGAR EL DOM =====
 
 document.addEventListener("DOMContentLoaded", () => {
   if (!checkAuth()) return;
@@ -1760,8 +1714,6 @@ document.addEventListener("DOMContentLoaded", () => {
     initializeRegisterPage();
   }
 });
-
-// ===== FUNCIONES GLOBALES =====
 
 window.validateField = validateField;
 window.validateQuantity = validateQuantity;
@@ -1784,3 +1736,5 @@ window.viewPurchaseDetails = viewPurchaseDetails;
 window.isNumber = isNumber;
 window.updateProductTotal = updateProductTotal;
 window.hideLoadingIndicator = hideLoadingIndicator;
+window.registerPurchase = registerPurchase;
+window.handleSwitchClick = handleSwitchClick;

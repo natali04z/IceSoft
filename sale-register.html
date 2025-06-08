@@ -119,6 +119,15 @@
             </div>
             
             <div class="purchase-form-group">
+              <label for="branch">Sucursal</label>
+              <select class="field-element" id="branch">
+                <option value="" disabled selected hidden>Seleccionar sucursal</option>
+                <!-- Las sucursales se cargarán dinámicamente -->
+              </select>
+              <div class="error-message" id="branch-error" style="display:none;">El campo es obligatorio.</div>
+            </div>
+            
+            <div class="purchase-form-group">
               <label for="product">Producto</label>
               <select class="field-element" id="product">
                 <option value="" disabled selected hidden>Seleccionar producto</option>
@@ -133,10 +142,10 @@
               <div class="error-message" id="quantity-error" style="display:none;">El campo es obligatorio.</div>
             </div>
             
-            <div class="purchase-form-group">
-              <label for="salePrice">Precio Venta</label>
-              <input type="number" class="field-element" id="salePrice" min="0" step="0.01"  onkeypress="return isNumber(event, true)">
-              <div class="error-message" id="salePrice-error" style="display:none;">El campo es obligatorio.</div>
+            <div class="purchase-form-group">               
+              <label for="salePrice">Precio Venta</label>               
+              <input type="number" class="field-element" id="salePrice" min="0" step="0.01" readonly>               
+              <div class="error-message" id="salePrice-error" style="display:none;">El campo es obligatorio.</div>             
             </div>
             
             <div class="purchase-form-group">
@@ -170,7 +179,7 @@
             <thead>
               <tr>
                 <th>Producto</th>
-                <th>Cant.</th>
+                <th>Cantidad</th>
                 <th>Precio Venta</th>
                 <th>Total</th>
                 <th>Acción</th>

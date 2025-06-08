@@ -1,3 +1,5 @@
+// ===== CONFIGURACIÓN Y VARIABLES GLOBALES =====
+
 // Endpoints de la API
 const API_PROVIDERS = "https://backend-yy4o.onrender.com/api/providers";
 
@@ -6,6 +8,8 @@ let allProviders = [];
 let originalProviders = [];
 let currentPage = 1;
 const rowsPerPage = 10;
+
+// ===== FUNCIONES DE VALIDACIÓN =====
 
 // Función para validar un campo y mostrar error
 function validateField(fieldId, errorMessage) {
@@ -24,7 +28,7 @@ function validateField(fieldId, errorMessage) {
   }
 }
 
-// Función para validar número NIT - ACTUALIZADA
+// Función para validar número NIT
 function validateNIT(fieldId) {
   const field = document.getElementById(fieldId);
   const errorElement = document.getElementById(`${fieldId}-error`);
@@ -138,7 +142,7 @@ function clearValidationErrors(formId) {
   });
 }
 
-// Función para establecer validación de campos numéricos - ACTUALIZADA
+// Función para establecer validación de campos numéricos
 function setupNumericValidation() {
   const phoneInputs = document.querySelectorAll('#contact_phone, #editContactPhone');
   const nitInputs = document.querySelectorAll('#nit, #editNit');
@@ -170,11 +174,37 @@ function setupNumericValidation() {
   });
 }
 
+function disableNativeBrowserValidation() {
+  const providerForm = document.getElementById("providerForm");
+  if (providerForm) {
+    providerForm.setAttribute("novalidate", "");
+    const inputs = providerForm.querySelectorAll("input");
+    inputs.forEach(input => {
+      input.removeAttribute("required");
+      input.removeAttribute("pattern");
+      input.removeAttribute("minlength");
+    });
+  }
+
+  const editForm = document.getElementById("editForm");
+  if (editForm) {
+    editForm.setAttribute("novalidate", "");
+    const inputs = editForm.querySelectorAll("input");
+    inputs.forEach(input => {
+      input.removeAttribute("required");
+      input.removeAttribute("pattern");
+      input.removeAttribute("minlength");
+    });
+  }
+}
+
+// ===== FUNCIONES DE UTILIDAD =====
+
 // Función para obtener permisos de usuario
 function getUserPermissions() {
   try {
     const userInfo = localStorage.getItem('userInfo');
-    if (!userInfo) return ['update_providers', 'delete_providers', 'update_status_providers']; // Permisos por defecto
+    if (!userInfo) return ['update_providers', 'delete_providers', 'update_status_providers'];
     
     const user = JSON.parse(userInfo);
     return user.permissions || ['update_providers', 'delete_providers', 'update_status_providers'];
@@ -189,7 +219,6 @@ function openModal(modalId) {
   if (modal) {
     modal.style.display = "flex";
     
-    // Resetear mensajes de error al abrir el modal
     if (modalId === 'registerModal') {
       clearValidationErrors('providerForm');
       document.getElementById("providerForm").reset();
@@ -207,12 +236,17 @@ function closeModal(modalId) {
   }
 }
 
-// ===== FUNCIÓN PRINCIPAL DE RENDERIZADO CON PAGINADO MEJORADO =====
+function hideLoadingIndicator() {
+  Swal.close();
+}
+
+// ===== FUNCIONES DE RENDERIZADO Y PAGINACIÓN =====
+
+// Función principal de renderizado con paginado
 const renderProvidersTable = (page = 1) => {
   const tbody = document.getElementById("providerTableBody");
   
   if (!tbody) {
-    console.error("Elemento providerTableBody no encontrado en el DOM");
     return;
   }
   
@@ -230,19 +264,16 @@ const renderProvidersTable = (page = 1) => {
     return;
   }
 
-  // LÓGICA DE PAGINADO: Calcular elementos a mostrar
   const start = (page - 1) * rowsPerPage;
   const end = start + rowsPerPage;
   const providersToShow = allProviders.slice(start, end);
 
-  // Verificar si el usuario tiene permisos para editar
   const userPermissions = getUserPermissions();
   const canEditProviders = userPermissions.includes("update_providers");
   const canUpdateStatus = userPermissions.includes("update_status_providers");
   
   let tableContent = '';
 
-  // Renderizar solo los elementos de la página actual
   providersToShow.forEach((provider, index) => {
     try {
       const providerId = provider._id || "";
@@ -294,16 +325,15 @@ const renderProvidersTable = (page = 1) => {
   });
   
   tbody.innerHTML = tableContent;
-  renderPaginationControls(); // Renderizar controles de paginación
+  renderPaginationControls();
 };
 
-// ===== FUNCIÓN DE CONTROLES DE PAGINACIÓN MEJORADA =====
+// Función de controles de paginación
 const renderPaginationControls = () => {
   if (!allProviders || allProviders.length === 0) {
     return;
   }
   
-  // Calcular total de páginas
   const totalPages = Math.ceil(allProviders.length / rowsPerPage);
   const container = document.querySelector(".page-numbers");
   const info = document.querySelector(".pagination .page-info");
@@ -312,7 +342,6 @@ const renderPaginationControls = () => {
 
   container.innerHTML = "";
 
-  // Botón "Anterior"
   const prevBtn = document.createElement("button");
   prevBtn.classList.add("page-nav");
   prevBtn.innerText = "←";
@@ -320,7 +349,6 @@ const renderPaginationControls = () => {
   prevBtn.onclick = () => changePage(currentPage - 1);
   container.appendChild(prevBtn);
 
-  // Números de página
   for (let i = 1; i <= totalPages; i++) {
     const btn = document.createElement("div");
     btn.classList.add("page-number");
@@ -330,7 +358,6 @@ const renderPaginationControls = () => {
     container.appendChild(btn);
   }
 
-  // Botón "Siguiente"
   const nextBtn = document.createElement("button");
   nextBtn.classList.add("page-nav");
   nextBtn.innerText = "→";
@@ -338,7 +365,6 @@ const renderPaginationControls = () => {
   nextBtn.onclick = () => changePage(currentPage + 1);
   container.appendChild(nextBtn);
 
-  // Información de paginación (ej: "1-10 de 50")
   if (info) {
     const startItem = allProviders.length > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0;
     const endItem = Math.min(startItem + rowsPerPage - 1, allProviders.length);
@@ -346,11 +372,13 @@ const renderPaginationControls = () => {
   }
 };
 
-// ===== FUNCIÓN PARA CAMBIAR DE PÁGINA =====
+// Función para cambiar de página
 const changePage = (page) => {
   currentPage = page;
   renderProvidersTable(currentPage);
 };
+
+// ===== FUNCIONES DE CARGA DE DATOS =====
 
 // Cargar proveedores internamente sin indicador de carga
 const loadProvidersInternal = async () => {
@@ -369,7 +397,6 @@ const loadProvidersInternal = async () => {
       }
     });
     
-    // Verificar si la respuesta es exitosa
     if (!res.ok) {
       try {
         const errorData = await res.json();
@@ -381,21 +408,15 @@ const loadProvidersInternal = async () => {
     }
     
     const data = await res.json();
-    console.log("Datos cargados internamente:", data);
     
     if (data.success) {
-      // Si la respuesta tiene la estructura {success: true, data: [...]}
       originalProviders = data.data || [];
     } else if (Array.isArray(data)) {
-      // Si la respuesta es directamente un array
       originalProviders = data;
     } else {
-      // Si hay datos pero no en el formato esperado
       originalProviders = [];
-      console.warn("Formato de respuesta inesperado en loadProvidersInternal:", data);
     }
     
-    // Verificar si originalProviders es un array válido
     if (!Array.isArray(originalProviders)) {
       originalProviders = [];
     }
@@ -404,7 +425,6 @@ const loadProvidersInternal = async () => {
     currentPage = 1;
     renderProvidersTable(currentPage);
     
-    // Mostrar mensaje si no hay proveedores
     const tbody = document.getElementById("providerTableBody");
     if (tbody && (!tbody.children.length || tbody.innerHTML.trim() === '')) {
       tbody.innerHTML = `
@@ -417,7 +437,6 @@ const loadProvidersInternal = async () => {
     }
     
   } catch (err) {
-    console.error("Error en loadProvidersInternal:", err);
     showError("Error de conexión al cargar los proveedores.");
   }
 };
@@ -441,11 +460,9 @@ const listProviders = async () => {
       }
     });
     
-    // Verificar si la respuesta es exitosa antes de parsear JSON
     if (!res.ok) {
       hideLoadingIndicator();
       
-      // Intentar obtener el mensaje de error del servidor
       try {
         const errorData = await res.json();
         showError(errorData.message || `Error del servidor: ${res.status} ${res.statusText}`);
@@ -458,22 +475,14 @@ const listProviders = async () => {
     const data = await res.json();
     hideLoadingIndicator();
 
-    // Verificar la estructura de la respuesta
-    console.log("Respuesta del servidor:", data);
-    
     if (data.success) {
-      // Si la respuesta tiene la estructura {success: true, data: [...]}
       originalProviders = data.data || [];
     } else if (Array.isArray(data)) {
-      // Si la respuesta es directamente un array
       originalProviders = data;
     } else {
-      // Si hay datos pero no en el formato esperado
       originalProviders = [];
-      console.warn("Formato de respuesta inesperado:", data);
     }
     
-    // Verificar si originalProviders es un array válido
     if (!Array.isArray(originalProviders)) {
       originalProviders = [];
     }
@@ -482,7 +491,6 @@ const listProviders = async () => {
     currentPage = 1;
     renderProvidersTable(currentPage);
     
-    // Mostrar mensaje si no hay proveedores
     const tbody = document.getElementById("providerTableBody");
     if (tbody && (!tbody.children.length || tbody.innerHTML.trim() === '')) {
       tbody.innerHTML = `
@@ -496,10 +504,11 @@ const listProviders = async () => {
     
   } catch (err) {
     hideLoadingIndicator();
-    console.error("Error completo:", err);
     showError("Error de conexión al servidor. Verifique su conexión a internet.");
   }
 };
+
+// ===== FUNCIONES CRUD =====
 
 // Registrar proveedor
 const registerProvider = async () => {
@@ -581,6 +590,8 @@ const fillEditForm = async (id) => {
   }
 
   try {
+    showLoadingIndicator();
+    
     const res = await fetch(`${API_PROVIDERS}/${encodeURIComponent(id)}`, {
       method: "GET",
       headers: {
@@ -589,10 +600,32 @@ const fillEditForm = async (id) => {
       }
     });
 
+    hideLoadingIndicator();
+    
+    if (!res.ok) {
+      const errorData = await res.json();
+      showError(errorData.message || `Error del servidor: ${res.status} ${res.statusText}`);
+      return;
+    }
+
     const data = await res.json();
 
-    if (!res.ok) {
-      showError(data.message || "Error al cargar los datos del proveedor.");
+    // Verificar la estructura de la respuesta y extraer los datos del proveedor
+    let providerData;
+    
+    if (data.success && data.data) {
+      providerData = data.data;
+    } else if (data.provider) {
+      providerData = data.provider;
+    } else if (data._id || data.id) {
+      providerData = data;
+    } else {
+      showError("Error: Formato de datos del proveedor no reconocido.");
+      return;
+    }
+
+    if (!providerData) {
+      showError("No se pudieron cargar los datos del proveedor.");
       return;
     }
 
@@ -611,16 +644,18 @@ const fillEditForm = async (id) => {
 
     clearValidationErrors('editForm');
 
-    editIdElement.value = data._id;
-    editNitElement.value = data.nit || "";
-    editCompanyElement.value = data.company || "";
-    editNameElement.value = data.name || "";
-    editContactPhoneElement.value = data.contact_phone || "";
-    editEmailElement.value = data.email || "";
+    editIdElement.value = providerData._id || providerData.id || "";
+    editNitElement.value = providerData.nit || "";
+    editCompanyElement.value = providerData.company || "";
+    editNameElement.value = providerData.name || "";
+    editContactPhoneElement.value = providerData.contact_phone || "";
+    editEmailElement.value = providerData.email || "";
 
     openModal("editModal");
+    
   } catch (err) {
-    showError("Error al cargar el proveedor.");
+    hideLoadingIndicator();
+    showError("Error al cargar el proveedor: " + (err.message || err));
   }
 };
 
@@ -651,51 +686,51 @@ const updateProvider = async () => {
   
   if (!editIdElement || !editNitElement || !editCompanyElement || 
     !editNameElement || !editContactPhoneElement || !editEmailElement) {
-  showError("No se encontraron los campos del formulario de edición");
-  return;
-}
-
-const id = editIdElement.value;
-const nit = editNitElement.value.trim();
-const company = editCompanyElement.value.trim();
-const name = editNameElement.value.trim();
-const contact_phone = editContactPhoneElement.value.trim();
-const email = editEmailElement.value.trim();
-
-try {
-  const res = await fetch(`${API_PROVIDERS}/${encodeURIComponent(id)}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`
-    },
-    body: JSON.stringify({ 
-      nit, 
-      company, 
-      name, 
-      contact_phone, 
-      email
-    })
-  });
-
-  const data = await res.json();
-
-  if (res.ok) {
-    showSuccess('El proveedor ha sido actualizado');
-    closeModal("editModal");
-    
-    const editForm = document.getElementById("editForm");
-    if (editForm) {
-      editForm.reset();
-    }
-
-    loadProvidersInternal();
-  } else {
-    showError(data.message || "No se pudo actualizar el proveedor.");
+    showError("No se encontraron los campos del formulario de edición");
+    return;
   }
-} catch (err) {
-  showError("Error al actualizar el proveedor.");
-}
+
+  const id = editIdElement.value;
+  const nit = editNitElement.value.trim();
+  const company = editCompanyElement.value.trim();
+  const name = editNameElement.value.trim();
+  const contact_phone = editContactPhoneElement.value.trim();
+  const email = editEmailElement.value.trim();
+
+  try {
+    const res = await fetch(`${API_PROVIDERS}/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ 
+        nit, 
+        company, 
+        name, 
+        contact_phone, 
+        email
+      })
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      showSuccess('El proveedor ha sido actualizado');
+      closeModal("editModal");
+      
+      const editForm = document.getElementById("editForm");
+      if (editForm) {
+        editForm.reset();
+      }
+
+      loadProvidersInternal();
+    } else {
+      showError(data.message || "No se pudo actualizar el proveedor.");
+    }
+  } catch (err) {
+    showError("Error al actualizar el proveedor.");
+  }
 };
 
 // Actualizar status del proveedor
@@ -718,7 +753,6 @@ const updateProviderStatus = async (id, status) => {
     
     if (res.ok) {
       showSuccess(`El proveedor ha sido ${status === 'active' ? 'activado' : 'desactivado'}`);
-      
       loadProvidersInternal();
     } else {
       const data = await res.json();
@@ -733,62 +767,60 @@ const updateProviderStatus = async (id, status) => {
 
 // Eliminar proveedor 
 const deleteProvider = async (id) => {
-const token = localStorage.getItem("token");
-if (!token) {
-  showError("Inicie sesión nuevamente.");
-  return;
-}
-
-const confirmed = await showConfirm({
-  title: "¿Estás seguro de eliminar este proveedor?",
-  text: "Esta acción no se puede deshacer.",
-  confirmText: "Eliminar",
-  cancelText: "Cancelar"
-});
-
-if (!confirmed) return;
-
-try {
-  const res = await fetch(`${API_PROVIDERS}/${id}`, {
-    method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  });
-  
-  const data = await res.json();
-  
-  if (res.ok) {
-    showSuccess('El proveedor ha sido eliminado');
-    loadProvidersInternal();
-  } else {
-    showError(data.message || "No se pudo eliminar el proveedor");
+  const token = localStorage.getItem("token");
+  if (!token) {
+    showError("Inicie sesión nuevamente.");
+    return;
   }
-} catch (err) {
-  showError("Error al eliminar proveedor");
-}
+
+  const confirmed = await showConfirm({
+    title: "¿Estás seguro de eliminar este proveedor?",
+    text: "Esta acción no se puede deshacer.",
+    confirmText: "Eliminar",
+    cancelText: "Cancelar"
+  });
+
+  if (!confirmed) return;
+
+  try {
+    const res = await fetch(`${API_PROVIDERS}/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    
+    const data = await res.json();
+    
+    if (res.ok) {
+      showSuccess('El proveedor ha sido eliminado');
+      loadProvidersInternal();
+    } else {
+      showError(data.message || "No se pudo eliminar el proveedor");
+    }
+  } catch (err) {
+    showError("Error al eliminar proveedor");
+  }
 };
 
-// ===== FUNCIÓN DE BÚSQUEDA CON PAGINADO =====
+// ===== FUNCIÓN DE BÚSQUEDA =====
+
 const searchProvider = () => {
   const searchInput = document.getElementById("searchInput");
 
   if (!searchInput) {
-    console.error("Elemento searchInput no encontrado");
     return;
   }
 
   const term = searchInput.value.toLowerCase().trim();
 
   if (!originalProviders) {
-    console.error("Array originalProviders no inicializado");
     return;
   }
 
   if (!term) {
     allProviders = [...originalProviders];
   } else {
-    // Filtrar proveedores según el término de búsqueda
     allProviders = originalProviders.filter(provider => {
       const nameMatch = provider.name && provider.name.toLowerCase().includes(term);
       const emailMatch = provider.email && provider.email.toLowerCase().includes(term);
@@ -801,131 +833,102 @@ const searchProvider = () => {
     });
   }
 
-  // Resetear a la primera página después de una búsqueda
   currentPage = 1;
   renderProvidersTable(currentPage);
 };
 
-function disableNativeBrowserValidation() {
-const providerForm = document.getElementById("providerForm");
-if (providerForm) {
-  providerForm.setAttribute("novalidate", "");
-  const inputs = providerForm.querySelectorAll("input");
-  inputs.forEach(input => {
-    input.removeAttribute("required");
-    input.removeAttribute("pattern");
-    input.removeAttribute("minlength");
-  });
-}
-
-// Desactivar validación del formulario de edición
-const editForm = document.getElementById("editForm");
-if (editForm) {
-  editForm.setAttribute("novalidate", "");
-
-  const inputs = editForm.querySelectorAll("input");
-  inputs.forEach(input => {
-    input.removeAttribute("required");
-    input.removeAttribute("pattern");
-    input.removeAttribute("minlength");
-  });
-}
-}
-
-function hideLoadingIndicator() {
-  Swal.close();
-}
+// ===== INICIALIZACIÓN Y EVENTOS =====
 
 // Eventos al cargar el DOM
 document.addEventListener("DOMContentLoaded", () => {
-disableNativeBrowserValidation();
+  disableNativeBrowserValidation();
+  listProviders();
+  setupNumericValidation();
 
-listProviders();
-setupNumericValidation();
+  // Configurar botones principales
+  const mobileAddButton = document.getElementById("mobileAddButton");
+  if (mobileAddButton) {
+    mobileAddButton.onclick = () => openModal('registerModal');
+  }
 
-// Configurar botones y eventos
-const mobileAddButton = document.getElementById("mobileAddButton");
-if (mobileAddButton) {
-  mobileAddButton.onclick = () => openModal('registerModal');
-}
+  const registerButton = document.getElementById("registerButton");
+  if (registerButton) {
+    registerButton.onclick = registerProvider;
+  }
 
-const registerButton = document.getElementById("registerButton");
-if (registerButton) {
-  registerButton.onclick = registerProvider;
-}
+  const updateButton = document.getElementById("updateButton");
+  if (updateButton) {
+    updateButton.onclick = updateProvider;
+  }
 
-const updateButton = document.getElementById("updateButton");
-if (updateButton) {
-  updateButton.onclick = updateProvider;
-}
+  const searchInput = document.getElementById("searchInput");
+  if (searchInput) {
+    searchInput.addEventListener("keyup", searchProvider);
+  }
 
-const searchInput = document.getElementById("searchInput");
-if (searchInput) {
-  searchInput.addEventListener("keyup", searchProvider);
-}
+  // Validación para formulario de registro
+  const nit = document.getElementById("nit");
+  if (nit) {
+    nit.addEventListener("blur", () => validateNIT("nit"));
+  }
 
-// Validación para formulario de registro
-const nit = document.getElementById("nit");
-if (nit) {
-  nit.addEventListener("blur", () => validateNIT("nit"));
-}
+  const company = document.getElementById("company");
+  if (company) {
+    company.addEventListener("blur", () => validateCompany("company"));
+  }
 
-const company = document.getElementById("company");
-if (company) {
-  company.addEventListener("blur", () => validateCompany("company"));
-}
+  const name = document.getElementById("name");
+  if (name) {
+    name.addEventListener("blur", () => validateField("name", "El nombre del contacto es obligatorio."));
+  }
 
-const name = document.getElementById("name");
-if (name) {
-  name.addEventListener("blur", () => validateField("name", "El nombre del contacto es obligatorio."));
-}
+  const contact_phone = document.getElementById("contact_phone");
+  if (contact_phone) {
+    contact_phone.addEventListener("blur", () => validatePhone("contact_phone"));
+  }
 
-const contact_phone = document.getElementById("contact_phone");
-if (contact_phone) {
-  contact_phone.addEventListener("blur", () => validatePhone("contact_phone"));
-}
+  const email = document.getElementById("email");
+  if (email) {
+    email.addEventListener("blur", () => validateEmail("email"));
+  }
 
-const email = document.getElementById("email");
-if (email) {
-  email.addEventListener("blur", () => validateEmail("email"));
-}
+  const editNit = document.getElementById("editNit");
+  if (editNit) {
+    editNit.addEventListener("blur", () => validateNIT("editNit"));
+  }
 
-// Validación para formulario de edición
-const editNit = document.getElementById("editNit");
-if (editNit) {
-  editNit.addEventListener("blur", () => validateNIT("editNit"));
-}
+  const editCompany = document.getElementById("editCompany");
+  if (editCompany) {
+    editCompany.addEventListener("blur", () => validateCompany("editCompany"));
+  }
 
-const editCompany = document.getElementById("editCompany");
-if (editCompany) {
-  editCompany.addEventListener("blur", () => validateCompany("editCompany"));
-}
+  const editName = document.getElementById("editName");
+  if (editName) {
+    editName.addEventListener("blur", () => validateField("editName", "El nombre del contacto es obligatorio."));
+  }
 
-const editName = document.getElementById("editName");
-if (editName) {
-  editName.addEventListener("blur", () => validateField("editName", "El nombre del contacto es obligatorio."));
-}
+  const editContactPhone = document.getElementById("editContactPhone");
+  if (editContactPhone) {
+    editContactPhone.addEventListener("blur", () => validatePhone("editContactPhone"));
+  }
 
-const editContactPhone = document.getElementById("editContactPhone");
-if (editContactPhone) {
-  editContactPhone.addEventListener("blur", () => validatePhone("editContactPhone"));
-}
+  const editEmail = document.getElementById("editEmail");
+  if (editEmail) {
+    editEmail.addEventListener("blur", () => validateEmail("editEmail"));
+  }
 
-const editEmail = document.getElementById("editEmail");
-if (editEmail) {
-  editEmail.addEventListener("blur", () => validateEmail("editEmail"));
-}
-
-const editForm = document.getElementById("editForm");
-if (editForm) {
-  editForm.onsubmit = async (event) => {
-    event.preventDefault();
-    await updateProvider();
-  };
-}
+  const editForm = document.getElementById("editForm");
+  if (editForm) {
+    editForm.onsubmit = async (event) => {
+      event.preventDefault();
+      await updateProvider();
+    };
+  }
 });
 
-// Hacer funciones globales si es necesario
+// ===== FUNCIONES GLOBALES =====
+
+// Hacer funciones globales disponibles
 window.fillEditForm = fillEditForm;
 window.updateProviderStatus = updateProviderStatus;
 window.deleteProvider = deleteProvider;

@@ -19,13 +19,11 @@ class DashboardManager {
     }
 
     init() {
-        console.log('🚀 Inicializando Dashboard ICESOFT...');
         this.loadMockData();
         this.setupEventListeners();
         this.startAnimations();
         this.setupTooltips();
         this.startAutoRefresh();
-        console.log('✅ Dashboard inicializado correctamente');
     }
 
     loadMockData() {
@@ -158,14 +156,7 @@ class DashboardManager {
         const widgets = document.querySelectorAll('.widget');
         widgets.forEach((widget, index) => {
             widget.addEventListener('click', () => {
-                const title = widget.querySelector('.widget-title').textContent;
-                if (title.includes('Ventas')) {
-                    console.log('📊 Navegando a gestión de ventas...');
-                    this.showNotification('Navegando...', 'Redirigiendo a gestión de ventas');
-                } else if (title.includes('Compras')) {
-                    console.log('🛒 Navegando a gestión de compras...');
-                    this.showNotification('Navegando...', 'Redirigiendo a gestión de compras');
-                }
+                // Widget click handling without redirects
             });
         });
 
@@ -173,9 +164,7 @@ class DashboardManager {
         const activities = document.querySelectorAll('.activity-item');
         activities.forEach((activity, index) => {
             activity.addEventListener('click', () => {
-                const title = activity.querySelector('.activity-title').textContent;
-                console.log('📋 Actividad seleccionada:', title);
-                this.showNotification('Actividad', title);
+                // Activity click handling without notifications
             });
         });
     }
@@ -279,8 +268,6 @@ class DashboardManager {
     }
 
     refreshData() {
-        console.log('🔄 Refrescando datos...');
-        
         // Simular pequeños cambios en los datos
         this.data.sales.thisMonth += Math.floor(Math.random() * 500) + 100;
         this.data.sales.transactions += Math.floor(Math.random() * 3) + 1;
@@ -297,8 +284,6 @@ class DashboardManager {
             salesWidget.classList.add('data-updated');
             setTimeout(() => salesWidget.classList.remove('data-updated'), 2000);
         }
-        
-        console.log('✅ Datos actualizados');
     }
 
     updateElement(selector, value) {
@@ -310,8 +295,6 @@ class DashboardManager {
 
     // API pública
     async addSale(amount, client) {
-        console.log(`💰 Agregando nueva venta: ${amount} - ${client}`);
-        
         this.data.sales.thisMonth += amount;
         this.data.sales.transactions += 1;
         
@@ -333,16 +316,9 @@ class DashboardManager {
         
         // Actualizar actividades
         this.refreshActivities();
-        
-        // Mostrar notificación
-        this.showNotification('Venta Registrada', `${amount.toLocaleString()} - ${client}`);
-        
-        console.log(`✅ Venta agregada exitosamente`);
     }
 
     async addPurchase(amount, provider) {
-        console.log(`🛒 Agregando nueva compra: ${amount} - ${provider}`);
-        
         this.data.purchases.thisMonth += amount;
         this.data.purchases.orders += 1;
         
@@ -364,11 +340,6 @@ class DashboardManager {
         
         // Actualizar actividades
         this.refreshActivities();
-        
-        // Mostrar notificación
-        this.showNotification('Compra Registrada', `${amount.toLocaleString()} - ${provider}`);
-        
-        console.log(`✅ Compra agregada exitosamente`);
     }
 
     refreshActivities() {
@@ -411,8 +382,7 @@ class DashboardManager {
 
         // Agregar event listener
         activityDiv.addEventListener('click', () => {
-            console.log('📋 Actividad seleccionada:', activity.title);
-            this.showNotification('Actividad', activity.title);
+            // Activity click handling without notifications
         });
 
         return activityDiv;
@@ -452,16 +422,12 @@ document.addEventListener('DOMContentLoaded', function() {
         addSale: async (amount, client) => {
             if (dashboardManager && amount > 0 && client) {
                 await dashboardManager.addSale(amount, client);
-            } else {
-                console.error('❌ Parámetros inválidos para addSale');
             }
         },
         
         addPurchase: async (amount, provider) => {
             if (dashboardManager && amount > 0 && provider) {
                 await dashboardManager.addPurchase(amount, provider);
-            } else {
-                console.error('❌ Parámetros inválidos para addPurchase');
             }
         },
         
@@ -482,8 +448,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const clients = ['Empresa ABC', 'Corporación XYZ', 'Industrias DEF'];
             const providers = ['Suministros XYZ', 'Proveedores ABC', 'Distribuidora DEF'];
             
-            console.log('🧪 Agregando datos de prueba...');
-            
             // Agregar 2 ventas de prueba
             for (let i = 0; i < 2; i++) {
                 const amount = Math.floor(Math.random() * 3000) + 1000;
@@ -496,22 +460,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const amount = Math.floor(Math.random() * 2000) + 500;
             const provider = providers[Math.floor(Math.random() * providers.length)];
             await dashboard.addPurchase(amount, provider);
-            
-            console.log('✅ Datos de prueba agregados');
-        },
-        
-        showStats: () => {
-            const data = dashboard.getData();
-            if (data) {
-                console.log('📊 ESTADÍSTICAS DEL DASHBOARD:');
-                console.log('================================');
-                console.log(`💰 Ventas: ${data.sales.thisMonth.toLocaleString()}`);
-                console.log(`🛒 Compras: ${data.purchases.thisMonth.toLocaleString()}`);
-                console.log(`📈 Ganancia: ${(data.sales.thisMonth - data.purchases.thisMonth).toLocaleString()}`);
-                console.log(`📋 Transacciones: ${data.sales.transactions}`);
-                console.log(`📦 Órdenes: ${data.purchases.orders}`);
-                console.log(`🎯 Actividades: ${data.activities.length}`);
-            }
         },
         
         exportData: () => {
@@ -528,24 +476,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
-                
-                console.log('📥 Datos exportados exitosamente');
             }
         }
     };
-    
-    // Información de la API
-    console.log('🎉 Dashboard ICESOFT cargado exitosamente!');
-    console.log('📚 API disponible:');
-    console.log('   • dashboard.addSale(amount, client)');
-    console.log('   • dashboard.addPurchase(amount, provider)');
-    console.log('   • dashboard.refresh()');
-    console.log('   • dashboard.getData()');
-    console.log('   • dashboardUtils.addTestData()');
-    console.log('   • dashboardUtils.showStats()');
-    console.log('   • dashboardUtils.exportData()');
-    console.log('');
-    console.log('💡 Ejemplo: await dashboard.addSale(2500, "Empresa ABC");');
 });
 
 // Teclas de acceso rápido
@@ -554,12 +487,6 @@ document.addEventListener('keydown', (event) => {
     if (event.ctrlKey && event.altKey && event.key === 't') {
         event.preventDefault();
         dashboardUtils.addTestData();
-    }
-    
-    // Ctrl + Alt + S: Mostrar estadísticas
-    if (event.ctrlKey && event.altKey && event.key === 's') {
-        event.preventDefault();
-        dashboardUtils.showStats();
     }
     
     // Ctrl + Alt + R: Refrescar
