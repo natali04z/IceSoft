@@ -1,6 +1,6 @@
-const API_PURCHASES = "https://backend-yy4o.onrender.com/api/purchases";
-const API_PRODUCTS = "https://backend-yy4o.onrender.com/api/products";
-const API_PROVIDERS = "https://backend-yy4o.onrender.com/api/providers";
+const API_PURCHASES = "https://backend-delta-sable.vercel.app/api/purchases";
+const API_PRODUCTS = "https://backend-delta-sable.vercel.app/api/products";
+const API_PROVIDERS = "https://backend-delta-sable.vercel.app/api/providers";
 
 let allPurchases = [];
 let originalPurchases = [];

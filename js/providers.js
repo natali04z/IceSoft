@@ -1,7 +1,7 @@
 // ===== CONFIGURACIÓN Y VARIABLES GLOBALES =====
 
 // Endpoints de la API
-const API_PROVIDERS = "https://backend-yy4o.onrender.com/api/providers";
+const API_PROVIDERS = "https://backend-delta-sable.vercel.app/api/providers";
 
 // Variables globales para proveedores y paginación
 let allProviders = [];

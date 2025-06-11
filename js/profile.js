@@ -13,7 +13,7 @@ class UserHeaderIntegrated {
         };
         
         // URLs de la API
-        this.API_BASE_URL = "https://backend-yy4o.onrender.com/api";
+        this.API_BASE_URL = "https://backend-delta-sable.vercel.app/api";
         this.API_PROFILE = `${this.API_BASE_URL}/users/profile/me`;
         
         this.init();

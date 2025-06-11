@@ -1,7 +1,7 @@
 // Endpoints de la API
-const API_URL = "https://backend-yy4o.onrender.com/api/users";
-const API_AUTH = "https://backend-yy4o.onrender.com/api/auth/register";
-const API_ROLES = "https://backend-yy4o.onrender.com/api/roles";
+const API_URL = "https://backend-delta-sable.vercel.app/api/users";
+const API_AUTH = "https://backend-delta-sable.vercel.app/api/auth/register";
+const API_ROLES = "https://backend-delta-sable.vercel.app/api/roles";
 
 // Variables globales para usuarios y paginación
 let allUsers = [];

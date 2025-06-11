@@ -1,4 +1,4 @@
-const API_URL = "https://backend-yy4o.onrender.com/api/roles";
+const API_URL = "https://backend-delta-sable.vercel.app/api/roles";
   
 let allRoles = [];
 let originalRoles = [];
@@ -645,7 +645,7 @@ const loadPermissionsForForm = async () => {
       return;
     }
     
-    const res = await fetch("https://backend-yy4o.onrender.com/api/permissions", {
+    const res = await fetch("https://backend-delta-sable.vercel.app/api/permissions", {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
