@@ -218,7 +218,7 @@ body.menu-collapsed .navLateral {
 /* ===== SCROLLBAR PERSONALIZADO PARA EL MENÚ LATERAL ===== */
 
 .navLateral::-webkit-scrollbar {
-    width: 9px; 
+    width: 8px; 
 }
 
 .navLateral::-webkit-scrollbar-track {
@@ -482,7 +482,7 @@ html, body {
 .main-content::-webkit-scrollbar,
 .dashboard-container::-webkit-scrollbar,
 .container::-webkit-scrollbar {
-    width: 9px; 
+    width: 15px; 
 }
 
 .dashboard-content::-webkit-scrollbar-track,

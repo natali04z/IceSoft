@@ -1,7 +1,7 @@
-const API_SALES = "https://backend-yy4o.onrender.com/api/sales";
-const API_PRODUCTS = "https://backend-yy4o.onrender.com/api/products";
-const API_CUSTOMERS = "https://backend-yy4o.onrender.com/api/customers";
-const API_BRANCHES = "https://backend-yy4o.onrender.com/api/branches";
+const API_SALES = "https://backend-delta-sable.vercel.app/api/sales";
+const API_PRODUCTS = "https://backend-delta-sable.vercel.app/api/products";
+const API_CUSTOMERS = "https://backend-delta-sable.vercel.app/api/customers";
+const API_BRANCHES = "https://backend-delta-sable.vercel.app/api/branches";
 
 // ===== VARIABLES GLOBALES =====
 let allSales = [];

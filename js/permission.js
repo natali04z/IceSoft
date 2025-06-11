@@ -1,4 +1,4 @@
-const API_URL = "https://backend-yy4o.onrender.com/api/permissions";
+const API_URL = "https://backend-delta-sable.vercel.app/api/permissions";
   
 // Variables globales para permisos y paginación
 let allPermissions = [];

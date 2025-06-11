@@ -1,4 +1,4 @@
-const API_CUSTOMERS = "https://backend-yy4o.onrender.com/api/customers";
+const API_CUSTOMERS = "https://backend-delta-sable.vercel.app/api/customers";
 
 // Variables globales para clientes y paginación
 let allCustomers = [];

@@ -1,4 +1,4 @@
-const API_URL = "https://backend-yy4o.onrender.com/api/categories";
+const API_URL = "https://backend-delta-sable.vercel.app/api/categories";
   
 // Variables globales
 let allCategories = [];

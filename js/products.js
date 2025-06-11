@@ -1,5 +1,5 @@
-const API_PRODUCTS = "https://backend-yy4o.onrender.com/api/products";
-const API_CATEGORIES = "https://backend-yy4o.onrender.com/api/categories";
+const API_PRODUCTS = "https://backend-delta-sable.vercel.app/api/products";
+const API_CATEGORIES = "https://backend-delta-sable.vercel.app/api/categories";
 
 // Variables globales para productos y paginación
 let allProducts = [];
