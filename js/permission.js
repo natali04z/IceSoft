@@ -495,7 +495,7 @@ const registerPermission = async () => {
   }
 };
 
-// Llenar formulario de edición
+// Llenar formulario de edición - VERSIÓN CORREGIDA
 const fillEditForm = async (id) => {
   const token = localStorage.getItem("token");
   if (!token) {
@@ -504,6 +504,7 @@ const fillEditForm = async (id) => {
   }
 
   try {
+    console.log("Cargando permiso con ID:", id); // Debug
     clearValidationErrors('editForm');
     
     const res = await fetch(`${API_URL}/${id}`, {
@@ -520,20 +521,47 @@ const fillEditForm = async (id) => {
       return;
     }
 
-    const permission = await res.json();
+    const data = await res.json();
+    
+    // Manejo flexible de la respuesta - puede venir en diferentes formatos
+    let permission;
+    
+    if (data && data.permission) {
+      // Si viene dentro de una propiedad 'permission'
+      permission = data.permission;
+    } else if (data && data.data) {
+      // Si viene dentro de una propiedad 'data'
+      permission = data.data;
+    } else if (data && data._id) {
+      // Si la respuesta es directamente el objeto del permiso
+      permission = data;
+    } else {
+      console.error("Formato de respuesta no esperado:", data);
+      showError("Error: formato de datos no válido.");
+      return;
+    }
 
+    // Verificar que tenemos los elementos del DOM
     const editIdElement = document.getElementById("editId");
     const editNameElement = document.getElementById("editName");
     const editDescriptionElement = document.getElementById("editDescription");
     const editStatusElement = document.getElementById("editStatus");
     
-    if (editIdElement) editIdElement.value = permission._id;
+    if (!editIdElement || !editNameElement) {
+      console.error("Elementos del formulario no encontrados en el DOM");
+      showError("Error: elementos del formulario no encontrados.");
+      return;
+    }
+    
+    // Llenar los campos del formulario
+    if (editIdElement) editIdElement.value = permission._id || permission.id || "";
     if (editNameElement) editNameElement.value = permission.name || "";
     if (editDescriptionElement) editDescriptionElement.value = permission.description || "";
     if (editStatusElement) editStatusElement.value = permission.status || "active";
 
     openModal('editModal');
   } catch (err) {
+    console.error("Error en fillEditForm:", err);
     showError("Error al cargar el permiso.");
   }
 };
