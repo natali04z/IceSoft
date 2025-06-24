@@ -1,6 +1,6 @@
-const API_PURCHASES = "https://backend-delta-sable.vercel.app/api/purchases";
-const API_PRODUCTS = "https://backend-delta-sable.vercel.app/api/products";
-const API_PROVIDERS = "https://backend-delta-sable.vercel.app/api/providers";
+const API_PURCHASES = "https://backend-alpha-orpin-58.vercel.app/api/purchases";
+const API_PRODUCTS = "https://backend-alpha-orpin-58.vercel.app/api/products";
+const API_PROVIDERS = "https://backend-alpha-orpin-58.vercel.app/api/providers";
 
 let allPurchases = [];
 let originalPurchases = [];
@@ -825,12 +825,57 @@ const renderPaginationControls = () => {
   prevBtn.onclick = () => changePage(currentPage - 1);
   container.appendChild(prevBtn);
 
-  for (let i = 1; i <= totalPages; i++) {
+  // Lógica para mostrar máximo 5 páginas visibles
+  const maxVisiblePages = 5;
+  let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+  let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+  
+  // Ajustar startPage si estamos cerca del final
+  if (endPage - startPage < maxVisiblePages - 1) {
+    startPage = Math.max(1, endPage - maxVisiblePages + 1);
+  }
+  
+  // Mostrar página 1 si no está en el rango visible
+  if (startPage > 1) {
+    const btn = document.createElement("div");
+    btn.classList.add("page-number");
+    btn.innerText = "1";
+    btn.onclick = () => changePage(1);
+    container.appendChild(btn);
+    
+    // Agregar puntos suspensivos si hay gap
+    if (startPage > 2) {
+      const dots = document.createElement("div");
+      dots.classList.add("page-dots");
+      dots.innerText = "...";
+      container.appendChild(dots);
+    }
+  }
+  
+  // Mostrar páginas en el rango visible
+  for (let i = startPage; i <= endPage; i++) {
     const btn = document.createElement("div");
     btn.classList.add("page-number");
     if (i === currentPage) btn.classList.add("active");
     btn.innerText = i;
     btn.onclick = () => changePage(i);
+    container.appendChild(btn);
+  }
+  
+  // Mostrar última página si no está en el rango visible
+  if (endPage < totalPages) {
+    // Agregar puntos suspensivos si hay gap
+    if (endPage < totalPages - 1) {
+      const dots = document.createElement("div");
+      dots.classList.add("page-dots");
+      dots.innerText = "...";
+      container.appendChild(dots);
+    }
+    
+    const btn = document.createElement("div");
+    btn.classList.add("page-number");
+    btn.innerText = totalPages;
+    btn.onclick = () => changePage(totalPages);
     container.appendChild(btn);
   }
 

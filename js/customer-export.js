@@ -86,13 +86,37 @@ function getFilteredCustomersData(searchTerm = '', dateFrom = '', dateTo = '', s
 
   if (dateFrom || dateTo) {
     filteredCustomers = filteredCustomers.filter(c => {
-      const customerDate = new Date(c.createdAt || c.created_at || c.fechaCreacion);
-      if (isNaN(customerDate.getTime())) return false;
+      let customerDate = null;
+      const rawDate = c.createdAt || c.created_at || c.fechaCreacion;
       
-      if (dateFrom && customerDate < new Date(dateFrom)) return false;
-      if (dateTo && customerDate > new Date(dateTo)) return false;
+      if (!rawDate) return false;
       
-      return true;
+      try {
+        // Si viene en formato YYYY-MM-DD, parsearlo correctamente
+        if (typeof rawDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(rawDate)) {
+          const [year, month, day] = rawDate.split('-').map(Number);
+          customerDate = new Date(year, month - 1, day);
+        } else {
+          customerDate = new Date(rawDate);
+        }
+        
+        if (isNaN(customerDate.getTime())) return false;
+        
+        if (dateFrom) {
+          const fromDate = new Date(dateFrom);
+          if (customerDate < fromDate) return false;
+        }
+        
+        if (dateTo) {
+          const toDate = new Date(dateTo);
+          if (customerDate > toDate) return false;
+        }
+        
+        return true;
+      } catch (e) {
+        console.warn('Error al procesar fecha del cliente:', rawDate, e);
+        return false;
+      }
     });
   }
 
@@ -153,18 +177,21 @@ function prepareCustomersExportData(customers) {
       'inactive': 'Inactivo'
     };
     
-    const formatDateFunc = window.formatDateForDisplay || function(date) {
+    const formatDateFunc = function(date) {
       if (!date) return "Fecha no disponible";
       
       try {
+        // Si ya está en formato DD/MM/YYYY, devolverlo tal como está
         if (typeof date === 'string' && /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(date)) {
           return date;
         }
         
-        if (typeof date === 'string' && (date === "Fecha no disponible" || date === "Invalid Date")) {
-          return date;
+        // Si es "Invalid Date" o fecha no disponible, devolverlo
+        if (typeof date === 'string' && (date === "Fecha no disponible" || date === "Invalid Date" || date.toLowerCase().includes('invalid'))) {
+          return "Fecha no disponible";
         }
         
+        // Si viene en formato YYYY-MM-DD, parsearlo correctamente
         if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
           const [year, month, day] = date.split('-').map(Number);
           const dateObj = new Date(year, month - 1, day);
@@ -173,19 +200,31 @@ function prepareCustomersExportData(customers) {
           }
         }
         
+        // Si viene en formato ISO completo (YYYY-MM-DDTHH:MM:SS.sssZ)
+        if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(date)) {
+          const dateObj = new Date(date);
+          if (!isNaN(dateObj.getTime())) {
+            return dateObj.toLocaleDateString('es-CO');
+          }
+        }
+        
+        // Si es un objeto Date válido
         if (date instanceof Date && !isNaN(date.getTime())) {
           return date.toLocaleDateString('es-CO');
         }
         
+        // Intentar parsear como Date genérico
         const dateObj = new Date(date);
         if (!isNaN(dateObj.getTime())) {
           return dateObj.toLocaleDateString('es-CO');
         }
         
-        return date.toString();
+        // Si todo falla, devolver el string o fecha no disponible
+        return "Fecha no disponible";
         
       } catch (e) {
-        return date ? date.toString() : "Fecha no disponible";
+        console.warn('Error al formatear fecha:', date, e);
+        return "Fecha no disponible";
       }
     };
     
@@ -411,7 +450,7 @@ async function exportCustomersToPDF(filters = {}, selectedCustomers = []) {
       doc.setTextColor(100, 100, 100);
       
       const footerY = pageHeight - 15;
-      doc.text('ICESOFT - Sistema de Gestión de Clientes', margin, footerY);
+      doc.text('ICESOFT ', margin, footerY);
       doc.text(`Página ${i} de ${totalPages}`, pageWidth - margin, footerY, { align: 'right' });
       
       doc.setFontSize(7);
