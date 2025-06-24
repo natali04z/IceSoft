@@ -1,5 +1,5 @@
 // Endpoints de la API
-const API_URL = "https://backend-delta-sable.vercel.app/api";
+const API_URL = "https://backend-alpha-orpin-58.vercel.app/api";
 const API_VERIFY_EMAIL = `${API_URL}/auth/verify-email`;
 const API_RESET_PASSWORD = `${API_URL}/auth/reset-password`;
 

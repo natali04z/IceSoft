@@ -34,15 +34,7 @@ function loadExportLibraries() {
       document.head.appendChild(autoTableScript);
     }
 
-    // Cargar SheetJS para Excel
-    if (!window.XLSX) {
-      scriptsToLoad++;
-      const xlsxScript = document.createElement('script');
-      xlsxScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-      xlsxScript.onload = checkComplete;
-      xlsxScript.onerror = () => reject(new Error('Error al cargar XLSX'));
-      document.head.appendChild(xlsxScript);
-    }
+
 
     if (scriptsToLoad === 0) {
       resolve();
@@ -165,11 +157,7 @@ function prepareExportData(purchases) {
     // Calcular cantidad total de productos
     const totalQuantity = products.reduce((sum, item) => sum + (item.quantity || 0), 0);
     
-    // Lista detallada para Excel
-    const productsDetailedList = products.map(item => {
-      const productName = item.product?.name || getProductNameById(item.product?._id || item.product);
-      return `${productName} - Cant: ${item.quantity} - Precio: ${formatCurrency(item.purchase_price)} - Total: ${formatCurrency(item.total)}`;
-    }).join(' | ');
+
     
     const statusTranslation = {
       'active': 'Activa',
@@ -182,7 +170,6 @@ function prepareExportData(purchases) {
       fecha: formatDate(purchaseDate),
       productos: productsList,
       cantidad: totalQuantity,
-      productosDetallados: productsDetailedList,
       total: total,
       totalFormatted: formatCurrency(total),
       estado: statusTranslation[status] || status,
@@ -366,12 +353,12 @@ async function exportToPDF(filters = {}) {
             valign: 'middle'
           },
           1: { 
-            cellWidth: 35, 
+            cellWidth: 30, 
             halign: 'left',
             valign: 'middle'
           },
           2: { 
-            cellWidth: 20, 
+            cellWidth: 27, 
             halign: 'center',
             valign: 'middle'
           },
@@ -382,7 +369,7 @@ async function exportToPDF(filters = {}) {
             fontSize: 7
           },
           4: { 
-            cellWidth: 25, 
+            cellWidth: 22, 
             halign: 'center',
             valign: 'middle'
           },
@@ -397,11 +384,10 @@ async function exportToPDF(filters = {}) {
             valign: 'middle'
           }
         },
-        margin: { left: margin, right: margin },
         alternateRowStyles: {
           fillColor: [248, 249, 250]
         },
-        tableWidth: 'auto',
+        tableWidth: 174, // Suma exacta: 15+30+27+35+22+25+20 = 174
         tableLineColor: [200, 200, 200],
         tableLineWidth: 0.1,
         didParseCell: function(data) {
@@ -413,8 +399,8 @@ async function exportToPDF(filters = {}) {
           }
         },
         margin: { 
-          left: (pageWidth - 175) / 2,
-          right: (pageWidth - 175) / 2
+          left: (pageWidth - 174) / 2,
+          right: (pageWidth - 174) / 2
         }
       });
       
@@ -441,7 +427,7 @@ async function exportToPDF(filters = {}) {
       doc.setTextColor(100, 100, 100);
       
       const footerY = pageHeight - 15;
-      doc.text('ICESOFT - Sistema de Gestión', margin, footerY);
+      doc.text('ICESOFT', margin, footerY);
       doc.text(`Página ${i} de ${totalPages}`, pageWidth - margin, footerY, { align: 'right' });
       
       doc.setFontSize(7);
@@ -468,326 +454,6 @@ async function exportToPDF(filters = {}) {
   }
 }
 
-// ===== EXPORTACIÓN A EXCEL CON DISEÑO VISUAL MEJORADO =====
-async function exportToExcel(filters = {}) {
-  try {
-    showLoadingIndicator();
-    await loadExportLibraries();
-    
-    // Obtener datos filtrados
-    const filteredPurchases = getFilteredPurchasesData(
-      filters.searchTerm,
-      filters.dateFrom,
-      filters.dateTo,
-      filters.providerFilter,
-      filters.statusFilter
-    );
-    
-    const exportData = prepareExportData(filteredPurchases);
-    
-    // Crear nuevo workbook
-    const wb = XLSX.utils.book_new();
-    
-    // ===== HOJA 1: RESUMEN EJECUTIVO CON DISEÑO PROFESIONAL =====
-    const currentDate = new Date();
-    
-    // Crear array de datos con formato estructurado
-    const summaryData = [];
-    
-    // ENCABEZADO PRINCIPAL
-    summaryData.push(['REPORTE DE COMPRAS - ICESOFT', '', '', '']);
-    summaryData.push(['RESUMEN EJECUTIVO', '', '', '']);
-    summaryData.push(['', '', '', '']);
-    
-    // INFORMACIÓN GENERAL EN FORMATO DE TABLA
-    summaryData.push(['INFORMACIÓN GENERAL', '', '', '']);
-    summaryData.push(['Sistema:', 'ICESOFT - Gestión Empresarial', '', '']);
-    summaryData.push(['Fecha de generación:', currentDate.toLocaleDateString('es-ES'), '', '']);
-    summaryData.push(['Hora de generación:', currentDate.toLocaleTimeString('es-ES'), '', '']);
-    summaryData.push(['Total de registros:', exportData.length, '', '']);
-    summaryData.push(['', '', '', '']);
-    
-    // FILTROS APLICADOS
-    summaryData.push(['FILTROS APLICADOS', '', '', '']);
-    if (filters.searchTerm) {
-      summaryData.push(['Término de búsqueda:', filters.searchTerm, '', '']);
-    }
-    if (filters.dateFrom || filters.dateTo) {
-      const dateRange = `${filters.dateFrom || 'Sin límite'} - ${filters.dateTo || 'Sin límite'}`;
-      summaryData.push(['Rango de fechas:', dateRange, '', '']);
-    }
-    if (filters.providerFilter) {
-      summaryData.push(['Proveedor:', getProviderNameById(filters.providerFilter), '', '']);
-    }
-    if (filters.statusFilter) {
-      const statusNames = {
-        'active': 'Activa',
-        'inactive': 'Inactiva'
-      };
-      summaryData.push(['Estado:', statusNames[filters.statusFilter] || filters.statusFilter, '', '']);
-    }
-    summaryData.push(['', '', '', '']);
-    
-    // RESUMEN FINANCIERO CON FORMATO DESTACADO
-    const totalAmount = exportData.reduce((sum, item) => sum + item.total, 0);
-    const avgAmount = totalAmount / (exportData.length || 1);
-    
-    summaryData.push(['RESUMEN FINANCIERO', '', '', '']);
-    summaryData.push(['Total General:', '', formatCurrency(totalAmount), '']);
-    summaryData.push(['Promedio por Compra:', '', formatCurrency(avgAmount), '']);
-    summaryData.push(['', '', '', '']);
-    
-    // ESTADÍSTICAS POR ESTADO
-    const activeCount = exportData.filter(item => item.estado === 'Activa').length;
-    const inactiveCount = exportData.filter(item => item.estado === 'Inactiva').length;
-    const activeRate = ((activeCount / exportData.length) * 100).toFixed(1);
-    
-    summaryData.push(['ESTADÍSTICAS POR ESTADO', '', '', '']);
-    summaryData.push(['Estado', 'Cantidad', 'Porcentaje', '']);
-    summaryData.push(['Activas', activeCount, `${((activeCount / exportData.length) * 100).toFixed(1)}%`, '']);
-    summaryData.push(['Inactivas', inactiveCount, `${((inactiveCount / exportData.length) * 100).toFixed(1)}%`, '']);
-    summaryData.push(['', '', '', '']);
-    summaryData.push(['TASA DE ACTIVIDAD:', '', `${activeRate}%`, '']);
-    
-    // Crear hoja de resumen
-    const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
-    
-    // APLICAR ESTILOS PROFESIONALES AL RESUMEN
-    const summaryStyles = {};
-    
-    // Combinar celdas para el título
-    summaryWs['!merges'] = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } }, // Título principal
-      { s: { r: 1, c: 0 }, e: { r: 1, c: 3 } }, // Subtítulo
-    ];
-    
-    // Configurar ancho de columnas
-    summaryWs['!cols'] = [
-      { width: 25 }, // Columna A - Etiquetas
-      { width: 35 }, // Columna B - Valores
-      { width: 20 }, // Columna C - Montos/Porcentajes
-      { width: 15 }  // Columna D - Extra
-    ];
-    
-    XLSX.utils.book_append_sheet(wb, summaryWs, 'Resumen Ejecutivo');
-    
-    // ===== HOJA 2: DATOS PRINCIPALES CON FORMATO PROFESIONAL =====
-    if (exportData.length > 0) {
-      const detailData = exportData.map((purchase, index) => ({
-        'ID': purchase.id,
-        'Proveedor': purchase.proveedor,
-        'Fecha': purchase.fecha,
-        'Productos': purchase.productosDetallados,
-        'Items': purchase.productCount,
-        'Cantidad': purchase.cantidad,
-        'Total': purchase.total,
-        'Estado': purchase.estado,
-        'Observaciones': purchase.estado === 'Activa' ? 'Compra vigente' : 
-                        purchase.estado === 'Inactiva' ? 'Requiere revisión' : 'En proceso'
-      }));
-      
-      const detailWs = XLSX.utils.json_to_sheet(detailData);
-      
-      // Configurar ancho de columnas optimizado
-      detailWs['!cols'] = [
-        { width: 12 }, // ID
-        { width: 25 }, // Proveedor
-        { width: 12 }, // Fecha
-        { width: 40 }, // Productos
-        { width: 8 },  // Items
-        { width: 10 }, // Cantidad
-        { width: 15 }, // Total
-        { width: 12 }, // Estado
-        { width: 20 }  // Observaciones
-      ];
-      
-      XLSX.utils.book_append_sheet(wb, detailWs, 'Datos Principales');
-    }
-    
-    // ===== HOJA 3: ANÁLISIS POR PROVEEDOR CON GRÁFICOS VISUALES =====
-    if (exportData.length > 0) {
-      const providerStats = {};
-      
-      exportData.forEach(purchase => {
-        const provider = purchase.proveedor;
-        if (!providerStats[provider]) {
-          providerStats[provider] = {
-            totalCompras: 0,
-            montoTotal: 0,
-            comprasActivas: 0,
-            comprasInactivas: 0,
-            productos: new Set()
-          };
-        }
-        
-        providerStats[provider].totalCompras++;
-        providerStats[provider].montoTotal += purchase.total;
-        
-        if (purchase.productItems && Array.isArray(purchase.productItems)) {
-          purchase.productItems.forEach(product => {
-            const productName = product.product?.name || getProductNameById(product.product?._id || product.product);
-            providerStats[provider].productos.add(productName);
-          });
-        }
-        
-        switch(purchase.estado) {
-          case 'Activa':
-            providerStats[provider].comprasActivas++;
-            break;
-          case 'Inactiva':
-            providerStats[provider].comprasInactivas++;
-            break;
-        }
-      });
-      
-      const totalAmount = exportData.reduce((sum, item) => sum + item.total, 0);
-      
-      const providerAnalysis = Object.entries(providerStats).map(([provider, stats]) => {
-        const activeRate = ((stats.comprasActivas / stats.totalCompras) * 100).toFixed(1);
-        const participation = ((stats.montoTotal / totalAmount) * 100).toFixed(1);
-        
-        return {
-          'Proveedor': provider,
-          'Total Compras': stats.totalCompras,
-          'Monto Total': stats.montoTotal,
-          'Activas': stats.comprasActivas,
-          'Inactivas': stats.comprasInactivas,
-          'Promedio/Compra': Math.round(stats.montoTotal / stats.totalCompras),
-          'Productos Únicos': stats.productos.size,
-          '% Participación': `${participation}%`,
-          'Tasa Actividad': `${activeRate}%`,
-          'Calificación': activeRate >= 80 ? 'EXCELENTE' : 
-                           activeRate >= 60 ? 'BUENO' : 
-                           activeRate >= 40 ? 'REGULAR' : 'MEJORAR'
-        };
-      });
-      
-      // Ordenar por monto total descendente
-      providerAnalysis.sort((a, b) => b['Monto Total'] - a['Monto Total']);
-      
-      const providerWs = XLSX.utils.json_to_sheet(providerAnalysis);
-      
-      // Configurar anchos de columna
-      providerWs['!cols'] = [
-        { width: 25 }, // Proveedor
-        { width: 12 }, // Total Compras
-        { width: 15 }, // Monto Total
-        { width: 12 }, // Activas
-        { width: 12 }, // Inactivas
-        { width: 15 }, // Promedio
-        { width: 15 }, // Productos Únicos
-        { width: 15 }, // Participación
-        { width: 12 }, // Tasa Actividad
-        { width: 15 }  // Calificación
-      ];
-      
-      XLSX.utils.book_append_sheet(wb, providerWs, 'Análisis Proveedores');
-    }
-    
-    // ===== HOJA 4: DASHBOARD DE TENDENCIAS =====
-    if (exportData.length > 0) {
-      // Crear encabezado del dashboard
-      const dashboardData = [];
-      dashboardData.push(['DASHBOARD DE TENDENCIAS TEMPORALES', '', '', '', '', '']);
-      dashboardData.push(['', '', '', '', '', '']);
-      
-      // Agregar análisis mensual
-      const monthlyStats = {};
-      exportData.forEach(purchase => {
-        const date = new Date(purchase.rawDate);
-        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-        const monthName = date.toLocaleDateString('es-ES', { year: 'numeric', month: 'long' });
-        
-        if (!monthlyStats[monthKey]) {
-          monthlyStats[monthKey] = {
-            name: monthName,
-            compras: 0,
-            total: 0,
-            activas: 0,
-            inactivas: 0
-          };
-        }
-        
-        monthlyStats[monthKey].compras++;
-        monthlyStats[monthKey].total += purchase.total;
-        if (purchase.estado === 'Activa') monthlyStats[monthKey].activas++;
-        if (purchase.estado === 'Inactiva') monthlyStats[monthKey].inactivas++;
-      });
-      
-      // Encabezados de la tabla
-      dashboardData.push(['Período', 'Compras', 'Total', 'Activas', 'Inactivas', 'Tasa Actividad', 'Rendimiento']);
-      
-      const trendsData = Object.entries(monthlyStats)
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([month, stats]) => {
-          const activeRate = ((stats.activas / stats.compras) * 100).toFixed(1);
-          const performance = stats.compras > 10 ? 'ALTO' : 
-                            stats.compras > 5 ? 'MEDIO' : 
-                            'BAJO';
-          
-          return [
-            stats.name,
-            stats.compras,
-            stats.total,
-            stats.activas,
-            stats.inactivas,
-            `${activeRate}%`,
-            performance
-          ];
-        });
-      
-      // Agregar datos a la tabla
-      trendsData.forEach(row => dashboardData.push(row));
-      
-      // Agregar resumen final
-      dashboardData.push(['', '', '', '', '', '', '']);
-      dashboardData.push(['RESUMEN GENERAL', '', '', '', '', '', '']);
-      
-      const totalCompras = trendsData.reduce((sum, row) => sum + row[1], 0);
-      const totalMonto = trendsData.reduce((sum, row) => sum + row[2], 0);
-      const totalActivas = trendsData.reduce((sum, row) => sum + row[3], 0);
-      const promedioMensual = Math.round(totalCompras / trendsData.length);
-      
-      dashboardData.push(['Total Períodos Analizados:', trendsData.length, '', '', '', '', '']);
-      dashboardData.push(['Promedio Compras/Mes:', promedioMensual, '', '', '', '', '']);
-      dashboardData.push(['Mejor Período:', trendsData.sort((a,b) => b[1] - a[1])[0][0], '', '', '', '', '']);
-      
-      const trendsWs = XLSX.utils.aoa_to_sheet(dashboardData);
-      
-      // Configurar anchos
-      trendsWs['!cols'] = [
-        { width: 20 }, // Período
-        { width: 10 }, // Compras
-        { width: 15 }, // Total
-        { width: 12 }, // Activas
-        { width: 12 }, // Inactivas
-        { width: 12 }, // Tasa Actividad
-        { width: 15 }  // Rendimiento
-      ];
-      
-      // Combinar celdas para el título
-      trendsWs['!merges'] = [
-        { s: { r: 0, c: 0 }, e: { r: 0, c: 6 } }
-      ];
-      
-      XLSX.utils.book_append_sheet(wb, trendsWs, 'Tendencias');
-    }
-    
-    // ===== GUARDAR ARCHIVO CON NOMBRE DESCRIPTIVO =====
-    const timestamp = new Date().toISOString().slice(0,16).replace(/[-:]/g, '').replace('T', '_');
-    const fileName = `Compras_Reporte_Ejecutivo_${timestamp}.xlsx`;
-    
-    XLSX.writeFile(wb, fileName);
-    
-    hideLoadingIndicator();
-    showSuccess(`Archivo Excel generado exitosamente: ${fileName}`);
-    
-  } catch (error) {
-    hideLoadingIndicator();
-    showError('Error al generar Excel: ' + error.message);
-    console.error('Error completo:', error);
-  }
-}
 
 // ===== MODAL DE FILTROS PARA EXPORTACIÓN MEJORADO =====
 function showExportModal() {
@@ -855,9 +521,6 @@ function showExportModal() {
             </button>
             <button type="button" class="add-button pdf-button" onclick="executeExport('pdf')">
               Exportar PDF
-            </button>
-            <button type="button" class="add-button excel-button" onclick="executeExport('excel')">
-              Exportar Excel
             </button>
           </div>
         </div>
@@ -952,8 +615,6 @@ function executeExport(type) {
   
   if (type === 'pdf') {
     exportToPDF(filters);
-  } else if (type === 'excel') {
-    exportToExcel(filters);
   }
   
   closeExportModal();
@@ -972,7 +633,6 @@ window.showExportModal = showExportModal;
 window.closeExportModal = closeExportModal;
 window.executeExport = executeExport;
 window.exportToPDF = exportToPDF;
-window.exportToExcel = exportToExcel;
 
 // Agregar estilos al documento
 if (!document.getElementById('export-styles')) {

@@ -1,5 +1,5 @@
-const API_PRODUCTS = "https://backend-delta-sable.vercel.app/api/products";
-const API_CATEGORIES = "https://backend-delta-sable.vercel.app/api/categories";
+const API_PRODUCTS = "https://backend-alpha-orpin-58.vercel.app/api/products";
+const API_CATEGORIES = "https://backend-alpha-orpin-58.vercel.app/api/categories";
 
 // Variables globales para productos y paginación
 let allProducts = [];
@@ -253,7 +253,7 @@ const formatPrice = (price) => {
   return `$${parseFloat(price).toLocaleString('es-CO')}`;
 };
 
-// ✅ NUEVA IMPLEMENTACIÓN - usando la función helper para DD/MM/YYYY
+// Usando la función helper para DD/MM/YYYY
 const formatDate = (dateString) => {
   return formatDateForDisplay(dateString);
 };
@@ -296,7 +296,7 @@ const renderProductsTable = (page = 1) => {
       const productId = product._id || "";
       const displayId = product.id || productId || `Pr${String(index + 1).padStart(2, '0')}`;
       
-      // ✅ NUEVA IMPLEMENTACIÓN - usando la función helper para formatear fechas
+      // Usando la función helper para formatear fechas
       const formattedBatchDate = formatDate(product.batchDate);
       const formattedExpirationDate = formatDate(product.expirationDate);
       const formattedPrice = product.formattedPrice || formatPrice(product.price);
@@ -366,12 +366,57 @@ const renderPaginationControls = () => {
   prevBtn.onclick = () => changePage(currentPage - 1);
   container.appendChild(prevBtn);
 
-  for (let i = 1; i <= totalPages; i++) {
+  // Lógica para mostrar máximo 5 páginas visibles
+  const maxVisiblePages = 5;
+  let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+  let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+  
+  // Ajustar startPage si estamos cerca del final
+  if (endPage - startPage < maxVisiblePages - 1) {
+    startPage = Math.max(1, endPage - maxVisiblePages + 1);
+  }
+  
+  // Mostrar página 1 si no está en el rango visible
+  if (startPage > 1) {
+    const btn = document.createElement("div");
+    btn.classList.add("page-number");
+    btn.innerText = "1";
+    btn.onclick = () => changePage(1);
+    container.appendChild(btn);
+    
+    // Agregar puntos suspensivos si hay gap
+    if (startPage > 2) {
+      const dots = document.createElement("div");
+      dots.classList.add("page-dots");
+      dots.innerText = "...";
+      container.appendChild(dots);
+    }
+  }
+  
+  // Mostrar páginas en el rango visible
+  for (let i = startPage; i <= endPage; i++) {
     const btn = document.createElement("div");
     btn.classList.add("page-number");
     if (i === currentPage) btn.classList.add("active");
     btn.innerText = i;
     btn.onclick = () => changePage(i);
+    container.appendChild(btn);
+  }
+  
+  // Mostrar última página si no está en el rango visible
+  if (endPage < totalPages) {
+    // Agregar puntos suspensivos si hay gap
+    if (endPage < totalPages - 1) {
+      const dots = document.createElement("div");
+      dots.classList.add("page-dots");
+      dots.innerText = "...";
+      container.appendChild(dots);
+    }
+    
+    const btn = document.createElement("div");
+    btn.classList.add("page-number");
+    btn.innerText = totalPages;
+    btn.onclick = () => changePage(totalPages);
     container.appendChild(btn);
   }
 
@@ -555,7 +600,7 @@ const listProducts = async () => {
 
 // ===== FUNCIONES DE OPERACIONES CRUD =====
 
-// Registrar producto
+// Registrar producto - VERSIÓN ACTUALIZADA
 const registerProduct = async () => {
   const token = localStorage.getItem("token");
   if (!token) {
@@ -570,7 +615,14 @@ const registerProduct = async () => {
   const expirationDateValid = validateDate("expirationDate");
   const dateRangeValid = validateDateRange("batchDate", "expirationDate");
 
-  if (!nameValid || !categoryValid || !priceValid || !batchDateValid || !expirationDateValid || !dateRangeValid) {
+  // ⭐ NUEVO: Validar stock solo si se proporciona
+  const stockField = document.getElementById("stock");
+  let stockValid = true;
+  if (stockField && stockField.value.trim()) {
+    stockValid = validateStock("stock");
+  }
+
+  if (!nameValid || !categoryValid || !priceValid || !batchDateValid || !expirationDateValid || !dateRangeValid || !stockValid) {
     return;
   }
   
@@ -580,6 +632,22 @@ const registerProduct = async () => {
   const batchDate = document.getElementById("batchDate").value;
   const expirationDate = document.getElementById("expirationDate").value;
 
+  const requestBody = { 
+    name, 
+    category, 
+    price, 
+    batchDate,
+    expirationDate
+  };
+
+  // Solo agregar stock si se proporciona
+  if (stockField && stockField.value.trim()) {
+    const stock = parseInt(stockField.value);
+    if (!isNaN(stock) && stock >= 0) {
+      requestBody.stock = stock;
+    }
+  }
+
   try {
     const res = await fetch(API_PRODUCTS, {
       method: "POST",
@@ -587,13 +655,7 @@ const registerProduct = async () => {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`
       },
-      body: JSON.stringify({ 
-        name, 
-        category, 
-        price, 
-        batchDate,
-        expirationDate
-      })
+      body: JSON.stringify(requestBody)
     });
     const data = await res.json();
     if (res.status === 201 || res.ok) {
@@ -620,7 +682,7 @@ const registerProduct = async () => {
   }
 };
 
-// Llenar formulario de edición de producto
+// Llenar formulario de edición de producto - VERSIÓN ACTUALIZADA
 const fillEditForm = async (id) => {
   const token = localStorage.getItem("token");
   if (!token) {
@@ -650,8 +712,13 @@ const fillEditForm = async (id) => {
     document.getElementById("editName").value = product.name || "";
     document.getElementById("editCategory").value = product.category?._id || "";
     document.getElementById("editPrice").value = product.price || "";
+    
+    const editStockField = document.getElementById("editStock");
+    if (editStockField) {
+      editStockField.value = product.stock || "";
+    }
    
-    // ✅ NUEVA IMPLEMENTACIÓN - manejo de fechas mejorado
+    // Manejo de fechas mejorado
     if (product.batchDate) {
       // Si viene en formato ISO, convertir a YYYY-MM-DD para el input
       const batchDate = new Date(product.batchDate);
@@ -679,7 +746,7 @@ const fillEditForm = async (id) => {
   }
 };
 
-// Actualizar producto
+// Actualizar producto - VERSIÓN ACTUALIZADA
 const updateProduct = async () => {
   const token = localStorage.getItem("token");
   if (!token) {
@@ -694,7 +761,13 @@ const updateProduct = async () => {
   const expirationDateValid = validateDate("editExpirationDate");
   const dateRangeValid = validateDateRange("editBatchDate", "editExpirationDate");
 
-  if (!nameValid || !categoryValid || !priceValid || !batchDateValid || !expirationDateValid || !dateRangeValid) {
+  const editStockField = document.getElementById("editStock");
+  let stockValid = true;
+  if (editStockField && editStockField.value.trim()) {
+    stockValid = validateStock("editStock");
+  }
+
+  if (!nameValid || !categoryValid || !priceValid || !batchDateValid || !expirationDateValid || !dateRangeValid || !stockValid) {
     return;
   }
 
@@ -705,6 +778,22 @@ const updateProduct = async () => {
   const batchDate = document.getElementById("editBatchDate").value;
   const expirationDate = document.getElementById("editExpirationDate").value;
 
+  const requestBody = { 
+    name, 
+    category, 
+    price,
+    batchDate,
+    expirationDate
+  };
+
+  // Solo agregar stock si se proporciona
+  if (editStockField && editStockField.value.trim()) {
+    const stock = parseInt(editStockField.value);
+    if (!isNaN(stock) && stock >= 0) {
+      requestBody.stock = stock;
+    }
+  }
+
   try {
     const res = await fetch(`${API_PRODUCTS}/${productId}`, {
       method: "PUT",
@@ -712,18 +801,18 @@ const updateProduct = async () => {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ 
-        name, 
-        category, 
-        price,
-        batchDate,
-        expirationDate
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     const data = await res.json();
     if (res.ok) {
-      showSuccess('El producto ha sido actualizado');
+      let successMessage = 'El producto ha sido actualizado';
+      
+      if (data.stockChange) {
+        successMessage += `. ${data.stockChange.message}`;
+      }
+      
+      showSuccess(successMessage);
       
       // Mostrar alerta de vencimiento si existe
       if (data.expirationAlert && typeof showWarning === 'function') {
@@ -957,6 +1046,15 @@ function initializeValidationEvents() {
   if (priceField) {
     priceField.addEventListener("blur", () => validatePrice("price"));
   }
+
+  const stockField = document.getElementById("stock");
+  if (stockField) {
+    stockField.addEventListener("blur", () => {
+      if (stockField.value.trim()) {
+        validateStock("stock");
+      }
+    });
+  }
   
   const batchDateField = document.getElementById("batchDate");
   if (batchDateField) {
@@ -988,6 +1086,15 @@ function initializeValidationEvents() {
   const editPriceField = document.getElementById("editPrice");
   if (editPriceField) {
     editPriceField.addEventListener("blur", () => validatePrice("editPrice"));
+  }
+
+  const editStockField = document.getElementById("editStock");
+  if (editStockField) {
+    editStockField.addEventListener("blur", () => {
+      if (editStockField.value.trim()) {
+        validateStock("editStock");
+      }
+    });
   }
   
   const editBatchDateField = document.getElementById("editBatchDate");
@@ -1058,14 +1165,9 @@ document.addEventListener("DOMContentLoaded", () => {
   initializeValidationEvents();
   initializeListPage();
   
-  // Debug: Verificar funciones antes de llamarlas
-  console.log('Checking notification functions...');
-  console.log('ensureNotificationManager:', typeof window.ensureNotificationManager);
-  console.log('getExpirationNotifications:', typeof window.getExpirationNotifications);
   
   // Inicializar notificaciones con debug
   setTimeout(() => {
-      console.log('Initializing notifications...');
       
       if (typeof window.ensureNotificationManager === 'function') {
           console.log('Calling ensureNotificationManager...');
@@ -1075,7 +1177,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       
       if (typeof window.getExpirationNotifications === 'function') {
-          console.log('Calling getExpirationNotifications...');
           window.getExpirationNotifications(7);
       } else {
           console.error('getExpirationNotifications not found!');

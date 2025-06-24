@@ -169,6 +169,17 @@
             </div>
             <div class="form-row">
               <div class="form-field">
+                <label for="stock">Stock Inicial (Opcional)</label>
+                <input type="number" class="field-element" id="stock" min="0">
+                <div class="error-message" id="stock-error">El stock debe ser un número entero no negativo.</div>
+              </div>
+              <div class="form-field">
+                <!-- Campo vacío para mantener la estructura de 2 columnas -->
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-field">
                 <label for="batchDate">Fecha de Lote</label>
                  <input type="date" class="field-element date-input" id="batchDate">
                 <div class="error-message" id="batchDate-error">La fecha de lote es obligatoria.</div>
@@ -218,6 +229,16 @@
                 <div class="error-message" id="editPrice-error">El precio es obligatorio.</div>
               </div>
             </div>
+            <div class="form-row">
+              <div class="form-field">
+                <label for="editStock">Stock (Opcional)</label>
+                <input type="number" class="field-element" id="editStock" min="0">
+                <div class="error-message" id="editStock-error">El stock debe ser un número entero no negativo.</div>
+              </div>
+              <div class="form-field">
+              </div>
+            </div>
+            
             <div class="form-row">
               <div class="form-field">
                 <label for="editBatchDate">Fecha de Lote</label>

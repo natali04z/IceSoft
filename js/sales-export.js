@@ -34,15 +34,7 @@ function loadExportLibraries() {
       document.head.appendChild(autoTableScript);
     }
 
-    // Cargar SheetJS para Excel
-    if (!window.XLSX) {
-      scriptsToLoad++;
-      const xlsxScript = document.createElement('script');
-      xlsxScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-      xlsxScript.onload = checkComplete;
-      xlsxScript.onerror = () => reject(new Error('Error al cargar XLSX'));
-      document.head.appendChild(xlsxScript);
-    }
+
 
     if (scriptsToLoad === 0) {
       resolve();
@@ -189,7 +181,7 @@ function prepareExportData(sales) {
     // Calcular cantidad total de productos
     const totalQuantity = products.reduce((sum, item) => sum + (item.quantity || 0), 0);
     
-    // Lista detallada para Excel
+    // Lista detallada para el PDF
     const productsDetailedList = products.map(item => {
       const productName = item.product?.name || getProductNameById(item.product?._id || item.product);
       return `${productName} - Cant: ${item.quantity} - Precio: ${formatCurrency(item.sale_price)} - Total: ${formatCurrency(item.total)}`;
@@ -376,7 +368,7 @@ async function exportToPDF(filters = {}) {
       // Configurar tabla con autoTable - COLUMNAS OPTIMIZADAS CON SUCURSAL
       doc.autoTable({
         startY: yPosition,
-        head: [['ID', 'Cliente', 'Sucursal', 'Fecha', 'Productos', 'Cant.', 'Total', 'Estado']],
+        head: [['ID', 'Cliente', 'Sucursal', 'Fecha', 'Productos', 'Cantidad', 'Total', 'Estado']],
         body: tableData,
         theme: 'striped',
         styles: {
@@ -424,12 +416,12 @@ async function exportToPDF(filters = {}) {
             fontSize: 6
           },
           5: { 
-            cellWidth: 15, 
+            cellWidth: 20, 
             halign: 'center',
             valign: 'middle'
           },
           6: { 
-            cellWidth: 20, 
+            cellWidth: 22, 
             halign: 'right',
             valign: 'middle'
           },
@@ -455,8 +447,8 @@ async function exportToPDF(filters = {}) {
           }
         },
         margin: { 
-          left: (pageWidth - 170) / 2,
-          right: (pageWidth - 170) / 2
+          left: (pageWidth - 177) / 2,
+          right: (pageWidth - 177) / 2
         }
       });
       
@@ -483,7 +475,7 @@ async function exportToPDF(filters = {}) {
       doc.setTextColor(100, 100, 100);
       
       const footerY = pageHeight - 15;
-      doc.text('ICESOFT - Sistema de Gestión', margin, footerY);
+      doc.text('ICESOFT', margin, footerY);
       doc.text(`Página ${i} de ${totalPages}`, pageWidth - margin, footerY, { align: 'right' });
       
       doc.setFontSize(7);
@@ -510,442 +502,10 @@ async function exportToPDF(filters = {}) {
   }
 }
 
-// ===== EXPORTACIÓN A EXCEL CON DISEÑO VISUAL MEJORADO Y SUCURSALES =====
-async function exportToExcel(filters = {}) {
-  try {
-    showLoadingIndicator();
-    await loadExportLibraries();
-    
-    // Obtener datos filtrados
-    const filteredSales = getFilteredSalesData(
-      filters.searchTerm,
-      filters.dateFrom,
-      filters.dateTo,
-      filters.customerFilter,
-      filters.branchFilter,
-      filters.statusFilter
-    );
-    
-    const exportData = prepareExportData(filteredSales);
-    
-    // Crear nuevo workbook
-    const wb = XLSX.utils.book_new();
-    
-    // ===== HOJA 1: RESUMEN EJECUTIVO CON DISEÑO PROFESIONAL =====
-    const currentDate = new Date();
-    
-    // Crear array de datos con formato estructurado
-    const summaryData = [];
-    
-    // ENCABEZADO PRINCIPAL
-    summaryData.push(['REPORTE DE VENTAS - ICESOFT', '', '', '', '']);
-    summaryData.push(['RESUMEN EJECUTIVO', '', '', '', '']);
-    summaryData.push(['', '', '', '', '']);
-    
-    // INFORMACIÓN GENERAL EN FORMATO DE TABLA
-    summaryData.push(['INFORMACIÓN GENERAL', '', '', '', '']);
-    summaryData.push(['Sistema:', 'ICESOFT - Gestión Empresarial', '', '', '']);
-    summaryData.push(['Fecha de generación:', currentDate.toLocaleDateString('es-ES'), '', '', '']);
-    summaryData.push(['Hora de generación:', currentDate.toLocaleTimeString('es-ES'), '', '', '']);
-    summaryData.push(['Total de registros:', exportData.length, '', '', '']);
-    summaryData.push(['', '', '', '', '']);
-    
-    // FILTROS APLICADOS
-    summaryData.push(['FILTROS APLICADOS', '', '', '', '']);
-    if (filters.searchTerm) {
-      summaryData.push(['Término de búsqueda:', filters.searchTerm, '', '', '']);
-    }
-    if (filters.dateFrom || filters.dateTo) {
-      const dateRange = `${filters.dateFrom || 'Sin límite'} - ${filters.dateTo || 'Sin límite'}`;
-      summaryData.push(['Rango de fechas:', dateRange, '', '', '']);
-    }
-    if (filters.customerFilter) {
-      summaryData.push(['Cliente:', getCustomerNameById(filters.customerFilter), '', '', '']);
-    }
-    if (filters.branchFilter) {
-      summaryData.push(['Sucursal:', getBranchNameById(filters.branchFilter), '', '', '']);
-    }
-    if (filters.statusFilter) {
-      const statusNames = {
-        'processing': 'Procesando',
-        'completed': 'Completada',
-        'cancelled': 'Cancelada'
-      };
-      summaryData.push(['Estado:', statusNames[filters.statusFilter] || filters.statusFilter, '', '', '']);
-    }
-    summaryData.push(['', '', '', '', '']);
-    
-    // RESUMEN FINANCIERO CON FORMATO DESTACADO
-    const totalAmount = exportData.reduce((sum, item) => sum + item.total, 0);
-    const avgAmount = totalAmount / (exportData.length || 1);
-    
-    summaryData.push(['RESUMEN FINANCIERO', '', '', '', '']);
-    summaryData.push(['Total General:', '', formatCurrency(totalAmount), '', '']);
-    summaryData.push(['Promedio por Venta:', '', formatCurrency(avgAmount), '', '']);
-    summaryData.push(['', '', '', '', '']);
-    
-    // ESTADÍSTICAS POR ESTADO
-    const completedCount = exportData.filter(item => item.estado === 'Completada').length;
-    const cancelledCount = exportData.filter(item => item.estado === 'Cancelada').length;
-    const processingCount = exportData.filter(item => item.estado === 'Procesando').length;
-    const completionRate = ((completedCount / exportData.length) * 100).toFixed(1);
-    
-    summaryData.push(['ESTADÍSTICAS POR ESTADO', '', '', '', '']);
-    summaryData.push(['Estado', 'Cantidad', 'Porcentaje', '', '']);
-    summaryData.push(['Procesando', processingCount, `${((processingCount / exportData.length) * 100).toFixed(1)}%`, '', '']);
-    summaryData.push(['Completadas', completedCount, `${((completedCount / exportData.length) * 100).toFixed(1)}%`, '', '']);
-    summaryData.push(['Canceladas', cancelledCount, `${((cancelledCount / exportData.length) * 100).toFixed(1)}%`, '', '']);
-    summaryData.push(['', '', '', '', '']);
-    summaryData.push(['TASA DE ÉXITO:', '', `${completionRate}%`, '', '']);
-    
-    // Crear hoja de resumen
-    const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
-    
-    // APLICAR ESTILOS PROFESIONALES AL RESUMEN
-    const summaryStyles = {};
-    
-    // Combinar celdas para el título
-    summaryWs['!merges'] = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 4 } }, // Título principal
-      { s: { r: 1, c: 0 }, e: { r: 1, c: 4 } }, // Subtítulo
-    ];
-    
-    // Configurar ancho de columnas
-    summaryWs['!cols'] = [
-      { width: 25 }, // Columna A - Etiquetas
-      { width: 35 }, // Columna B - Valores
-      { width: 20 }, // Columna C - Montos/Porcentajes
-      { width: 15 }, // Columna D - Extra
-      { width: 15 }  // Columna E - Extra
-    ];
-    
-    XLSX.utils.book_append_sheet(wb, summaryWs, 'Resumen Ejecutivo');
-    
-    // ===== HOJA 2: DATOS PRINCIPALES CON FORMATO PROFESIONAL =====
-    if (exportData.length > 0) {
-      const detailData = exportData.map((sale, index) => ({
-        'ID': sale.id,
-        'Cliente': sale.cliente,
-        'Sucursal': sale.sucursal,
-        'Fecha': sale.fecha,
-        'Productos': sale.productosDetallados,
-        'Items': sale.productCount,
-        'Cantidad': sale.cantidad,
-        'Total': sale.total,
-        'Estado': sale.estado,
-        'Observaciones': sale.estado === 'Completada' ? 'Finalizada exitosamente' : 
-                        sale.estado === 'Cancelada' ? 'Requiere análisis' : 'En proceso'
-      }));
-      
-      const detailWs = XLSX.utils.json_to_sheet(detailData);
-      
-      // Configurar ancho de columnas optimizado - COLUMNAS AJUSTADAS CON SUCURSAL
-      detailWs['!cols'] = [
-        { width: 12 }, // ID
-        { width: 25 }, // Cliente
-        { width: 20 }, // Sucursal
-        { width: 12 }, // Fecha
-        { width: 40 }, // Productos
-        { width: 8 },  // Items
-        { width: 10 }, // Cantidad
-        { width: 15 }, // Total
-        { width: 12 }, // Estado
-        { width: 20 }  // Observaciones
-      ];
-      
-      XLSX.utils.book_append_sheet(wb, detailWs, 'Datos Principales');
-    }
-    
-    // ===== HOJA 3: ANÁLISIS POR CLIENTE Y SUCURSAL =====
-    if (exportData.length > 0) {
-      const customerBranchStats = {};
-      
-      exportData.forEach(sale => {
-        const customer = sale.cliente;
-        const branch = sale.sucursal;
-        const key = `${customer} - ${branch}`;
-        
-        if (!customerBranchStats[key]) {
-          customerBranchStats[key] = {
-            cliente: customer,
-            sucursal: branch,
-            totalVentas: 0,
-            montoTotal: 0,
-            ventasCompletadas: 0,
-            ventasCanceladas: 0,
-            ventasProcesando: 0,
-            productos: new Set()
-          };
-        }
-        
-        customerBranchStats[key].totalVentas++;
-        customerBranchStats[key].montoTotal += sale.total;
-        
-        if (sale.productItems && Array.isArray(sale.productItems)) {
-          sale.productItems.forEach(product => {
-            const productName = product.product?.name || getProductNameById(product.product?._id || product.product);
-            customerBranchStats[key].productos.add(productName);
-          });
-        }
-        
-        switch(sale.estado) {
-          case 'Completada':
-            customerBranchStats[key].ventasCompletadas++;
-            break;
-          case 'Cancelada':
-            customerBranchStats[key].ventasCanceladas++;
-            break;
-          case 'Procesando':
-            customerBranchStats[key].ventasProcesando++;
-            break;
-        }
-      });
-      
-      const totalAmount = exportData.reduce((sum, item) => sum + item.total, 0);
-      
-      const customerBranchAnalysis = Object.entries(customerBranchStats).map(([key, stats]) => {
-        const successRate = ((stats.ventasCompletadas / stats.totalVentas) * 100).toFixed(1);
-        const participation = ((stats.montoTotal / totalAmount) * 100).toFixed(1);
-        
-        return {
-          'Cliente': stats.cliente,
-          'Sucursal': stats.sucursal,
-          'Total Ventas': stats.totalVentas,
-          'Monto Total': stats.montoTotal,
-          'Completadas': stats.ventasCompletadas,
-          'Canceladas': stats.ventasCanceladas,
-          'Procesando': stats.ventasProcesando,
-          'Promedio/Venta': Math.round(stats.montoTotal / stats.totalVentas),
-          'Productos Únicos': stats.productos.size,
-          '% Participación': `${participation}%`,
-          'Tasa Éxito': `${successRate}%`,
-          'Calificación': successRate >= 80 ? 'EXCELENTE' : 
-                           successRate >= 60 ? 'BUENO' : 
-                           successRate >= 40 ? 'REGULAR' : 'MEJORAR'
-        };
-      });
-      
-      // Ordenar por monto total descendente
-      customerBranchAnalysis.sort((a, b) => b['Monto Total'] - a['Monto Total']);
-      
-      const customerBranchWs = XLSX.utils.json_to_sheet(customerBranchAnalysis);
-      
-      // Configurar anchos de columna
-      customerBranchWs['!cols'] = [
-        { width: 25 }, // Cliente
-        { width: 20 }, // Sucursal
-        { width: 12 }, // Total Ventas
-        { width: 15 }, // Monto Total
-        { width: 12 }, // Completadas
-        { width: 12 }, // Canceladas
-        { width: 12 }, // Procesando
-        { width: 15 }, // Promedio
-        { width: 15 }, // Productos Únicos
-        { width: 15 }, // Participación
-        { width: 12 }, // Tasa Éxito
-        { width: 15 }  // Calificación
-      ];
-      
-      XLSX.utils.book_append_sheet(wb, customerBranchWs, 'Análisis Cliente-Sucursal');
-    }
 
-    // ===== HOJA 4: ANÁLISIS POR SUCURSAL =====
-    if (exportData.length > 0) {
-      const branchStats = {};
-      
-      exportData.forEach(sale => {
-        const branch = sale.sucursal;
-        if (!branchStats[branch]) {
-          branchStats[branch] = {
-            totalVentas: 0,
-            montoTotal: 0,
-            ventasCompletadas: 0,
-            ventasCanceladas: 0,
-            ventasProcesando: 0,
-            clientes: new Set(),
-            productos: new Set()
-          };
-        }
-        
-        branchStats[branch].totalVentas++;
-        branchStats[branch].montoTotal += sale.total;
-        branchStats[branch].clientes.add(sale.cliente);
-        
-        if (sale.productItems && Array.isArray(sale.productItems)) {
-          sale.productItems.forEach(product => {
-            const productName = product.product?.name || getProductNameById(product.product?._id || product.product);
-            branchStats[branch].productos.add(productName);
-          });
-        }
-        
-        switch(sale.estado) {
-          case 'Completada':
-            branchStats[branch].ventasCompletadas++;
-            break;
-          case 'Cancelada':
-            branchStats[branch].ventasCanceladas++;
-            break;
-          case 'Procesando':
-            branchStats[branch].ventasProcesando++;
-            break;
-        }
-      });
-      
-      const totalAmount = exportData.reduce((sum, item) => sum + item.total, 0);
-      
-      const branchAnalysis = Object.entries(branchStats).map(([branch, stats]) => {
-        const successRate = ((stats.ventasCompletadas / stats.totalVentas) * 100).toFixed(1);
-        const participation = ((stats.montoTotal / totalAmount) * 100).toFixed(1);
-        
-        return {
-          'Sucursal': branch,
-          'Total Ventas': stats.totalVentas,
-          'Monto Total': stats.montoTotal,
-          'Completadas': stats.ventasCompletadas,
-          'Canceladas': stats.ventasCanceladas,
-          'Procesando': stats.ventasProcesando,
-          'Promedio/Venta': Math.round(stats.montoTotal / stats.totalVentas),
-          'Clientes Únicos': stats.clientes.size,
-          'Productos Únicos': stats.productos.size,
-          '% Participación': `${participation}%`,
-          'Tasa Éxito': `${successRate}%`,
-          'Rendimiento': stats.totalVentas > 20 ? 'ALTO' : 
-                        stats.totalVentas > 10 ? 'MEDIO' : 'BAJO'
-        };
-      });
-      
-      // Ordenar por monto total descendente
-      branchAnalysis.sort((a, b) => b['Monto Total'] - a['Monto Total']);
-      
-      const branchWs = XLSX.utils.json_to_sheet(branchAnalysis);
-      
-      // Configurar anchos de columna
-      branchWs['!cols'] = [
-        { width: 20 }, // Sucursal
-        { width: 12 }, // Total Ventas
-        { width: 15 }, // Monto Total
-        { width: 12 }, // Completadas
-        { width: 12 }, // Canceladas
-        { width: 12 }, // Procesando
-        { width: 15 }, // Promedio
-        { width: 15 }, // Clientes Únicos
-        { width: 15 }, // Productos Únicos
-        { width: 15 }, // Participación
-        { width: 12 }, // Tasa Éxito
-        { width: 15 }  // Rendimiento
-      ];
-      
-      XLSX.utils.book_append_sheet(wb, branchWs, 'Análisis por Sucursal');
-    }
-    
-    // ===== HOJA 5: DASHBOARD DE TENDENCIAS =====
-    if (exportData.length > 0) {
-      // Crear encabezado del dashboard
-      const dashboardData = [];
-      dashboardData.push(['DASHBOARD DE TENDENCIAS TEMPORALES', '', '', '', '', '', '']);
-      dashboardData.push(['', '', '', '', '', '', '']);
-      
-      // Agregar análisis mensual
-      const monthlyStats = {};
-      exportData.forEach(sale => {
-        const date = new Date(sale.rawDate);
-        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-        const monthName = date.toLocaleDateString('es-ES', { year: 'numeric', month: 'long' });
-        
-        if (!monthlyStats[monthKey]) {
-          monthlyStats[monthKey] = {
-            name: monthName,
-            ventas: 0,
-            total: 0,
-            completadas: 0,
-            canceladas: 0,
-            sucursales: new Set()
-          };
-        }
-        
-        monthlyStats[monthKey].ventas++;
-        monthlyStats[monthKey].total += sale.total;
-        monthlyStats[monthKey].sucursales.add(sale.sucursal);
-        if (sale.estado === 'Completada') monthlyStats[monthKey].completadas++;
-        if (sale.estado === 'Cancelada') monthlyStats[monthKey].canceladas++;
-      });
-      
-      // Encabezados de la tabla
-      dashboardData.push(['Período', 'Ventas', 'Total', 'Completadas', 'Canceladas', 'Sucursales', 'Tasa Éxito', 'Rendimiento']);
-      
-      const trendsData = Object.entries(monthlyStats)
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([month, stats]) => {
-          const successRate = ((stats.completadas / stats.ventas) * 100).toFixed(1);
-          const performance = stats.ventas > 10 ? 'ALTO' : 
-                            stats.ventas > 5 ? 'MEDIO' : 
-                            'BAJO';
-          
-          return [
-            stats.name,
-            stats.ventas,
-            stats.total,
-            stats.completadas,
-            stats.canceladas,
-            stats.sucursales.size,
-            `${successRate}%`,
-            performance
-          ];
-        });
-      
-      // Agregar datos a la tabla
-      trendsData.forEach(row => dashboardData.push(row));
-      
-      // Agregar resumen final
-      dashboardData.push(['', '', '', '', '', '', '', '']);
-      dashboardData.push(['RESUMEN GENERAL', '', '', '', '', '', '', '']);
-      
-      const totalVentas = trendsData.reduce((sum, row) => sum + row[1], 0);
-      const totalMonto = trendsData.reduce((sum, row) => sum + row[2], 0);
-      const totalCompletadas = trendsData.reduce((sum, row) => sum + row[3], 0);
-      const promedioMensual = Math.round(totalVentas / trendsData.length);
-      
-      dashboardData.push(['Total Períodos Analizados:', trendsData.length, '', '', '', '', '', '']);
-      dashboardData.push(['Promedio Ventas/Mes:', promedioMensual, '', '', '', '', '', '']);
-      dashboardData.push(['Mejor Período:', trendsData.sort((a,b) => b[1] - a[1])[0][0], '', '', '', '', '', '']);
-      
-      const trendsWs = XLSX.utils.aoa_to_sheet(dashboardData);
-      
-      // Configurar anchos
-      trendsWs['!cols'] = [
-        { width: 20 }, // Período
-        { width: 10 }, // Ventas
-        { width: 15 }, // Total
-        { width: 12 }, // Completadas
-        { width: 12 }, // Canceladas
-        { width: 12 }, // Sucursales
-        { width: 12 }, // Tasa Éxito
-        { width: 15 }  // Rendimiento
-      ];
-      
-      // Combinar celdas para el título
-      trendsWs['!merges'] = [
-        { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } }
-      ];
-      
-      XLSX.utils.book_append_sheet(wb, trendsWs, 'Tendencias');
-    }
-    
-    // ===== GUARDAR ARCHIVO CON NOMBRE DESCRIPTIVO =====
-    const timestamp = new Date().toISOString().slice(0,16).replace(/[-:]/g, '').replace('T', '_');
-    const fileName = `Ventas_Reporte_Ejecutivo_${timestamp}.xlsx`;
-    
-    XLSX.writeFile(wb, fileName);
-    
-    hideLoadingIndicator();
-    showSuccess(`Archivo Excel generado exitosamente: ${fileName}`);
-    
-  } catch (error) {
-    hideLoadingIndicator();
-    showError('Error al generar Excel: ' + error.message);
-    console.error('Error completo:', error);
-  }
-}
+
+
+
 
 // ===== MODAL DE FILTROS PARA EXPORTACIÓN MEJORADO CON SUCURSALES =====
 function showExportModal() {
@@ -1023,9 +583,6 @@ function showExportModal() {
             </button>
             <button type="button" class="add-button pdf-button" onclick="executeExport('pdf')">
               Exportar PDF
-            </button>
-            <button type="button" class="add-button excel-button" onclick="executeExport('excel')">
-              Exportar Excel
             </button>
           </div>
         </div>
@@ -1149,8 +706,6 @@ function executeExport(type) {
   
   if (type === 'pdf') {
     exportToPDF(filters);
-  } else if (type === 'excel') {
-    exportToExcel(filters);
   }
   
   closeExportModal();
@@ -1169,4 +724,3 @@ window.showExportModal = showExportModal;
 window.closeExportModal = closeExportModal;
 window.executeExport = executeExport;
 window.exportToPDF = exportToPDF;
-window.exportToExcel = exportToExcel;
