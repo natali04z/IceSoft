@@ -10,6 +10,7 @@ let currentPage = 1;
 const rowsPerPage = 10;
 let productItems = [];
 let productIdToNameMap = {};
+let productIdToStockMap = {};
 let customerIdToNameMap = {};
 let branchIdToNameMap = {};
 
@@ -133,6 +134,76 @@ function validateQuantity(fieldId) {
   return true;
 }
 
+// Función para convertir formato colombiano a número
+function parseColombianPrice(value) {
+  if (!value) return 0;
+  
+  // Convertir a string si no lo es
+  const str = value.toString().trim();
+  
+  // Remover separadores de miles (puntos) pero mantener decimales (comas)
+  // Ejemplo: "3.000,50" -> "3000.50"
+  const normalized = str.replace(/\./g, '').replace(',', '.');
+  
+  return parseFloat(normalized) || 0;
+}
+
+// Función para formatear con puntos directamente
+function addThousandsSeparators(num) {
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+// Función para formatear entrada de precio en tiempo real
+function formatPriceInput(field) {
+  // Permitir números y puntos, eliminar todo lo demás
+  let value = field.value.replace(/[^\d.]/g, '');
+  
+  // Remover todos los puntos y usar solo números
+  value = value.replace(/\./g, '');
+  
+  if (value === '') {
+    field.value = '';
+    return;
+  }
+  
+  // Formatear con puntos directamente
+  const formatted = addThousandsSeparators(value);
+  field.value = formatted;
+}
+
+// Función para formatear mientras escribe
+function formatPriceOnInput(field) {
+  // Guardar posición del cursor
+  const cursorPosition = field.selectionStart;
+  const oldValue = field.value;
+  
+  // Permitir números y puntos, eliminar todo lo demás
+  let value = field.value.replace(/[^\d.]/g, '');
+  
+  // Remover todos los puntos y usar solo números
+  value = value.replace(/\./g, '');
+  
+  if (value === '') {
+    field.value = '';
+    return;
+  }
+  
+  // Formatear con puntos directamente
+  const formatted = addThousandsSeparators(value);
+  field.value = formatted;
+  
+  // Ajustar posición del cursor de manera más inteligente
+  const pointsInOld = (oldValue.match(/\./g) || []).length;
+  const pointsInNew = (formatted.match(/\./g) || []).length;
+  const pointDiff = pointsInNew - pointsInOld;
+  
+  let newPosition = cursorPosition + pointDiff;
+  if (newPosition < 0) newPosition = 0;
+  if (newPosition > formatted.length) newPosition = formatted.length;
+  
+  field.setSelectionRange(newPosition, newPosition);
+}
+
 function validatePrice(fieldId) {
   const field = document.getElementById(fieldId);
   const errorElement = document.getElementById(`${fieldId}-error`);
@@ -144,7 +215,7 @@ function validatePrice(fieldId) {
     return false;
   }
   
-  const price = parseFloat(field.value.trim());
+  const price = parseColombianPrice(field.value.trim());
   
   if (isNaN(price) || price <= 0) {
     errorElement.textContent = "El precio debe ser un número mayor que cero.";
@@ -166,49 +237,82 @@ function validatePrice(fieldId) {
 }
 
 function validateCustomer(fieldId) {
+  // Obtener valor del selector (personalizado o nativo)
+  let fieldValue = '';
   const field = document.getElementById(fieldId);
-  const errorElement = document.getElementById(`${fieldId}-error`);
   
-  if (!field.value) {
+  if (customCustomerSelector && isRegisterPage) {
+    fieldValue = customCustomerSelector.getValue();
+  } else if (field) {
+    fieldValue = field.value;
+  }
+  
+  const errorElement = document.getElementById(`${fieldId}-error`);
+  const inputElement = customCustomerSelector ? 
+    document.getElementById('customerSearch') : field;
+  
+  if (!fieldValue) {
     errorElement.textContent = "Debe seleccionar un cliente.";
     errorElement.style.display = "block";
-    field.classList.add("input-error");
+    if (inputElement) inputElement.classList.add("input-error");
     return false;
   } else {
     errorElement.style.display = "none";
-    field.classList.remove("input-error");
+    if (inputElement) inputElement.classList.remove("input-error");
     return true;
   }
 }
 
 function validateBranch(fieldId) {
+  // Obtener valor del selector (personalizado o nativo)
+  let fieldValue = '';
   const field = document.getElementById(fieldId);
-  const errorElement = document.getElementById(`${fieldId}-error`);
   
-  if (!field.value) {
+  if (customBranchSelector && isRegisterPage) {
+    fieldValue = customBranchSelector.getValue();
+  } else if (field) {
+    fieldValue = field.value;
+  }
+  
+  const errorElement = document.getElementById(`${fieldId}-error`);
+  const inputElement = customBranchSelector ? 
+    document.getElementById('branchSearch') : field;
+  
+  if (!fieldValue) {
     errorElement.textContent = "Debe seleccionar una sucursal.";
     errorElement.style.display = "block";
-    field.classList.add("input-error");
+    if (inputElement) inputElement.classList.add("input-error");
     return false;
   } else {
     errorElement.style.display = "none";
-    field.classList.remove("input-error");
+    if (inputElement) inputElement.classList.remove("input-error");
     return true;
   }
 }
 
 function validateProduct(fieldId) {
+  // Obtener valor del selector (personalizado o nativo)
+  let fieldValue = '';
   const field = document.getElementById(fieldId);
-  const errorElement = document.getElementById(`${fieldId}-error`);
   
-  if (!field.value) {
+  if (customProductSelector && isRegisterPage) {
+    fieldValue = customProductSelector.getValue();
+  } else if (field) {
+    fieldValue = field.value;
+  }
+  
+  const errorElement = document.getElementById(`${fieldId}-error`);
+  const inputElement = customProductSelector ? 
+    document.getElementById('productSearch') : field;
+  
+  if (!fieldValue) {
     errorElement.textContent = "Debe seleccionar un producto.";
     errorElement.style.display = "block";
-    field.classList.add("input-error");
+    if (inputElement) inputElement.classList.add("input-error");
     return false;
   } else {
     errorElement.style.display = "none";
-    field.classList.remove("input-error");
+    if (inputElement) inputElement.classList.remove("input-error");
     return true;
   }
 }
@@ -284,10 +388,19 @@ function getUserPermissions() {
 function isNumber(evt, allowDecimals = false) {
   const charCode = (evt.which) ? evt.which : evt.keyCode;
   
-  if (allowDecimals && charCode === 46 && evt.target.value.indexOf('.') === -1) {
+  // Permitir teclas de control (backspace, delete, tab, escape, enter)
+  if ([8, 9, 27, 13, 46].indexOf(charCode) !== -1 ||
+    // Permitir Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+    (charCode === 65 && evt.ctrlKey === true) ||
+    (charCode === 67 && evt.ctrlKey === true) ||
+    (charCode === 86 && evt.ctrlKey === true) ||
+    (charCode === 88 && evt.ctrlKey === true) ||
+    // Permitir home, end, left, right
+    (charCode >= 35 && charCode <= 39)) {
     return true;
   }
   
+  // Solo permitir números
   if (charCode > 31 && (charCode < 48 || charCode > 57)) {
     return false;
   }
@@ -318,6 +431,17 @@ function openModal(modalId) {
       const todayLocal = getTodayLocal();
       salesDateElement.value = todayLocal;
     }
+    
+    // Ocultar la información de stock
+    const stockInfo = document.getElementById("stockInfo");
+    if (stockInfo) {
+      stockInfo.style.display = "none";
+    }
+    
+    // Resetear selectores personalizados si existen
+    if (customCustomerSelector) customCustomerSelector.reset();
+    if (customBranchSelector) customBranchSelector.reset();
+    if (customProductSelector) customProductSelector.reset();
   } else if (modalId === 'editModal') {
     clearValidationErrors('editForm');
   }
@@ -355,7 +479,17 @@ const formatDate = (dateString) => {
 
 const formatCurrency = (amount) => {
   if (amount === undefined || amount === null) return "$0";
-  return `$${parseFloat(amount).toLocaleString('es-CO')}`;
+  
+  const num = parseFloat(amount);
+  if (isNaN(num)) return "$0";
+  
+  // Si es un número entero, no mostrar decimales
+  if (num % 1 === 0) {
+    return `$${Math.round(num).toLocaleString('es-CO')}`;
+  } else {
+    // Si tiene decimales, mostrar máximo 2 decimales
+    return `$${num.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
 };
 
 const getProductNameById = (productId) => {
@@ -381,6 +515,526 @@ const getStatusBadge = (status) => {
   };
   return badges[status] || '<span class="status-badge processing">Procesando</span>';
 };
+
+// ===== CLASES DE SELECTORES PERSONALIZADOS =====
+
+// Instancias globales de los selectores personalizados
+let customCustomerSelector = null;
+let customBranchSelector = null;
+let customProductSelector = null;
+
+// Clase para manejar el selector personalizado de clientes
+class CustomCustomerSelector {
+  constructor(containerId) {
+    this.container = document.getElementById(containerId);
+    this.input = document.getElementById('customerSearch');
+    this.hiddenInput = document.getElementById('customer');
+    this.dropdown = document.getElementById('customerDropdown');
+    this.searchInput = document.getElementById('customerSearchInput');
+    this.optionsContainer = document.getElementById('customerOptions');
+    this.customers = [];
+    this.filteredCustomers = [];
+    this.selectedCustomer = null;
+    this.isOpen = false;
+
+    this.init();
+  }
+
+  init() {
+    if (!this.container) return;
+
+    // Event listeners
+    this.input.addEventListener('click', () => this.toggle());
+    this.searchInput.addEventListener('input', (e) => this.filterCustomers(e.target.value));
+    this.searchInput.addEventListener('keydown', (e) => this.handleKeydown(e));
+
+    // Cerrar al hacer clic fuera
+    document.addEventListener('click', (e) => {
+      if (!this.container.contains(e.target)) {
+        this.close();
+      }
+    });
+  }
+
+  setCustomers(customers) {
+    this.customers = customers.map(customer => ({
+      id: customer._id || customer.id,
+      name: customer.name || 'Sin nombre',
+      email: customer.email || 'Sin email'
+    }));
+    this.filteredCustomers = [...this.customers];
+    this.renderOptions();
+  }
+
+  filterCustomers(searchTerm) {
+    const term = searchTerm.toLowerCase().trim();
+    
+    if (!term) {
+      this.filteredCustomers = [...this.customers];
+    } else {
+      this.filteredCustomers = this.customers.filter(customer => 
+        customer.name.toLowerCase().includes(term) ||
+        customer.email.toLowerCase().includes(term)
+      );
+    }
+    
+    this.renderOptions();
+  }
+
+  renderOptions() {
+    if (this.filteredCustomers.length === 0) {
+      this.optionsContainer.innerHTML = '<div class="custom-select-no-results">No se encontraron clientes</div>';
+      return;
+    }
+
+    const optionsHTML = this.filteredCustomers.map(customer => 
+      `<div class="custom-select-option" data-id="${customer.id}">
+        ${customer.name}
+      </div>`
+    ).join('');
+
+    this.optionsContainer.innerHTML = optionsHTML;
+
+    // Agregar event listeners a las opciones
+    this.optionsContainer.querySelectorAll('.custom-select-option').forEach(option => {
+      option.addEventListener('click', () => this.selectOption(option));
+    });
+  }
+
+  selectOption(optionElement) {
+    const customerId = optionElement.dataset.id;
+    const customerName = optionElement.textContent.trim();
+
+    // Actualizar valores
+    this.selectedCustomer = { id: customerId, name: customerName };
+    this.input.value = customerName;
+    this.hiddenInput.value = customerId;
+
+    // Limpiar validación
+    this.clearValidation();
+
+    // Cerrar dropdown
+    this.close();
+
+    // Disparar evento de cambio para compatibilidad con código existente
+    const changeEvent = new Event('change', { bubbles: true });
+    this.hiddenInput.dispatchEvent(changeEvent);
+  }
+
+  toggle() {
+    if (this.isOpen) {
+      this.close();
+    } else {
+      this.open();
+    }
+  }
+
+  open() {
+    this.isOpen = true;
+    this.container.classList.add('open');
+    this.searchInput.value = '';
+    this.filteredCustomers = [...this.customers];
+    this.renderOptions();
+    
+    // Enfocar en el input de búsqueda
+    setTimeout(() => {
+      this.searchInput.focus();
+    }, 100);
+  }
+
+  close() {
+    this.isOpen = false;
+    this.container.classList.remove('open');
+  }
+
+  handleKeydown(e) {
+    if (e.key === 'Escape') {
+      this.close();
+    }
+  }
+
+  clearValidation() {
+    const errorElement = document.getElementById('customer-error');
+    if (errorElement) {
+      errorElement.style.display = 'none';
+    }
+    this.input.classList.remove('input-error');
+  }
+
+  reset() {
+    this.selectedCustomer = null;
+    this.input.value = '';
+    this.hiddenInput.value = '';
+    this.searchInput.value = '';
+    // Asegurar que this.customers sea un array válido antes de copiar
+    if (Array.isArray(this.customers)) {
+      this.filteredCustomers = [...this.customers];
+    } else {
+      this.filteredCustomers = [];
+    }
+    this.renderOptions();
+    this.close();
+  }
+
+  getValue() {
+    return this.hiddenInput.value;
+  }
+
+  getSelectedCustomer() {
+    return this.selectedCustomer;
+  }
+}
+
+// Clase para manejar el selector personalizado de sucursales
+class CustomBranchSelector {
+  constructor(containerId) {
+    this.container = document.getElementById(containerId);
+    this.input = document.getElementById('branchSearch');
+    this.hiddenInput = document.getElementById('branch');
+    this.dropdown = document.getElementById('branchDropdown');
+    this.searchInput = document.getElementById('branchSearchInput');
+    this.optionsContainer = document.getElementById('branchOptions');
+    this.branches = [];
+    this.filteredBranches = [];
+    this.selectedBranch = null;
+    this.isOpen = false;
+
+    this.init();
+  }
+
+  init() {
+    if (!this.container) return;
+
+    // Event listeners
+    this.input.addEventListener('click', () => this.toggle());
+    this.searchInput.addEventListener('input', (e) => this.filterBranches(e.target.value));
+    this.searchInput.addEventListener('keydown', (e) => this.handleKeydown(e));
+
+    // Cerrar al hacer clic fuera
+    document.addEventListener('click', (e) => {
+      if (!this.container.contains(e.target)) {
+        this.close();
+      }
+    });
+  }
+
+  setBranches(branches) {
+    this.branches = branches.map(branch => ({
+      id: branch._id || branch.id,
+      name: branch.name || 'Sin nombre',
+      location: branch.location || 'Sin ubicación'
+    }));
+    this.filteredBranches = [...this.branches];
+    this.renderOptions();
+  }
+
+  filterBranches(searchTerm) {
+    const term = searchTerm.toLowerCase().trim();
+    
+    if (!term) {
+      this.filteredBranches = [...this.branches];
+    } else {
+      this.filteredBranches = this.branches.filter(branch => 
+        branch.name.toLowerCase().includes(term) ||
+        branch.location.toLowerCase().includes(term)
+      );
+    }
+    
+    this.renderOptions();
+  }
+
+  renderOptions() {
+    if (this.filteredBranches.length === 0) {
+      this.optionsContainer.innerHTML = '<div class="custom-select-no-results">No se encontraron sucursales</div>';
+      return;
+    }
+
+    const optionsHTML = this.filteredBranches.map(branch => 
+      `<div class="custom-select-option" data-id="${branch.id}">
+        ${branch.name}
+      </div>`
+    ).join('');
+
+    this.optionsContainer.innerHTML = optionsHTML;
+
+    // Agregar event listeners a las opciones
+    this.optionsContainer.querySelectorAll('.custom-select-option').forEach(option => {
+      option.addEventListener('click', () => this.selectOption(option));
+    });
+  }
+
+  selectOption(optionElement) {
+    const branchId = optionElement.dataset.id;
+    const branchName = optionElement.textContent.trim();
+
+    // Actualizar valores
+    this.selectedBranch = { id: branchId, name: branchName };
+    this.input.value = branchName;
+    this.hiddenInput.value = branchId;
+
+    // Limpiar validación
+    this.clearValidation();
+
+    // Cerrar dropdown
+    this.close();
+
+    // Disparar evento de cambio para compatibilidad con código existente
+    const changeEvent = new Event('change', { bubbles: true });
+    this.hiddenInput.dispatchEvent(changeEvent);
+  }
+
+  toggle() {
+    if (this.isOpen) {
+      this.close();
+    } else {
+      this.open();
+    }
+  }
+
+  open() {
+    this.isOpen = true;
+    this.container.classList.add('open');
+    this.searchInput.value = '';
+    this.filteredBranches = [...this.branches];
+    this.renderOptions();
+    
+    // Enfocar en el input de búsqueda
+    setTimeout(() => {
+      this.searchInput.focus();
+    }, 100);
+  }
+
+  close() {
+    this.isOpen = false;
+    this.container.classList.remove('open');
+  }
+
+  handleKeydown(e) {
+    if (e.key === 'Escape') {
+      this.close();
+    }
+  }
+
+  clearValidation() {
+    const errorElement = document.getElementById('branch-error');
+    if (errorElement) {
+      errorElement.style.display = 'none';
+    }
+    this.input.classList.remove('input-error');
+  }
+
+  reset() {
+    this.selectedBranch = null;
+    this.input.value = '';
+    this.hiddenInput.value = '';
+    this.searchInput.value = '';
+    // Asegurar que this.branches sea un array válido antes de copiar
+    if (Array.isArray(this.branches)) {
+      this.filteredBranches = [...this.branches];
+    } else {
+      this.filteredBranches = [];
+    }
+    this.renderOptions();
+    this.close();
+  }
+
+  getValue() {
+    return this.hiddenInput.value;
+  }
+
+  getSelectedBranch() {
+    return this.selectedBranch;
+  }
+}
+
+// Clase para manejar el selector personalizado de productos (para ventas)
+class CustomSaleProductSelector {
+  constructor(containerId) {
+    this.container = document.getElementById(containerId);
+    this.input = document.getElementById('productSearch');
+    this.hiddenInput = document.getElementById('product');
+    this.dropdown = document.getElementById('productDropdown');
+    this.searchInput = document.getElementById('productSearchInput');
+    this.optionsContainer = document.getElementById('productOptions');
+    this.products = [];
+    this.filteredProducts = [];
+    this.selectedProduct = null;
+    this.isOpen = false;
+
+    this.init();
+  }
+
+  init() {
+    if (!this.container) return;
+
+    // Event listeners
+    this.input.addEventListener('click', () => this.toggle());
+    this.searchInput.addEventListener('input', (e) => this.filterProducts(e.target.value));
+    this.searchInput.addEventListener('keydown', (e) => this.handleKeydown(e));
+
+    // Cerrar al hacer clic fuera
+    document.addEventListener('click', (e) => {
+      if (!this.container.contains(e.target)) {
+        this.close();
+      }
+    });
+  }
+
+  setProducts(products) {
+    this.products = products.map(product => ({
+      id: product._id || product.id,
+      name: product.name || 'Sin nombre',
+      price: product.price || 0,
+      stock: product.stock || 0
+    }));
+    this.filteredProducts = [...this.products];
+    this.renderOptions();
+  }
+
+  filterProducts(searchTerm) {
+    const term = searchTerm.toLowerCase().trim();
+    
+    if (!term) {
+      this.filteredProducts = [...this.products];
+    } else {
+      this.filteredProducts = this.products.filter(product => 
+        product.name.toLowerCase().includes(term)
+      );
+    }
+    
+    this.renderOptions();
+  }
+
+  renderOptions() {
+    if (this.filteredProducts.length === 0) {
+      this.optionsContainer.innerHTML = '<div class="custom-select-no-results">No se encontraron productos</div>';
+      return;
+    }
+
+    const optionsHTML = this.filteredProducts.map(product => 
+      `<div class="custom-select-option" data-id="${product.id}" data-price="${product.price}" data-stock="${product.stock}">
+        ${product.name}
+      </div>`
+    ).join('');
+
+    this.optionsContainer.innerHTML = optionsHTML;
+
+    // Agregar event listeners a las opciones
+    this.optionsContainer.querySelectorAll('.custom-select-option').forEach(option => {
+      option.addEventListener('click', () => this.selectOption(option));
+    });
+  }
+
+  selectOption(optionElement) {
+    const productId = optionElement.dataset.id;
+    const productName = optionElement.textContent.trim();
+    const productPrice = optionElement.dataset.price;
+    const productStock = optionElement.dataset.stock;
+
+    // Actualizar valores
+    this.selectedProduct = { 
+      id: productId, 
+      name: productName, 
+      price: productPrice,
+      stock: productStock 
+    };
+    this.input.value = productName;
+    this.hiddenInput.value = productId;
+
+    // Actualizar el campo de precio de venta
+    const salePriceInput = document.getElementById('salePrice');
+    if (salePriceInput && productPrice && productPrice !== "0") {
+      salePriceInput.value = parseFloat(productPrice);
+      // Validar el precio después de actualizarlo
+      if (window.validatePrice) {
+        window.validatePrice('salePrice');
+      }
+    }
+
+    // Limpiar validación
+    this.clearValidation();
+
+    // Cerrar dropdown
+    this.close();
+
+    // Disparar evento de cambio para compatibilidad con código existente
+    const changeEvent = new Event('change', { bubbles: true });
+    this.hiddenInput.dispatchEvent(changeEvent);
+
+    // Actualizar total del producto
+    if (window.updateProductTotal) {
+      window.updateProductTotal();
+    }
+
+    // Mostrar stock si existe la función
+    if (window.showProductStock) {
+      window.showProductStock();
+    }
+  }
+
+  toggle() {
+    if (this.isOpen) {
+      this.close();
+    } else {
+      this.open();
+    }
+  }
+
+  open() {
+    this.isOpen = true;
+    this.container.classList.add('open');
+    this.searchInput.value = '';
+    this.filteredProducts = [...this.products];
+    this.renderOptions();
+    
+    // Enfocar en el input de búsqueda
+    setTimeout(() => {
+      this.searchInput.focus();
+    }, 100);
+  }
+
+  close() {
+    this.isOpen = false;
+    this.container.classList.remove('open');
+  }
+
+  handleKeydown(e) {
+    if (e.key === 'Escape') {
+      this.close();
+    }
+  }
+
+  clearValidation() {
+    const errorElement = document.getElementById('product-error');
+    if (errorElement) {
+      errorElement.style.display = 'none';
+    }
+    this.input.classList.remove('input-error');
+  }
+
+  reset() {
+    this.selectedProduct = null;
+    this.input.value = '';
+    this.hiddenInput.value = '';
+    this.searchInput.value = '';
+    // Asegurar que this.products sea un array válido antes de copiar
+    if (Array.isArray(this.products)) {
+      this.filteredProducts = [...this.products];
+    } else {
+      this.filteredProducts = [];
+    }
+    this.renderOptions();
+    this.close();
+  }
+
+  getValue() {
+    return this.hiddenInput.value;
+  }
+
+  getSelectedProduct() {
+    return this.selectedProduct;
+  }
+}
 
 const getValidStatusOptions = (currentStatus) => {
   const statusConfig = {
@@ -727,32 +1381,47 @@ const loadProducts = async () => {
     }
     
     productIdToNameMap = {};
+    productIdToStockMap = {};
     products.forEach(prod => {
       if (!prod || typeof prod !== 'object') return;
       
       const productId = prod._id;
       const productName = prod.name || 'Sin nombre';
       const productPrice = prod.price || 0;
+      const productStock = prod.stock || prod.quantity || 0;
       
       if (productId) {
         productIdToNameMap[productId] = productName;
+        productIdToStockMap[productId] = productStock;
         
-        const option = `<option value="${productId}" data-price="${productPrice}">${productName}</option>`;
+        const option = `<option value="${productId}" data-price="${productPrice}" data-stock="${productStock}">${productName}</option>`;
         if (productSelect) productSelect.innerHTML += option;
         if (editProductSelect) editProductSelect.innerHTML += option;
       }
     });
     
+    // Inicializar selector personalizado si estamos en la página de registro
+    if (isRegisterPage && document.getElementById('productSelectContainer')) {
+      customProductSelector = new CustomSaleProductSelector('productSelectContainer');
+      customProductSelector.setProducts(products);
+    }
+    
     if (productSelect) {
       productSelect.addEventListener('change', function() {
-        const selectedOption = this.options[this.selectedIndex];
-        const price = selectedOption.getAttribute('data-price');
-        const salePriceInput = document.getElementById('salePrice');
-        
-        if (salePriceInput && price) {
-          salePriceInput.value = parseFloat(price);
-          updateProductTotal();
-          validatePrice('salePrice');
+        // Solo ejecutar si no estamos usando el selector personalizado
+        if (!customProductSelector || !isRegisterPage) {
+          const selectedOption = this.options && this.options[this.selectedIndex];
+          const price = selectedOption ? selectedOption.getAttribute('data-price') : null;
+          const salePriceInput = document.getElementById('salePrice');
+          
+          if (salePriceInput && price) {
+            salePriceInput.value = parseFloat(price);
+            updateProductTotal();
+            validatePrice('salePrice');
+          }
+          
+          // Mostrar el stock del producto seleccionado
+          showProductStock();
         }
       });
     }
@@ -865,6 +1534,12 @@ const loadCustomers = async () => {
       }
     });
     
+    // Inicializar selector personalizado si estamos en la página de registro
+    if (isRegisterPage && document.getElementById('customerSelectContainer')) {
+      customCustomerSelector = new CustomCustomerSelector('customerSelectContainer');
+      customCustomerSelector.setCustomers(customers);
+    }
+    
   } catch (err) {
     showError("Error al listar los clientes: " + (err.message || err));
   }
@@ -960,6 +1635,12 @@ const loadBranches = async () => {
         if (editBranchSelect) editBranchSelect.innerHTML += option;
       }
     });
+    
+    // Inicializar selector personalizado si estamos en la página de registro
+    if (isRegisterPage && document.getElementById('branchSelectContainer')) {
+      customBranchSelector = new CustomBranchSelector('branchSelectContainer');
+      customBranchSelector.setBranches(branches);
+    }
     
   } catch (err) {
     showError("Error al listar las sucursales: " + (err.message || err));
@@ -1189,11 +1870,10 @@ const changePage = (page) => {
 // ===== FUNCIONES DE GESTIÓN DE PRODUCTOS =====
 
 const addProductItem = () => {
-  const productSelect = document.getElementById("product");
   const quantityInput = document.getElementById("quantity");
   const salePriceInput = document.getElementById("salePrice");
   
-  if (!productSelect || !quantityInput || !salePriceInput) {
+  if (!quantityInput || !salePriceInput) {
     showError("Error: No se pudieron encontrar los campos del formulario");
     return;
   }
@@ -1206,9 +1886,26 @@ const addProductItem = () => {
     return;
   }
   
-  const productId = productSelect.value;
+  // Obtener datos del producto (selector personalizado o nativo)
+  let productId = '';
+  let productName = '';
+  
+  if (customProductSelector && isRegisterPage) {
+    productId = customProductSelector.getValue();
+    const selectedProduct = customProductSelector.getSelectedProduct();
+    productName = selectedProduct ? selectedProduct.name : 'Sin nombre';
+  } else {
+    const productSelect = document.getElementById("product");
+    if (!productSelect) {
+      showError("Error: No se pudo encontrar el selector de producto");
+      return;
+    }
+    productId = productSelect.value;
+    productName = productSelect.options[productSelect.selectedIndex].text;
+  }
+  
   const quantity = parseInt(quantityInput.value);
-  const salePrice = parseFloat(salePriceInput.value);
+  const salePrice = parseColombianPrice(salePriceInput.value);
   
   if (quantity <= 0) {
     showError("La cantidad debe ser mayor que cero");
@@ -1221,7 +1918,6 @@ const addProductItem = () => {
   }
   
   const total = quantity * salePrice;
-  const productName = productSelect.options[productSelect.selectedIndex].text;
   
   // Verificar si el producto ya está en la lista
   const existingProductIndex = productItems.findIndex(item => item.product === productId);
@@ -1248,10 +1944,24 @@ const addProductItem = () => {
   updateProductItemsList();
   
   // Limpiar formulario
-  productSelect.selectedIndex = 0;
+  if (customProductSelector && isRegisterPage) {
+    customProductSelector.reset();
+  } else {
+    const productSelect = document.getElementById("product");
+    if (productSelect) {
+      productSelect.selectedIndex = 0;
+    }
+  }
+  
   quantityInput.value = "1";
   salePriceInput.value = "";
   document.getElementById("product-total").textContent = formatCurrency(0);
+  
+  // Ocultar la información de stock al limpiar el formulario
+  const stockInfo = document.getElementById("stockInfo");
+  if (stockInfo) {
+    stockInfo.style.display = "none";
+  }
   
   // Ocultar errores de validación de la lista de productos
   const productListError = document.getElementById("productItemsList-error");
@@ -1319,12 +2029,39 @@ const updateProductItemsList = () => {
 
 function updateProductTotal() {
   const quantity = parseInt(document.getElementById("quantity").value) || 0;
-  const price = parseFloat(document.getElementById("salePrice").value) || 0;
+  const price = parseColombianPrice(document.getElementById("salePrice").value) || 0;
   const totalElement = document.getElementById("product-total");
   
   if (totalElement) {
     const total = quantity * price;
     totalElement.textContent = formatCurrency(total);
+  }
+}
+
+function showProductStock() {
+  const stockInfo = document.getElementById("stockInfo");
+  const currentStockElement = document.getElementById("currentStock");
+  
+  if (!stockInfo || !currentStockElement) return;
+  
+  let selectedProductId = '';
+  
+  // Obtener ID del producto según el tipo de selector
+  if (customProductSelector && isRegisterPage) {
+    selectedProductId = customProductSelector.getValue();
+  } else {
+    const productSelect = document.getElementById("product");
+    if (productSelect) {
+      selectedProductId = productSelect.value;
+    }
+  }
+  
+  if (selectedProductId && productIdToStockMap[selectedProductId] !== undefined) {
+    const stock = productIdToStockMap[selectedProductId];
+    currentStockElement.textContent = stock;
+    stockInfo.style.display = "block";
+  } else {
+    stockInfo.style.display = "none";
   }
 }
 
@@ -1577,12 +2314,36 @@ const registerSale = async () => {
     return;
   }
   
-  const customerSelect = document.getElementById("customer");
-  const branchSelect = document.getElementById("branch");
-  const salesDateInput = document.getElementById("salesDate");
+  // Obtener valores (selectores personalizados o nativos)
+  let customerId = '';
+  let branchId = '';
   
-  const customerId = customerSelect.value;
-  const branchId = branchSelect.value;
+  if (customCustomerSelector && isRegisterPage) {
+    customerId = customCustomerSelector.getValue();
+  } else {
+    const customerSelect = document.getElementById("customer");
+    customerId = customerSelect ? customerSelect.value : '';
+  }
+  
+  if (customBranchSelector && isRegisterPage) {
+    branchId = customBranchSelector.getValue();
+  } else {
+    const branchSelect = document.getElementById("branch");
+    branchId = branchSelect ? branchSelect.value : '';
+  }
+
+  // Validar que los IDs no estén vacíos
+  if (!customerId || customerId.trim() === '') {
+    showError("Error: Debe seleccionar un cliente válido");
+    return;
+  }
+  
+  if (!branchId || branchId.trim() === '') {
+    showError("Error: Debe seleccionar una sucursal válida");
+    return;
+  }
+  
+  const salesDateInput = document.getElementById("salesDate");
   const salesDate = salesDateInput.value;
 
   // Preparar los productos en el formato correcto
@@ -1597,7 +2358,7 @@ const registerSale = async () => {
       customer: customerId,
       branch: branchId,
       products: formattedProducts,
-      sales_date: salesDate
+      salesDate: salesDate
     };
     
     const res = await fetch(API_SALES, {
@@ -1617,6 +2378,11 @@ const registerSale = async () => {
       try {
         const data = await res.json();
         errorMessage = data.message || data.error || errorMessage;
+        
+        // Si hay errores específicos de validación, mostrarlos
+        if (data.errors && Array.isArray(data.errors)) {
+          errorMessage += "\n• " + data.errors.join("\n• ");
+        }
       } catch (parseError) {
         errorMessage = `Error del servidor (${res.status}): ${res.statusText}`;
       }
@@ -1633,10 +2399,11 @@ const registerSale = async () => {
     }
     
     if (isRegisterPage) {
-      showSuccess("Venta registrada correctamente.")
-      .then(() => {
-        window.location.href = "sale.html";
-      });
+      // Guardar mensaje de éxito para mostrarlo en la siguiente página
+      localStorage.setItem('saleSuccessMessage', 'Venta registrada correctamente');
+      
+      // Redirigir inmediatamente a la lista de ventas
+      window.location.href = "sale.html";
     } else {
       showSuccess("Venta registrada correctamente.");
       closeModal('registerModal');
@@ -1648,6 +2415,13 @@ const registerSale = async () => {
       
       productItems = [];
       updateProductItemsList();
+      
+      // Ocultar la información de stock
+      const stockInfo = document.getElementById("stockInfo");
+      if (stockInfo) {
+        stockInfo.style.display = "none";
+      }
+      
       loadSalesInternal();
     }
   } catch (err) {
@@ -1893,9 +2667,12 @@ function initializeValidationEvents() {
   
   const salePriceInput = document.getElementById("salePrice");
   if (salePriceInput) {
+    salePriceInput.addEventListener("input", () => {
+      formatPriceOnInput(salePriceInput);
+      updateProductTotal();
+    });
     salePriceInput.addEventListener("blur", () => validatePrice("salePrice"));
-    salePriceInput.addEventListener("keypress", (evt) => isNumber(evt, true));
-    salePriceInput.addEventListener("input", updateProductTotal);
+    salePriceInput.addEventListener("keypress", (evt) => isNumber(evt));
   }
   
   const saleForm = document.getElementById("saleForm");
@@ -1953,6 +2730,17 @@ function initializeListPage() {
     return;
   }
   
+  // Verificar si hay un mensaje de éxito guardado desde el registro
+  const successMessage = localStorage.getItem('saleSuccessMessage');
+  if (successMessage) {
+    // Mostrar la alerta de éxito después de que la página termine de cargar
+    setTimeout(() => {
+      showSuccess(successMessage);
+      // Eliminar el mensaje del localStorage para que no se muestre de nuevo
+      localStorage.removeItem('saleSuccessMessage');
+    }, 500);
+  }
+  
   try {
     listSales();
   } catch (err) {
@@ -2004,6 +2792,12 @@ function initializeRegisterPage() {
   if (productTotalElement) {
     productTotalElement.textContent = formatCurrency(0);
   }
+  
+  // Ocultar información de stock inicialmente
+  const stockInfo = document.getElementById("stockInfo");
+  if (stockInfo) {
+    stockInfo.style.display = "none";
+  }
 }
 
 // ===== EVENTOS AL CARGAR EL DOM =====
@@ -2042,5 +2836,10 @@ window.removeProductItem = removeProductItem;
 window.viewSaleDetails = viewSaleDetails;
 window.isNumber = isNumber;
 window.updateProductTotal = updateProductTotal;
+window.showProductStock = showProductStock;
 window.hideLoadingIndicator = hideLoadingIndicator;
 window.onProductChange = onProductChange;
+window.formatPriceInput = formatPriceInput;
+window.formatPriceOnInput = formatPriceOnInput;
+window.parseColombianPrice = parseColombianPrice;
+window.addThousandsSeparators = addThousandsSeparators;

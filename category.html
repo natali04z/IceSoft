@@ -99,7 +99,7 @@
       <!-- Search container -->
       <div class="search-container">
         <div class="search-box">
-          <input type="text" id="searchInput" placeholder="Buscar categoría..." oninput="searchCategory()">
+                                  <input type="text" id="searchInput" oninput="searchCategory()">
           <button onclick="searchCategory()"><i class="material-icons">search</i></button>
         </div>
       </div>
@@ -146,7 +146,7 @@
           <form id="categoryForm" novalidate>
             <div class="form-field">
               <label for="name">Nombre</label>
-              <input type="text" class="field-element" id="name">
+              <input type="text" class="field-element" id="name" placeholder="Nombre de la categoría">
               <div class="error-message" id="name-error">El campo es obligatorio.</div>
             </div>
             <div class="controls-container">

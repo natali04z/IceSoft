@@ -113,28 +113,51 @@ function validatePassword(fieldId) {
 
 // Función para validar rol
 function validateRole(fieldId) {
-  // Si el fieldId es 'role', usar 'rol' para el formulario de registro
-  const actualFieldId = fieldId === 'role' ? 'rol' : fieldId;
+  // Siempre usar el selector nativo como fuente de verdad
+  let fieldValue = '';
+  let inputElement = null;
   
-  const field = document.getElementById(actualFieldId);
-  // Usar el fieldId original para el error
+  if (fieldId === 'role') {
+    // Formulario de registro
+    const field = document.getElementById('rol');
+    fieldValue = field ? field.value : '';
+    
+    // Para mostrar error en el input visible (personalizado o nativo)
+    if (customRoleSelector && customRoleSelector.container && customRoleSelector.container.style.display !== 'none') {
+      inputElement = document.getElementById('roleSearch');
+    } else {
+      inputElement = field;
+    }
+  } else if (fieldId === 'editRole') {
+    // Formulario de edición
+    const field = document.getElementById('editRole');
+    fieldValue = field ? field.value : '';
+    
+    // Para mostrar error en el input visible (personalizado o nativo)
+    if (customEditRoleSelector && customEditRoleSelector.container && customEditRoleSelector.container.style.display !== 'none') {
+      inputElement = document.getElementById('editRoleSearch');
+    } else {
+      inputElement = field;
+    }
+  }
+  
   const errorElement = document.getElementById(`${fieldId}-error`);
   
-  if (!field || !field.value) {
+  if (!fieldValue) {
     if (errorElement) {
       errorElement.textContent = "Debe seleccionar un rol.";
       errorElement.style.display = "block";
     }
-    if (field) {
-      field.classList.add("input-error");
+    if (inputElement) {
+      inputElement.classList.add("input-error");
     }
     return false;
   } else {
     if (errorElement) {
       errorElement.style.display = "none";
     }
-    if (field) {
-      field.classList.remove("input-error");
+    if (inputElement) {
+      inputElement.classList.remove("input-error");
     }
     return true;
   }
@@ -184,6 +207,606 @@ function disableNativeBrowserValidation() {
   }
 }
 
+// ===== CLASES DE SELECTORES PERSONALIZADOS =====
+
+// Instancias globales de los selectores personalizados
+let customRoleSelector = null;
+let customEditRoleSelector = null;
+
+// Clase para manejar el selector personalizado de roles (registro)
+class CustomRoleSelector {
+  constructor(containerId) {
+    this.container = document.getElementById(containerId);
+    this.input = document.getElementById('roleSearch');
+    this.hiddenInput = document.getElementById('rolHidden');
+    this.nativeSelect = document.getElementById('rol');
+    this.dropdown = document.getElementById('roleDropdown');
+    this.searchInput = document.getElementById('roleSearchInput');
+    this.optionsContainer = document.getElementById('roleOptions');
+    this.roles = [];
+    this.filteredRoles = [];
+    this.selectedRole = null;
+    this.isOpen = false;
+
+    this.init();
+  }
+
+  init() {
+    if (!this.container) return;
+
+    // Event listeners
+    this.input.addEventListener('click', () => this.toggle());
+    this.searchInput.addEventListener('input', (e) => this.filterRoles(e.target.value));
+    this.searchInput.addEventListener('keydown', (e) => this.handleKeydown(e));
+
+    // Cerrar al hacer clic fuera
+    document.addEventListener('click', (e) => {
+      if (!this.container.contains(e.target)) {
+        this.close();
+      }
+    });
+  }
+
+  setRoles(roles) {
+    // Validar que roles sea un array válido
+    if (!Array.isArray(roles)) {
+      console.warn('CustomRoleSelector setRoles: roles no es un array válido:', roles);
+      this.roles = [];
+      this.filteredRoles = [];
+      this.renderOptions();
+      return;
+    }
+    
+    this.roles = roles.map(role => ({
+      id: role._id,
+      name: role.name || 'Sin nombre',
+      displayName: role.displayName || getDisplayNameForRole(role.name) || role.name
+    }));
+    this.filteredRoles = [...this.roles];
+    this.renderOptions();
+    
+    // Mostrar selector personalizado y ocultar nativo
+    if (this.container && this.nativeSelect) {
+      this.container.style.display = 'block';
+      this.nativeSelect.style.display = 'none';
+    }
+  }
+
+  filterRoles(searchTerm) {
+    const term = searchTerm.toLowerCase().trim();
+    
+    if (!term) {
+      this.filteredRoles = [...this.roles];
+    } else {
+      this.filteredRoles = this.roles.filter(role => 
+        role.displayName.toLowerCase().includes(term) ||
+        role.name.toLowerCase().includes(term)
+      );
+    }
+    
+    this.renderOptions();
+  }
+
+  renderOptions() {
+    if (this.filteredRoles.length === 0) {
+      this.optionsContainer.innerHTML = '<div class="custom-select-no-results">No se encontraron roles</div>';
+      return;
+    }
+
+    const optionsHTML = this.filteredRoles.map(role => 
+      `<div class="custom-select-option" data-id="${role.id}">
+        ${role.displayName}
+      </div>`
+    ).join('');
+
+    this.optionsContainer.innerHTML = optionsHTML;
+
+    // Agregar event listeners a las opciones
+    this.optionsContainer.querySelectorAll('.custom-select-option').forEach(option => {
+      option.addEventListener('click', () => this.selectOption(option));
+    });
+  }
+
+  selectOption(optionElement) {
+    const roleId = optionElement.dataset.id;
+    const roleName = optionElement.textContent.trim();
+
+    // Actualizar valores
+    this.selectedRole = { id: roleId, name: roleName };
+    this.input.value = roleName;
+    this.hiddenInput.value = roleId;
+
+    // Limpiar validación
+    this.clearValidation();
+
+    // Cerrar dropdown
+    this.close();
+
+    // Disparar evento de cambio para compatibilidad con código existente
+    // Sincronizar con selector nativo
+    if (this.nativeSelect) {
+      this.nativeSelect.value = roleId;
+    }
+
+    const changeEvent = new Event('change', { bubbles: true });
+    this.hiddenInput.dispatchEvent(changeEvent);
+  }
+
+  toggle() {
+    if (this.isOpen) {
+      this.close();
+    } else {
+      this.open();
+    }
+  }
+
+  adjustDropdownDirection() {
+    if (!this.dropdown || !this.container) {
+      console.log('CustomRoleSelector: No hay dropdown o container disponible');
+      return;
+    }
+    
+    // Lógica simplificada: si estamos en un modal y hay poco espacio abajo, abrir hacia arriba
+    const modal = this.container.closest('.modal');
+    const containerRect = this.container.getBoundingClientRect();
+    
+    console.log('CustomRoleSelector: Detectando dirección del dropdown...');
+    console.log('Modal encontrado:', !!modal);
+    console.log('Posición del container:', containerRect);
+    
+    if (modal) {
+      // TEMPORAL: Siempre abrir hacia arriba en modales para probar
+      console.log('CustomRoleSelector: Estamos en modal - FORZANDO hacia ARRIBA!');
+      this.dropdown.classList.add('dropdown-up');
+      return;
+      
+      /* Lógica original comentada para debugging
+      const modalRect = modal.getBoundingClientRect();
+      const modalBottom = modalRect.bottom;
+      const modalTop = modalRect.top;
+      const modalHeight = modalRect.height;
+      const containerBottom = containerRect.bottom;
+      const containerTop = containerRect.top;
+      const spaceBelow = modalBottom - containerBottom;
+      
+      // Calcular si estamos en la segunda mitad del modal
+      const containerPositionInModal = (containerTop - modalTop) / modalHeight;
+      
+      console.log('Espacio debajo en modal:', spaceBelow);
+      console.log('Posición en modal (0-1):', containerPositionInModal);
+      
+      // Si hay menos de 250px de espacio abajo O estamos en la segunda mitad del modal, abrir hacia arriba
+      if (spaceBelow < 250 || containerPositionInModal > 0.6) {
+        console.log('CustomRoleSelector: ¡Abriendo hacia ARRIBA!');
+        this.dropdown.classList.add('dropdown-up');
+        return;
+      }
+      */
+    }
+    
+    // Si no estamos en modal o hay suficiente espacio, abrir hacia abajo
+    const viewportHeight = window.innerHeight;
+    const spaceBelow = viewportHeight - containerRect.bottom;
+    
+    if (spaceBelow < 280) {
+      console.log('CustomRoleSelector: ¡Abriendo hacia ARRIBA!');
+      this.dropdown.classList.add('dropdown-up');
+    } else {
+      console.log('CustomRoleSelector: Abriendo hacia abajo');
+      this.dropdown.classList.remove('dropdown-up');
+    }
+  }
+
+  open() {
+    this.isOpen = true;
+    this.container.classList.add('open');
+    this.searchInput.value = '';
+    this.filteredRoles = [...this.roles];
+    this.renderOptions();
+    
+    // Detectar si debe abrirse hacia arriba o abajo (con pequeño delay para asegurar renderizado)
+    setTimeout(() => {
+      this.adjustDropdownDirection();
+    }, 10);
+    
+    // Enfocar en el input de búsqueda
+    setTimeout(() => {
+      this.searchInput.focus();
+    }, 100);
+  }
+
+  close() {
+    this.isOpen = false;
+    this.container.classList.remove('open');
+    // Limpiar la dirección del dropdown
+    if (this.dropdown) {
+      this.dropdown.classList.remove('dropdown-up');
+    }
+  }
+
+  handleKeydown(e) {
+    if (e.key === 'Escape') {
+      this.close();
+    }
+  }
+
+  clearValidation() {
+    const errorElement = document.getElementById('role-error');
+    if (errorElement) {
+      errorElement.style.display = 'none';
+    }
+    this.input.classList.remove('input-error');
+  }
+
+  reset() {
+    this.selectedRole = null;
+    this.input.value = '';
+    this.hiddenInput.value = '';
+    this.searchInput.value = '';
+    // Asegurar que this.roles sea un array válido antes de copiar
+    if (Array.isArray(this.roles)) {
+      this.filteredRoles = [...this.roles];
+    } else {
+      this.filteredRoles = [];
+    }
+    this.renderOptions();
+    this.close();
+  }
+
+  getValue() {
+    return this.hiddenInput.value;
+  }
+
+  setValue(roleId) {
+    console.log('CustomEditRoleSelector setValue llamado con:', roleId);
+    console.log('Roles disponibles:', this.roles);
+    
+    if (!Array.isArray(this.roles)) {
+      console.log('Roles no es array, inicializando...');
+      this.roles = [];
+    }
+    
+    if (!roleId) {
+      console.log('No hay roleId, resetear selector');
+      this.reset();
+      return;
+    }
+    
+    const role = this.roles.find(r => r.id === roleId);
+    console.log('Rol encontrado:', role);
+    
+    if (role) {
+      this.selectedRole = role;
+      this.input.value = role.displayName;
+      this.hiddenInput.value = roleId;
+      
+      // También sincronizar con el selector nativo
+      if (this.nativeSelect) {
+        this.nativeSelect.value = roleId;
+      }
+      
+      console.log('Valor establecido correctamente:', {
+        input: this.input.value,
+        hidden: this.hiddenInput.value,
+        native: this.nativeSelect ? this.nativeSelect.value : 'N/A'
+      });
+    } else {
+      console.warn('Rol no encontrado con ID:', roleId);
+      // Si no encuentra el rol, intentar establecer directamente en el input nativo
+      if (this.nativeSelect) {
+        const nativeOption = this.nativeSelect.querySelector(`option[value="${roleId}"]`);
+        if (nativeOption) {
+          this.input.value = nativeOption.textContent;
+          this.hiddenInput.value = roleId;
+          this.nativeSelect.value = roleId;
+          console.log('Valor establecido desde selector nativo');
+        }
+      }
+    }
+  }
+
+  getSelectedRole() {
+    return this.selectedRole;
+  }
+}
+
+// Clase para manejar el selector personalizado de roles (edición)
+class CustomEditRoleSelector {
+  constructor(containerId) {
+    this.container = document.getElementById(containerId);
+    this.input = document.getElementById('editRoleSearch');
+    this.hiddenInput = document.getElementById('editRoleHidden');
+    this.nativeSelect = document.getElementById('editRole');
+    this.dropdown = document.getElementById('editRoleDropdown');
+    this.searchInput = document.getElementById('editRoleSearchInput');
+    this.optionsContainer = document.getElementById('editRoleOptions');
+    this.roles = [];
+    this.filteredRoles = [];
+    this.selectedRole = null;
+    this.isOpen = false;
+
+    this.init();
+  }
+
+  init() {
+    if (!this.container) return;
+
+    // Event listeners
+    this.input.addEventListener('click', () => this.toggle());
+    this.searchInput.addEventListener('input', (e) => this.filterRoles(e.target.value));
+    this.searchInput.addEventListener('keydown', (e) => this.handleKeydown(e));
+
+    // Cerrar al hacer clic fuera
+    document.addEventListener('click', (e) => {
+      if (!this.container.contains(e.target)) {
+        this.close();
+      }
+    });
+  }
+
+  setRoles(roles) {
+    // Validar que roles sea un array válido
+    if (!Array.isArray(roles)) {
+      console.warn('CustomEditRoleSelector setRoles: roles no es un array válido:', roles);
+      this.roles = [];
+      this.filteredRoles = [];
+      this.renderOptions();
+      return;
+    }
+    
+    this.roles = roles.map(role => ({
+      id: role._id,
+      name: role.name || 'Sin nombre',
+      displayName: role.displayName || getDisplayNameForRole(role.name) || role.name
+    }));
+    this.filteredRoles = [...this.roles];
+    this.renderOptions();
+    
+    // Mostrar selector personalizado y ocultar nativo
+    if (this.container && this.nativeSelect) {
+      this.container.style.display = 'block';
+      this.nativeSelect.style.display = 'none';
+    }
+  }
+
+  filterRoles(searchTerm) {
+    const term = searchTerm.toLowerCase().trim();
+    
+    if (!term) {
+      this.filteredRoles = [...this.roles];
+    } else {
+      this.filteredRoles = this.roles.filter(role => 
+        role.displayName.toLowerCase().includes(term) ||
+        role.name.toLowerCase().includes(term)
+      );
+    }
+    
+    this.renderOptions();
+  }
+
+  renderOptions() {
+    if (this.filteredRoles.length === 0) {
+      this.optionsContainer.innerHTML = '<div class="custom-select-no-results">No se encontraron roles</div>';
+      return;
+    }
+
+    const optionsHTML = this.filteredRoles.map(role => 
+      `<div class="custom-select-option" data-id="${role.id}">
+        ${role.displayName}
+      </div>`
+    ).join('');
+
+    this.optionsContainer.innerHTML = optionsHTML;
+
+    // Agregar event listeners a las opciones
+    this.optionsContainer.querySelectorAll('.custom-select-option').forEach(option => {
+      option.addEventListener('click', () => this.selectOption(option));
+    });
+  }
+
+  selectOption(optionElement) {
+    const roleId = optionElement.dataset.id;
+    const roleName = optionElement.textContent.trim();
+
+    // Actualizar valores
+    this.selectedRole = { id: roleId, name: roleName };
+    this.input.value = roleName;
+    this.hiddenInput.value = roleId;
+
+    // Limpiar validación
+    this.clearValidation();
+
+    // Cerrar dropdown
+    this.close();
+
+    // Disparar evento de cambio para compatibilidad con código existente
+    // Sincronizar con selector nativo
+    if (this.nativeSelect) {
+      this.nativeSelect.value = roleId;
+    }
+
+    const changeEvent = new Event('change', { bubbles: true });
+    this.hiddenInput.dispatchEvent(changeEvent);
+  }
+
+  toggle() {
+    if (this.isOpen) {
+      this.close();
+    } else {
+      this.open();
+    }
+  }
+
+  adjustDropdownDirection() {
+    if (!this.dropdown || !this.container) {
+      console.log('CustomEditRoleSelector: No hay dropdown o container disponible');
+      return;
+    }
+    
+    // Lógica simplificada: si estamos en un modal y hay poco espacio abajo, abrir hacia arriba
+    const modal = this.container.closest('.modal');
+    const containerRect = this.container.getBoundingClientRect();
+    
+    console.log('CustomEditRoleSelector: Detectando dirección del dropdown...');
+    console.log('Modal encontrado:', !!modal);
+    console.log('Posición del container:', containerRect);
+    
+    if (modal) {
+      // TEMPORAL: Siempre abrir hacia arriba en modales para probar
+      console.log('CustomEditRoleSelector: Estamos en modal - FORZANDO hacia ARRIBA!');
+      this.dropdown.classList.add('dropdown-up');
+      return;
+      
+      /* Lógica original comentada para debugging
+      const modalRect = modal.getBoundingClientRect();
+      const modalBottom = modalRect.bottom;
+      const modalTop = modalRect.top;
+      const modalHeight = modalRect.height;
+      const containerBottom = containerRect.bottom;
+      const containerTop = containerRect.top;
+      const spaceBelow = modalBottom - containerBottom;
+      
+      // Calcular si estamos en la segunda mitad del modal
+      const containerPositionInModal = (containerTop - modalTop) / modalHeight;
+      
+      console.log('Espacio debajo en modal:', spaceBelow);
+      console.log('Posición en modal (0-1):', containerPositionInModal);
+      
+      // Si hay menos de 250px de espacio abajo O estamos en la segunda mitad del modal, abrir hacia arriba
+      if (spaceBelow < 250 || containerPositionInModal > 0.6) {
+        console.log('CustomEditRoleSelector: ¡Abriendo hacia ARRIBA!');
+        this.dropdown.classList.add('dropdown-up');
+        return;
+      }
+      */
+    }
+    
+    // Si no estamos en modal o hay suficiente espacio, abrir hacia abajo
+    const viewportHeight = window.innerHeight;
+    const spaceBelow = viewportHeight - containerRect.bottom;
+    
+    if (spaceBelow < 280) {
+      console.log('CustomEditRoleSelector: ¡Abriendo hacia ARRIBA!');
+      this.dropdown.classList.add('dropdown-up');
+    } else {
+      console.log('CustomEditRoleSelector: Abriendo hacia abajo');
+      this.dropdown.classList.remove('dropdown-up');
+    }
+  }
+
+  open() {
+    this.isOpen = true;
+    this.container.classList.add('open');
+    this.searchInput.value = '';
+    this.filteredRoles = [...this.roles];
+    this.renderOptions();
+    
+    // Detectar si debe abrirse hacia arriba o abajo (con pequeño delay para asegurar renderizado)
+    setTimeout(() => {
+      this.adjustDropdownDirection();
+    }, 10);
+    
+    // Enfocar en el input de búsqueda
+    setTimeout(() => {
+      this.searchInput.focus();
+    }, 100);
+  }
+
+  close() {
+    this.isOpen = false;
+    this.container.classList.remove('open');
+    // Limpiar la dirección del dropdown
+    if (this.dropdown) {
+      this.dropdown.classList.remove('dropdown-up');
+    }
+  }
+
+  handleKeydown(e) {
+    if (e.key === 'Escape') {
+      this.close();
+    }
+  }
+
+  clearValidation() {
+    const errorElement = document.getElementById('editRole-error');
+    if (errorElement) {
+      errorElement.style.display = 'none';
+    }
+    this.input.classList.remove('input-error');
+  }
+
+  reset() {
+    this.selectedRole = null;
+    this.input.value = '';
+    this.hiddenInput.value = '';
+    this.searchInput.value = '';
+    // Asegurar que this.roles sea un array válido antes de copiar
+    if (Array.isArray(this.roles)) {
+      this.filteredRoles = [...this.roles];
+    } else {
+      this.filteredRoles = [];
+    }
+    this.renderOptions();
+    this.close();
+  }
+
+  getValue() {
+    return this.hiddenInput.value;
+  }
+
+  setValue(roleId) {
+    console.log('CustomEditRoleSelector setValue llamado con:', roleId);
+    console.log('Roles disponibles:', this.roles);
+    
+    if (!Array.isArray(this.roles)) {
+      console.log('Roles no es array, inicializando...');
+      this.roles = [];
+    }
+    
+    if (!roleId) {
+      console.log('No hay roleId, resetear selector');
+      this.reset();
+      return;
+    }
+    
+    const role = this.roles.find(r => r.id === roleId);
+    console.log('Rol encontrado:', role);
+    
+    if (role) {
+      this.selectedRole = role;
+      this.input.value = role.displayName;
+      this.hiddenInput.value = roleId;
+      
+      // También sincronizar con el selector nativo
+      if (this.nativeSelect) {
+        this.nativeSelect.value = roleId;
+      }
+      
+      console.log('Valor establecido correctamente:', {
+        input: this.input.value,
+        hidden: this.hiddenInput.value,
+        native: this.nativeSelect ? this.nativeSelect.value : 'N/A'
+      });
+    } else {
+      console.warn('Rol no encontrado con ID:', roleId);
+      // Si no encuentra el rol, intentar establecer directamente en el input nativo
+      if (this.nativeSelect) {
+        const nativeOption = this.nativeSelect.querySelector(`option[value="${roleId}"]`);
+        if (nativeOption) {
+          this.input.value = nativeOption.textContent;
+          this.hiddenInput.value = roleId;
+          this.nativeSelect.value = roleId;
+          console.log('Valor establecido desde selector nativo');
+        }
+      }
+    }
+  }
+
+  getSelectedRole() {
+    return this.selectedRole;
+  }
+}
+
 // ===== FUNCIONES DE INTERFAZ DE USUARIO =====
 
 // Función para abrir un modal
@@ -194,8 +817,19 @@ function openModal(modalId) {
   if (modalId === 'registerModal') {
     clearValidationErrors('userForm');
     document.getElementById("userForm").reset();
+    
+    // Resetear selector nativo
+    const roleSelect = document.getElementById("rol");
+    if (roleSelect) roleSelect.value = "";
+    
+    // Resetear selector personalizado de rol
+    if (customRoleSelector) customRoleSelector.reset();
   } else if (modalId === 'editModal') {
     clearValidationErrors('editForm');
+    
+    // NO resetear selectores en modal de edición ya que se establecen en fillEditForm
+    // Los valores se establecen específicamente en fillEditForm()
+    console.log('Abriendo modal de edición - NO resetear selectores');
   }
 }
 
@@ -452,6 +1086,13 @@ const loadRoles = async () => {
         roles = [];
       }
       
+      // Asegurar que roles sea un array válido y filtrar roles activos
+      if (!Array.isArray(roles)) {
+        roles = [];
+      }
+      
+      const activeRoles = roles.filter(role => role && role.status === "active");
+      
       // Cambiar #role por #rol para el selector del formulario de registro
       const roleSelectors = document.querySelectorAll('#rol, #editRole');
       
@@ -474,8 +1115,6 @@ const loadRoles = async () => {
           selector.appendChild(option);
         }
         
-        const activeRoles = roles.filter(role => role.status === "active");
-        
         activeRoles.forEach(role => {
           const option = document.createElement('option');
           option.value = role._id;
@@ -484,6 +1123,17 @@ const loadRoles = async () => {
           selector.appendChild(option);
         });
       });
+      
+      // Inicializar selectores personalizados si los contenedores existen
+      if (document.getElementById('roleSelectContainer')) {
+        customRoleSelector = new CustomRoleSelector('roleSelectContainer');
+        customRoleSelector.setRoles(activeRoles);
+      }
+      
+      if (document.getElementById('editRoleSelectContainer')) {
+        customEditRoleSelector = new CustomEditRoleSelector('editRoleSelectContainer');
+        customEditRoleSelector.setRoles(activeRoles);
+      }
       
       return roles;
     } else {
@@ -657,7 +1307,10 @@ const registerUser = async () => {
   const email = document.getElementById("email").value.trim();
   const contact_number = document.getElementById("contact_number").value.trim();
   const password = document.getElementById("password").value.trim();
-  const role = document.getElementById("rol").value;
+  
+  // Obtener rol del selector nativo (fuente de verdad)
+  const roleField = document.getElementById("rol");
+  const role = roleField ? roleField.value : '';
 
   try {
     const res = await fetch(API_AUTH, {
@@ -743,10 +1396,13 @@ const fillEditForm = async (id) => {
     document.getElementById("editContact").value = user.contact_number || "";
     document.getElementById("editEmail").value = user.email || "";
 
-    const roleSelect = document.getElementById("editRole");
-    if (roleSelect) {
+    // Establecer rol (nativo primero, luego sincronizar con personalizado)
       if (user.role) {
         const roleId = user.role._id || user.role;
+      
+      // Establecer en selector nativo
+      const roleSelect = document.getElementById("editRole");
+      if (roleSelect) {
         roleSelect.value = roleId;
 
         if (roleSelect.value !== roleId) {
@@ -758,8 +1414,35 @@ const fillEditForm = async (id) => {
             roleSelect.value = roleId;
           }
         }
+      }
+      
+      // Sincronizar con selector personalizado si está disponible (con delay para asegurar que los roles estén cargados)
+      if (customEditRoleSelector) {
+        // Intentar establecer el valor con reintentos
+        const setValueWithRetry = (attempts = 0) => {
+          console.log(`Intento ${attempts + 1} de establecer valor en selector personalizado:`, roleId);
+          
+          if (customEditRoleSelector && Array.isArray(customEditRoleSelector.roles) && customEditRoleSelector.roles.length > 0) {
+            customEditRoleSelector.setValue(roleId);
+          } else if (attempts < 3) {
+            console.log('Roles aún no cargados, reintentando...');
+            setTimeout(() => setValueWithRetry(attempts + 1), 200);
       } else {
+            console.error('No se pudo establecer el valor después de varios intentos');
+          }
+        };
+        
+        setTimeout(() => setValueWithRetry(), 200);
+      }
+    } else {
+      // Resetear ambos selectores
+      const roleSelect = document.getElementById("editRole");
+      if (roleSelect) {
         roleSelect.value = "";
+      }
+      
+      if (customEditRoleSelector) {
+        customEditRoleSelector.reset();
       }
     }
 
@@ -792,14 +1475,17 @@ const updateUser = async () => {
   const lastname = document.getElementById("editLastname").value.trim();
   const contact_number = document.getElementById("editContact").value.trim();
   const email = document.getElementById("editEmail").value.trim();
+  
+  // Obtener rol del selector nativo (fuente de verdad)
   const roleSelect = document.getElementById("editRole");
+  const role = roleSelect ? roleSelect.value : '';
   
   const userData = { 
     name, lastname, email, contact_number
   };
 
-  if (roleSelect && roleSelect.value) {
-    userData.role = roleSelect.value;
+  if (role) {
+    userData.role = role;
   }
     
   try {
@@ -843,6 +1529,11 @@ const updateUser = async () => {
       showSuccess('El usuario ha sido actualizado');
       closeModal("editModal");
       document.getElementById("editForm").reset();
+      
+      // Resetear selector nativo explícitamente
+      const editRoleSelect = document.getElementById("editRole");
+      if (editRoleSelect) editRoleSelect.value = "";
+      
       loadUsersInternal();
     } else {
       let errorMsg = data.message || `Error al actualizar el usuario (${res.status})`;
