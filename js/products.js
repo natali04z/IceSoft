@@ -51,11 +51,81 @@ function validateField(fieldId, errorMessage) {
   }
 }
 
+// Función para convertir formato colombiano a número
+function parseColombianPrice(value) {
+  if (!value) return 0;
+  
+  // Convertir a string si no lo es
+  const str = value.toString().trim();
+  
+  // Remover separadores de miles (puntos) pero mantener decimales (comas)
+  // Ejemplo: "3.000,50" -> "3000.50"
+  const normalized = str.replace(/\./g, '').replace(',', '.');
+  
+  return parseFloat(normalized) || 0;
+}
+
+// Función para formatear con puntos directamente
+function addThousandsSeparators(num) {
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+// Función para formatear entrada de precio en tiempo real
+function formatPriceInput(field) {
+  // Permitir números y puntos, eliminar todo lo demás
+  let value = field.value.replace(/[^\d.]/g, '');
+  
+  // Remover todos los puntos y usar solo números
+  value = value.replace(/\./g, '');
+  
+  if (value === '') {
+    field.value = '';
+    return;
+  }
+  
+  // Formatear con puntos directamente
+  const formatted = addThousandsSeparators(value);
+  field.value = formatted;
+}
+
+// Función para formatear mientras escribe
+function formatPriceOnInput(field) {
+  // Guardar posición del cursor
+  const cursorPosition = field.selectionStart;
+  const oldValue = field.value;
+  
+  // Permitir números y puntos, eliminar todo lo demás
+  let value = field.value.replace(/[^\d.]/g, '');
+  
+  // Remover todos los puntos y usar solo números
+  value = value.replace(/\./g, '');
+  
+  if (value === '') {
+    field.value = '';
+    return;
+  }
+  
+  // Formatear con puntos directamente
+  const formatted = addThousandsSeparators(value);
+  field.value = formatted;
+  
+  // Ajustar posición del cursor de manera más inteligente
+  const pointsInOld = (oldValue.match(/\./g) || []).length;
+  const pointsInNew = (formatted.match(/\./g) || []).length;
+  const pointDiff = pointsInNew - pointsInOld;
+  
+  let newPosition = cursorPosition + pointDiff;
+  if (newPosition < 0) newPosition = 0;
+  if (newPosition > formatted.length) newPosition = formatted.length;
+  
+  field.setSelectionRange(newPosition, newPosition);
+}
+
 // Función para validar precio
 function validatePrice(fieldId) {
   const field = document.getElementById(fieldId);
   const errorElement = document.getElementById(`${fieldId}-error`);
-  const price = parseFloat(field.value);
+  const price = parseColombianPrice(field.value);
   
   if (!field.value.trim()) {
     errorElement.textContent = "El precio es obligatorio.";
@@ -121,17 +191,50 @@ function validateDate(fieldId) {
 
 // Función para validar categoría
 function validateCategory(fieldId) {
-  const field = document.getElementById(fieldId);
+  // Obtener valor del selector (personalizado o nativo)
+  let fieldValue = '';
+  let inputElement = null;
+  
+  if (fieldId === 'category') {
+    // Formulario de registro
+    if (customCategorySelector) {
+      fieldValue = customCategorySelector.getValue();
+      inputElement = document.getElementById('categorySearch');
+    } else {
+      const field = document.getElementById('category');
+      fieldValue = field ? field.value : '';
+      inputElement = field;
+    }
+  } else if (fieldId === 'editCategory') {
+    // Formulario de edición
+    if (customEditCategorySelector) {
+      fieldValue = customEditCategorySelector.getValue();
+      inputElement = document.getElementById('editCategorySearch');
+    } else {
+      const field = document.getElementById('editCategory');
+      fieldValue = field ? field.value : '';
+      inputElement = field;
+    }
+  }
+  
   const errorElement = document.getElementById(`${fieldId}-error`);
   
-  if (!field.value) {
-    errorElement.textContent = "Debe seleccionar una categoría.";
-    errorElement.style.display = "block";
-    field.classList.add("input-error");
+  if (!fieldValue) {
+    if (errorElement) {
+      errorElement.textContent = "Debe seleccionar una categoría.";
+      errorElement.style.display = "block";
+    }
+    if (inputElement) {
+      inputElement.classList.add("input-error");
+    }
     return false;
   } else {
-    errorElement.style.display = "none";
-    field.classList.remove("input-error");
+    if (errorElement) {
+      errorElement.style.display = "none";
+    }
+    if (inputElement) {
+      inputElement.classList.remove("input-error");
+    }
     return true;
   }
 }
@@ -177,6 +280,29 @@ function clearValidationErrors(formId) {
   });
 }
 
+function isNumber(evt, allowDecimals = false) {
+  const charCode = (evt.which) ? evt.which : evt.keyCode;
+  
+  // Permitir teclas de control (backspace, delete, tab, escape, enter)
+  if ([8, 9, 27, 13, 46].indexOf(charCode) !== -1 ||
+    // Permitir Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+    (charCode === 65 && evt.ctrlKey === true) ||
+    (charCode === 67 && evt.ctrlKey === true) ||
+    (charCode === 86 && evt.ctrlKey === true) ||
+    (charCode === 88 && evt.ctrlKey === true) ||
+    // Permitir home, end, left, right
+    (charCode >= 35 && charCode <= 39)) {
+    return true;
+  }
+  
+  // Solo permitir números
+  if (charCode > 31 && (charCode < 48 || charCode > 57)) {
+    return false;
+  }
+  
+  return true;
+}
+
 function disableNativeBrowserValidation() {
   const productForm = document.getElementById("productForm");
   if (productForm) {
@@ -199,6 +325,366 @@ function disableNativeBrowserValidation() {
   }
 }
 
+// ===== CLASES DE SELECTORES PERSONALIZADOS =====
+
+// Instancias globales de los selectores personalizados
+let customCategorySelector = null;
+let customEditCategorySelector = null;
+
+// Clase para manejar el selector personalizado de categorías (registro)
+class CustomCategorySelector {
+  constructor(containerId) {
+    this.container = document.getElementById(containerId);
+    this.input = document.getElementById('categorySearch');
+    this.hiddenInput = document.getElementById('category');
+    this.dropdown = document.getElementById('categoryDropdown');
+    this.searchInput = document.getElementById('categorySearchInput');
+    this.optionsContainer = document.getElementById('categoryOptions');
+    this.categories = [];
+    this.filteredCategories = [];
+    this.selectedCategory = null;
+    this.isOpen = false;
+
+    this.init();
+  }
+
+  init() {
+    if (!this.container) return;
+
+    // Event listeners
+    this.input.addEventListener('click', () => this.toggle());
+    this.searchInput.addEventListener('input', (e) => this.filterCategories(e.target.value));
+    this.searchInput.addEventListener('keydown', (e) => this.handleKeydown(e));
+
+    // Cerrar al hacer clic fuera
+    document.addEventListener('click', (e) => {
+      if (!this.container.contains(e.target)) {
+        this.close();
+      }
+    });
+  }
+
+  setCategories(categories) {
+    this.categories = categories.map(category => ({
+      id: category._id,
+      name: category.name || 'Sin nombre'
+    }));
+    this.filteredCategories = [...this.categories];
+    this.renderOptions();
+  }
+
+  filterCategories(searchTerm) {
+    const term = searchTerm.toLowerCase().trim();
+    
+    if (!term) {
+      this.filteredCategories = [...this.categories];
+    } else {
+      this.filteredCategories = this.categories.filter(category => 
+        category.name.toLowerCase().includes(term)
+      );
+    }
+    
+    this.renderOptions();
+  }
+
+  renderOptions() {
+    if (this.filteredCategories.length === 0) {
+      this.optionsContainer.innerHTML = '<div class="custom-select-no-results">No se encontraron categorías</div>';
+      return;
+    }
+
+    const optionsHTML = this.filteredCategories.map(category => 
+      `<div class="custom-select-option" data-id="${category.id}">
+        ${category.name}
+      </div>`
+    ).join('');
+
+    this.optionsContainer.innerHTML = optionsHTML;
+
+    // Agregar event listeners a las opciones
+    this.optionsContainer.querySelectorAll('.custom-select-option').forEach(option => {
+      option.addEventListener('click', () => this.selectOption(option));
+    });
+  }
+
+  selectOption(optionElement) {
+    const categoryId = optionElement.dataset.id;
+    const categoryName = optionElement.textContent.trim();
+
+    // Actualizar valores
+    this.selectedCategory = { id: categoryId, name: categoryName };
+    this.input.value = categoryName;
+    this.hiddenInput.value = categoryId;
+
+    // Limpiar validación
+    this.clearValidation();
+
+    // Cerrar dropdown
+    this.close();
+
+    // Disparar evento de cambio para compatibilidad con código existente
+    const changeEvent = new Event('change', { bubbles: true });
+    this.hiddenInput.dispatchEvent(changeEvent);
+  }
+
+  toggle() {
+    if (this.isOpen) {
+      this.close();
+    } else {
+      this.open();
+    }
+  }
+
+  open() {
+    this.isOpen = true;
+    this.container.classList.add('open');
+    this.searchInput.value = '';
+    this.filteredCategories = [...this.categories];
+    this.renderOptions();
+    
+    // Enfocar en el input de búsqueda
+    setTimeout(() => {
+      this.searchInput.focus();
+    }, 100);
+  }
+
+  close() {
+    this.isOpen = false;
+    this.container.classList.remove('open');
+  }
+
+  handleKeydown(e) {
+    if (e.key === 'Escape') {
+      this.close();
+    }
+  }
+
+  clearValidation() {
+    const errorElement = document.getElementById('category-error');
+    if (errorElement) {
+      errorElement.style.display = 'none';
+    }
+    this.input.classList.remove('input-error');
+  }
+
+  reset() {
+    this.selectedCategory = null;
+    this.input.value = '';
+    this.hiddenInput.value = '';
+    this.searchInput.value = '';
+    this.filteredCategories = [...this.categories];
+    this.renderOptions();
+    this.close();
+  }
+
+  getValue() {
+    return this.hiddenInput.value;
+  }
+
+  setValue(categoryId) {
+    const category = this.categories.find(c => c.id === categoryId);
+    if (category) {
+      this.selectedCategory = category;
+      this.input.value = category.name;
+      this.hiddenInput.value = categoryId;
+    }
+  }
+
+  getSelectedCategory() {
+    return this.selectedCategory;
+  }
+}
+
+// Clase para manejar el selector personalizado de categorías (edición)
+class CustomEditCategorySelector {
+  constructor(containerId) {
+    this.container = document.getElementById(containerId);
+    this.input = document.getElementById('editCategorySearch');
+    this.hiddenInput = document.getElementById('editCategory');
+    // En productos solo tenemos selector personalizado, no hay nativo
+    this.dropdown = document.getElementById('editCategoryDropdown');
+    this.searchInput = document.getElementById('editCategorySearchInput');
+    this.optionsContainer = document.getElementById('editCategoryOptions');
+    this.categories = [];
+    this.filteredCategories = [];
+    this.selectedCategory = null;
+    this.isOpen = false;
+
+    this.init();
+  }
+
+  init() {
+    if (!this.container) return;
+
+    // Event listeners
+    this.input.addEventListener('click', () => this.toggle());
+    this.searchInput.addEventListener('input', (e) => this.filterCategories(e.target.value));
+    this.searchInput.addEventListener('keydown', (e) => this.handleKeydown(e));
+
+    // Cerrar al hacer clic fuera
+    document.addEventListener('click', (e) => {
+      if (!this.container.contains(e.target)) {
+        this.close();
+      }
+    });
+  }
+
+  setCategories(categories) {
+    this.categories = categories.map(category => ({
+      id: category._id,
+      name: category.name || 'Sin nombre'
+    }));
+    this.filteredCategories = [...this.categories];
+    this.renderOptions();
+  }
+
+  filterCategories(searchTerm) {
+    const term = searchTerm.toLowerCase().trim();
+    
+    if (!term) {
+      this.filteredCategories = [...this.categories];
+    } else {
+      this.filteredCategories = this.categories.filter(category => 
+        category.name.toLowerCase().includes(term)
+      );
+    }
+    
+    this.renderOptions();
+  }
+
+  renderOptions() {
+    if (this.filteredCategories.length === 0) {
+      this.optionsContainer.innerHTML = '<div class="custom-select-no-results">No se encontraron categorías</div>';
+      return;
+    }
+
+    const optionsHTML = this.filteredCategories.map(category => 
+      `<div class="custom-select-option" data-id="${category.id}">
+        ${category.name}
+      </div>`
+    ).join('');
+
+    this.optionsContainer.innerHTML = optionsHTML;
+
+    // Agregar event listeners a las opciones
+    this.optionsContainer.querySelectorAll('.custom-select-option').forEach(option => {
+      option.addEventListener('click', () => this.selectOption(option));
+    });
+  }
+
+  selectOption(optionElement) {
+    const categoryId = optionElement.dataset.id;
+    const categoryName = optionElement.textContent.trim();
+
+    // Actualizar valores
+    this.selectedCategory = { id: categoryId, name: categoryName };
+    this.input.value = categoryName;
+    this.hiddenInput.value = categoryId;
+
+    // Limpiar validación
+    this.clearValidation();
+
+    // Cerrar dropdown
+    this.close();
+
+    // Disparar evento de cambio para compatibilidad con código existente
+    const changeEvent = new Event('change', { bubbles: true });
+    this.hiddenInput.dispatchEvent(changeEvent);
+  }
+
+  toggle() {
+    if (this.isOpen) {
+      this.close();
+    } else {
+      this.open();
+    }
+  }
+
+  open() {
+    this.isOpen = true;
+    this.container.classList.add('open');
+    this.searchInput.value = '';
+    this.filteredCategories = [...this.categories];
+    this.renderOptions();
+    
+    // Enfocar en el input de búsqueda
+    setTimeout(() => {
+      this.searchInput.focus();
+    }, 100);
+  }
+
+  close() {
+    this.isOpen = false;
+    this.container.classList.remove('open');
+  }
+
+  handleKeydown(e) {
+    if (e.key === 'Escape') {
+      this.close();
+    }
+  }
+
+  clearValidation() {
+    const errorElement = document.getElementById('editCategory-error');
+    if (errorElement) {
+      errorElement.style.display = 'none';
+    }
+    this.input.classList.remove('input-error');
+  }
+
+  reset() {
+    this.selectedCategory = null;
+    this.input.value = '';
+    this.hiddenInput.value = '';
+    this.searchInput.value = '';
+    this.filteredCategories = [...this.categories];
+    this.renderOptions();
+    this.close();
+  }
+
+  getValue() {
+    return this.hiddenInput.value;
+  }
+
+  setValue(categoryId) {
+    console.log('CustomEditCategorySelector setValue llamado con:', categoryId);
+    console.log('Categorías disponibles:', this.categories);
+    
+    if (!Array.isArray(this.categories)) {
+      console.log('Categorías no es array, inicializando...');
+      this.categories = [];
+    }
+    
+    if (!categoryId) {
+      console.log('No hay categoryId, resetear selector');
+      this.reset();
+      return;
+    }
+    
+    const category = this.categories.find(c => c.id === categoryId);
+    console.log('Categoría encontrada:', category);
+    
+    if (category) {
+      this.selectedCategory = category;
+      this.input.value = category.name;
+      this.hiddenInput.value = categoryId;
+      
+      console.log('Valor establecido correctamente:', {
+        input: this.input.value,
+        hidden: this.hiddenInput.value
+      });
+    } else {
+      console.warn('Categoría no encontrada con ID:', categoryId);
+      // Si no se encuentra, resetear
+      this.reset();
+    }
+  }
+
+  getSelectedCategory() {
+    return this.selectedCategory;
+  }
+}
+
 // ===== FUNCIONES DE UTILIDAD =====
 
 // Función para abrir un modal
@@ -215,8 +701,15 @@ function openModal(modalId) {
     if (productForm) {
       productForm.reset();
     }
+    
+    // Resetear selector personalizado de categoría
+    if (customCategorySelector) customCategorySelector.reset();
   } else if (modalId === 'editModal') {
     clearValidationErrors('editForm');
+    
+    // NO resetear selector en modal de edición ya que se establece en fillEditForm
+    // Los valores se establecen específicamente en fillEditForm()
+    console.log('Abriendo modal de edición - NO resetear selectores');
   }
 }
 
@@ -250,7 +743,17 @@ function hideLoadingIndicator() {
 // Formatear precio en formato colombiano
 const formatPrice = (price) => {
   if (!price) return "$0";
-  return `$${parseFloat(price).toLocaleString('es-CO')}`;
+  
+  const num = parseFloat(price);
+  if (isNaN(num)) return "$0";
+  
+  // Si es un número entero, no mostrar decimales
+  if (num % 1 === 0) {
+    return `$${Math.round(num).toLocaleString('es-CO')}`;
+  } else {
+    // Si tiene decimales, mostrar máximo 2 decimales
+    return `$${num.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
 };
 
 // Usando la función helper para DD/MM/YYYY
@@ -474,6 +977,17 @@ const loadCategories = async () => {
         categorySelect.innerHTML += option;
         editCategorySelect.innerHTML += option;
       });
+      
+      // Inicializar selectores personalizados si los contenedores existen
+      if (document.getElementById('categorySelectContainer')) {
+        customCategorySelector = new CustomCategorySelector('categorySelectContainer');
+        customCategorySelector.setCategories(categories);
+      }
+      
+      if (document.getElementById('editCategorySelectContainer')) {
+        customEditCategorySelector = new CustomEditCategorySelector('editCategorySelectContainer');
+        customEditCategorySelector.setCategories(categories);
+      }
     } else {
       showError(data.message || "No se pudo listar las categorías.");
     }
@@ -627,8 +1141,17 @@ const registerProduct = async () => {
   }
   
   const name = document.getElementById("name").value.trim();
-  const category = document.getElementById("category").value;
-  const price = parseInt(document.getElementById("price").value);
+  
+  // Obtener categoría del selector personalizado o nativo
+  let category = '';
+  if (customCategorySelector) {
+    category = customCategorySelector.getValue();
+  } else {
+    const categoryField = document.getElementById("category");
+    category = categoryField ? categoryField.value : '';
+  }
+  
+  const price = parseColombianPrice(document.getElementById("price").value);
   const batchDate = document.getElementById("batchDate").value;
   const expirationDate = document.getElementById("expirationDate").value;
 
@@ -710,7 +1233,44 @@ const fillEditForm = async (id) => {
     const product = await res.json();
     document.getElementById("editId").value = product._id;
     document.getElementById("editName").value = product.name || "";
-    document.getElementById("editCategory").value = product.category?._id || "";
+    
+    // Establecer categoría (selector personalizado o nativo)
+    if (product.category?._id) {
+      const categoryId = product.category._id;
+      
+      if (customEditCategorySelector) {
+        // Intentar establecer el valor con reintentos
+        const setValueWithRetry = (attempts = 0) => {
+          console.log(`Intento ${attempts + 1} de establecer valor en selector personalizado:`, categoryId);
+          
+          if (customEditCategorySelector && Array.isArray(customEditCategorySelector.categories) && customEditCategorySelector.categories.length > 0) {
+            customEditCategorySelector.setValue(categoryId);
+          } else if (attempts < 3) {
+            console.log('Categorías aún no cargadas, reintentando...');
+            setTimeout(() => setValueWithRetry(attempts + 1), 200);
+          } else {
+            console.error('No se pudo establecer el valor después de varios intentos');
+          }
+        };
+        
+        setTimeout(() => setValueWithRetry(), 200);
+      } else {
+        const editCategoryField = document.getElementById("editCategory");
+        if (editCategoryField) {
+          editCategoryField.value = categoryId;
+        }
+      }
+    } else {
+      if (customEditCategorySelector) {
+        customEditCategorySelector.reset();
+      } else {
+        const editCategoryField = document.getElementById("editCategory");
+        if (editCategoryField) {
+          editCategoryField.value = "";
+        }
+      }
+    }
+    
     document.getElementById("editPrice").value = product.price || "";
     
     const editStockField = document.getElementById("editStock");
@@ -773,8 +1333,17 @@ const updateProduct = async () => {
 
   const productId = document.getElementById("editId").value;
   const name = document.getElementById("editName").value.trim();
-  const category = document.getElementById("editCategory").value;
-  const price = parseInt(document.getElementById("editPrice").value);
+  
+  // Obtener categoría del selector personalizado o nativo
+  let category = '';
+  if (customEditCategorySelector) {
+    category = customEditCategorySelector.getValue();
+  } else {
+    const categoryField = document.getElementById("editCategory");
+    category = categoryField ? categoryField.value : '';
+  }
+  
+  const price = parseColombianPrice(document.getElementById("editPrice").value);
   const batchDate = document.getElementById("editBatchDate").value;
   const expirationDate = document.getElementById("editExpirationDate").value;
 
@@ -1044,7 +1613,9 @@ function initializeValidationEvents() {
   
   const priceField = document.getElementById("price");
   if (priceField) {
+    priceField.addEventListener("input", () => formatPriceOnInput(priceField));
     priceField.addEventListener("blur", () => validatePrice("price"));
+    priceField.addEventListener("keypress", (evt) => isNumber(evt));
   }
 
   const stockField = document.getElementById("stock");
@@ -1085,7 +1656,9 @@ function initializeValidationEvents() {
   
   const editPriceField = document.getElementById("editPrice");
   if (editPriceField) {
+    editPriceField.addEventListener("input", () => formatPriceOnInput(editPriceField));
     editPriceField.addEventListener("blur", () => validatePrice("editPrice"));
+    editPriceField.addEventListener("keypress", (evt) => isNumber(evt));
   }
 
   const editStockField = document.getElementById("editStock");
@@ -1204,3 +1777,8 @@ window.checkProductStatus = checkProductStatus;
 window.searchProduct = searchProduct;
 window.hideLoadingIndicator = hideLoadingIndicator;
 window.formatDateForDisplay = formatDateForDisplay;
+window.isNumber = isNumber;
+window.formatPriceInput = formatPriceInput;
+window.formatPriceOnInput = formatPriceOnInput;
+window.parseColombianPrice = parseColombianPrice;
+window.addThousandsSeparators = addThousandsSeparators;

@@ -206,6 +206,11 @@ async function loadSalesData() {
                 adaptedSale.fecha_venta = adaptedSale.saleDate;
             }
             
+            // Normalizar createdAt si viene del backend
+            if (adaptedSale.created_at) {
+                adaptedSale.createdAt = adaptedSale.created_at;
+            }
+            
             // Normalizar monto total - más completo
             if (adaptedSale.totalAmount === undefined) {
                 if (adaptedSale.total !== undefined) {
@@ -276,39 +281,89 @@ async function loadSalesData() {
         const currentMonth = getFirstDayOfMonth();
         const previousMonth = getFirstDayOfPreviousMonth();
         
-        // Filtrar ventas del mes actual - acepta más estados
+        // Filtrar ventas del mes actual con mejor manejo de fechas
         const currentMonthSales = sales.filter(sale => {
-            if (!sale.saleDate) return false;
-            const saleDate = new Date(sale.saleDate);
-            return saleDate >= currentMonth && (
-                sale.status === 'completed' || 
-                sale.status === 'active' || 
-                sale.status === 'processing' ||
-                sale.estado === 'completed' || 
-                sale.estado === 'active' || 
-                sale.estado === 'processing'
-            );
+            const saleDateStr = sale.saleDate || 
+                              sale.sales_date || 
+                              sale.fecha_venta || 
+                              sale.createdAt ||
+                              sale.created_at ||
+                              sale.registrationDate ||
+                              sale.salesDate;
+            
+            if (!saleDateStr) return false;
+            
+            let saleDate;
+            try {
+                if (typeof saleDateStr === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(saleDateStr)) {
+                    saleDate = new Date(saleDateStr + 'T12:00:00');
+                } else {
+                    saleDate = new Date(saleDateStr);
+                }
+                if (isNaN(saleDate.getTime())) return false;
+            } catch (e) {
+                return false;
+            }
+            
+            const validStatus = !sale.status || 
+                              sale.status === 'completed' || 
+                              sale.status === 'active' || 
+                              sale.status === 'processing' ||
+                              sale.status === 'success' ||
+                              sale.status === 'finalizada' ||
+                              sale.estado === 'completed' || 
+                              sale.estado === 'active' || 
+                              sale.estado === 'processing' ||
+                              sale.estado === 'success' ||
+                              sale.estado === 'finalizada';
+            
+            return saleDate >= currentMonth && validStatus;
         });
         
-        // Filtrar ventas del mes anterior
+        // Filtrar ventas del mes anterior con mejor manejo de fechas
         const previousMonthSales = sales.filter(sale => {
-            if (!sale.saleDate) return false;
-            const saleDate = new Date(sale.saleDate);
-            return saleDate >= previousMonth && saleDate < currentMonth && (
-                sale.status === 'completed' || 
-                sale.status === 'active' || 
-                sale.status === 'processing' ||
-                sale.estado === 'completed' || 
-                sale.estado === 'active' || 
-                sale.estado === 'processing'
-            );
+            const saleDateStr = sale.saleDate || 
+                              sale.sales_date || 
+                              sale.fecha_venta || 
+                              sale.createdAt ||
+                              sale.created_at ||
+                              sale.registrationDate ||
+                              sale.salesDate;
+            
+            if (!saleDateStr) return false;
+            
+            let saleDate;
+            try {
+                if (typeof saleDateStr === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(saleDateStr)) {
+                    saleDate = new Date(saleDateStr + 'T12:00:00');
+                } else {
+                    saleDate = new Date(saleDateStr);
+                }
+                if (isNaN(saleDate.getTime())) return false;
+            } catch (e) {
+                return false;
+            }
+            
+            const validStatus = !sale.status || 
+                              sale.status === 'completed' || 
+                              sale.status === 'active' || 
+                              sale.status === 'processing' ||
+                              sale.status === 'success' ||
+                              sale.status === 'finalizada' ||
+                              sale.estado === 'completed' || 
+                              sale.estado === 'active' || 
+                              sale.estado === 'processing' ||
+                              sale.estado === 'success' ||
+                              sale.estado === 'finalizada';
+            
+            return saleDate >= previousMonth && saleDate < currentMonth && validStatus;
         });
         
         // Calcular totales
         const currentMonthTotal = currentMonthSales.reduce((sum, sale) => sum + (sale.totalAmount || 0), 0);
         const previousMonthTotal = previousMonthSales.reduce((sum, sale) => sum + (sale.totalAmount || 0), 0);
         
-        // Obtener ventas más recientes basándose en ID (últimas agregadas tienen ID más alto)
+        // Obtener ventas más recientes - SIEMPRE el último registro
         const recentSales = sales
             .filter(sale => 
                 sale.status === 'completed' || 
@@ -319,12 +374,44 @@ async function loadSalesData() {
                 sale.estado === 'processing'
             )
             .sort((a, b) => {
-                // Ordenar por ID descendente para obtener las últimas agregadas
-                const idA = parseInt(a.id?.replace(/\D/g, '') || a._id || '0');
-                const idB = parseInt(b.id?.replace(/\D/g, '') || b._id || '0');
-                return idB - idA;
+                // Ordenar SOLO por ID - el más alto es el más reciente
+                const idA = a._id || a.id || '';
+                const idB = b._id || b.id || '';
+                
+                // Comparar IDs como strings (MongoDB ObjectId)
+                if (idA > idB) return -1;
+                if (idA < idB) return 1;
+                return 0;
             })
             .slice(0, 5);
+        
+        // Para la venta más reciente, manejar tiempo de registro
+        if (recentSales.length > 0) {
+            const mostRecentSale = recentSales[0];
+            const currentSaleId = mostRecentSale._id || mostRecentSale.id;
+            
+            // Verificar si es una venta nueva
+            const lastKnownSaleId = localStorage.getItem('lastDashboardSaleId');
+            
+            if (currentSaleId !== lastKnownSaleId) {
+                // Es una venta nueva - asignar tiempo actual y guardar
+                const now = new Date();
+                const newTimestamp = new Date(now.getTime() - (30 * 1000)); // 30 segundos atrás
+                localStorage.setItem('lastDashboardSaleId', currentSaleId);
+                localStorage.setItem('lastDashboardSaleTime', newTimestamp.toISOString());
+                recentSales[0].createdAt = newTimestamp;
+            } else {
+                // Es la misma venta - usar tiempo guardado para que siga transcurriendo
+                const savedTime = localStorage.getItem('lastDashboardSaleTime');
+                if (savedTime) {
+                    recentSales[0].createdAt = savedTime;
+                } else {
+                    // Fallback
+                    const now = new Date();
+                    recentSales[0].createdAt = new Date(now.getTime() - (30 * 1000));
+                }
+            }
+        }
         
         // Obtener datos para gráfica (últimos 6 meses)
         const chartData = getSalesChartData(sales);
@@ -388,7 +475,7 @@ async function loadPurchasesData() {
             purchases = [];
         }
         
-        // Normalizar las compras como en el archivo original
+        // Normalizar las compras EXACTAMENTE como purchases.js
         purchases = purchases.map(purchase => {
             let adaptedPurchase = {...purchase};
             
@@ -399,15 +486,39 @@ async function loadPurchasesData() {
             // Normalizar status
             if (adaptedPurchase.status === undefined && adaptedPurchase.estado !== undefined) {
                 adaptedPurchase.status = adaptedPurchase.estado;
+            } else if (adaptedPurchase.estado === undefined && adaptedPurchase.status !== undefined) {
+                adaptedPurchase.estado = adaptedPurchase.status;
             }
             
-            // Normalizar fechas
+            // Normalizar fechas exactamente como purchases.js
             if (adaptedPurchase.purchaseDate === undefined) {
                 if (adaptedPurchase.purchase_date !== undefined) {
                     adaptedPurchase.purchaseDate = adaptedPurchase.purchase_date;
                 } else if (adaptedPurchase.fecha_compra !== undefined) {
                     adaptedPurchase.purchaseDate = adaptedPurchase.fecha_compra;
                 }
+            }
+            
+            if (adaptedPurchase.purchase_date === undefined && adaptedPurchase.fecha_compra !== undefined) {
+                adaptedPurchase.purchase_date = adaptedPurchase.fecha_compra;
+            } else if (adaptedPurchase.fecha_compra === undefined && adaptedPurchase.purchase_date !== undefined) {
+                adaptedPurchase.fecha_compra = adaptedPurchase.purchase_date;
+            } else if (adaptedPurchase.purchase_date === undefined && adaptedPurchase.fecha_compra === undefined && adaptedPurchase.purchaseDate !== undefined) {
+                adaptedPurchase.purchase_date = adaptedPurchase.purchaseDate;
+                adaptedPurchase.fecha_compra = adaptedPurchase.purchaseDate;
+            }
+            
+            // Normalizar provider exactamente como purchases.js
+            if (adaptedPurchase.provider === undefined && adaptedPurchase.proveedor !== undefined) {
+                adaptedPurchase.provider = adaptedPurchase.proveedor;
+            } else if (adaptedPurchase.proveedor === undefined && adaptedPurchase.provider !== undefined) {
+                adaptedPurchase.proveedor = adaptedPurchase.provider;
+            }
+            
+            // Normalizar status por defecto
+            if (adaptedPurchase.status === undefined && adaptedPurchase.estado === undefined) {
+                adaptedPurchase.status = "active";
+                adaptedPurchase.estado = "active";
             }
             
             // Normalizar monto total
@@ -419,22 +530,12 @@ async function loadPurchasesData() {
                 }
             }
             
-            // Normalizar nombre del proveedor basado en código original purchases.js
-            if (adaptedPurchase.providerName === undefined) {
-                if (adaptedPurchase.provider && adaptedPurchase.provider.company) {
-                    adaptedPurchase.providerName = adaptedPurchase.provider.company;
-                } else if (adaptedPurchase.proveedor && adaptedPurchase.proveedor.company) {
-                    adaptedPurchase.providerName = adaptedPurchase.proveedor.company;
-                } else if (adaptedPurchase.provider && adaptedPurchase.provider.name) {
-                    adaptedPurchase.providerName = adaptedPurchase.provider.name;
-                } else if (adaptedPurchase.proveedor && adaptedPurchase.proveedor.name) {
-                    adaptedPurchase.providerName = adaptedPurchase.proveedor.name;
-                } else if (adaptedPurchase.provider_name !== undefined) {
-                    adaptedPurchase.providerName = adaptedPurchase.provider_name;
-                } else if (adaptedPurchase.nombre_proveedor !== undefined) {
-                    adaptedPurchase.providerName = adaptedPurchase.nombre_proveedor;
-                }
+            // Normalizar createdAt si viene del backend
+            if (adaptedPurchase.created_at) {
+                adaptedPurchase.createdAt = adaptedPurchase.created_at;
             }
+            
+
             
             return adaptedPurchase;
         }).filter(purchase => purchase && typeof purchase === 'object' && Object.keys(purchase).length > 0);
@@ -442,37 +543,135 @@ async function loadPurchasesData() {
         const currentMonth = getFirstDayOfMonth();
         const previousMonth = getFirstDayOfPreviousMonth();
         
-        // Filtrar compras del mes actual
+        // Filtrar compras del mes actual con mejor manejo de fechas
         const currentMonthPurchases = purchases.filter(purchase => {
-            if (!purchase.purchaseDate) return false;
-            const purchaseDate = new Date(purchase.purchaseDate);
-            return purchaseDate >= currentMonth && (purchase.status === 'completed' || purchase.status === 'active');
+            const purchaseDateStr = purchase.purchaseDate || 
+                                  purchase.purchase_date || 
+                                  purchase.fecha_compra || 
+                                  purchase.createdAt ||
+                                  purchase.created_at ||
+                                  purchase.registrationDate;
+            
+            if (!purchaseDateStr) return false;
+            
+            let purchaseDate;
+            try {
+                if (typeof purchaseDateStr === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(purchaseDateStr)) {
+                    purchaseDate = new Date(purchaseDateStr + 'T12:00:00');
+                } else {
+                    purchaseDate = new Date(purchaseDateStr);
+                }
+                if (isNaN(purchaseDate.getTime())) return false;
+            } catch (e) {
+                return false;
+            }
+            
+            const validStatus = !purchase.status || 
+                              purchase.status === 'completed' || 
+                              purchase.status === 'active' || 
+                              purchase.status === 'processing' ||
+                              purchase.status === 'success' ||
+                              purchase.status === 'finalizada' ||
+                              purchase.estado === 'completed' || 
+                              purchase.estado === 'active' || 
+                              purchase.estado === 'processing' ||
+                              purchase.estado === 'success' ||
+                              purchase.estado === 'finalizada';
+            
+            return purchaseDate >= currentMonth && validStatus;
         });
         
-        // Filtrar compras del mes anterior
+        // Filtrar compras del mes anterior con mejor manejo de fechas
         const previousMonthPurchases = purchases.filter(purchase => {
-            if (!purchase.purchaseDate) return false;
-            const purchaseDate = new Date(purchase.purchaseDate);
-            return purchaseDate >= previousMonth && purchaseDate < currentMonth && (purchase.status === 'completed' || purchase.status === 'active');
+            const purchaseDateStr = purchase.purchaseDate || 
+                                  purchase.purchase_date || 
+                                  purchase.fecha_compra || 
+                                  purchase.createdAt ||
+                                  purchase.created_at ||
+                                  purchase.registrationDate;
+            
+            if (!purchaseDateStr) return false;
+            
+            let purchaseDate;
+            try {
+                if (typeof purchaseDateStr === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(purchaseDateStr)) {
+                    purchaseDate = new Date(purchaseDateStr + 'T12:00:00');
+                } else {
+                    purchaseDate = new Date(purchaseDateStr);
+                }
+                if (isNaN(purchaseDate.getTime())) return false;
+            } catch (e) {
+                return false;
+            }
+            
+            const validStatus = !purchase.status || 
+                              purchase.status === 'completed' || 
+                              purchase.status === 'active' || 
+                              purchase.status === 'processing' ||
+                              purchase.status === 'success' ||
+                              purchase.status === 'finalizada' ||
+                              purchase.estado === 'completed' || 
+                              purchase.estado === 'active' || 
+                              purchase.estado === 'processing' ||
+                              purchase.estado === 'success' ||
+                              purchase.estado === 'finalizada';
+            
+            return purchaseDate >= previousMonth && purchaseDate < currentMonth && validStatus;
         });
         
         // Calcular totales
         const currentMonthTotal = currentMonthPurchases.reduce((sum, purchase) => sum + (purchase.totalAmount || 0), 0);
         const previousMonthTotal = previousMonthPurchases.reduce((sum, purchase) => sum + (purchase.totalAmount || 0), 0);
         
-        // Obtener compras más recientes basándose en ID (últimas agregadas tienen ID más alto)
+        // Obtener compras más recientes - SIEMPRE el último registro
         const recentPurchases = purchases
-            .filter(purchase => purchase.status === 'completed' || purchase.status === 'active')
+            .filter(purchase => purchase.status === 'active' || purchase.estado === 'active')
             .sort((a, b) => {
-                // Ordenar por ID descendente para obtener las últimas agregadas
-                const idA = parseInt(a.id?.replace(/\D/g, '') || a._id || '0');
-                const idB = parseInt(b.id?.replace(/\D/g, '') || b._id || '0');
-                return idB - idA;
+                // Ordenar SOLO por ID - el más alto es el más reciente
+                const idA = a._id || a.id || '';
+                const idB = b._id || b.id || '';
+                
+                // Comparar IDs como strings (MongoDB ObjectId)
+                if (idA > idB) return -1;
+                if (idA < idB) return 1;
+                return 0;
             })
             .slice(0, 5);
         
+                // Para la compra más reciente, manejar tiempo de registro
+        if (recentPurchases.length > 0) {
+            const mostRecentPurchase = recentPurchases[0];
+            const currentPurchaseId = mostRecentPurchase._id || mostRecentPurchase.id;
+            
+            // Verificar si es una compra nueva
+            const lastKnownPurchaseId = localStorage.getItem('lastDashboardPurchaseId');
+            
+            if (currentPurchaseId !== lastKnownPurchaseId) {
+                // Es una compra nueva - asignar tiempo actual y guardar
+                const now = new Date();
+                const newTimestamp = new Date(now.getTime() - (30 * 1000)); // 30 segundos atrás
+                localStorage.setItem('lastDashboardPurchaseId', currentPurchaseId);
+                localStorage.setItem('lastDashboardPurchaseTime', newTimestamp.toISOString());
+                recentPurchases[0].createdAt = newTimestamp;
+            } else {
+                // Es la misma compra - usar tiempo guardado para que siga transcurriendo
+                const savedTime = localStorage.getItem('lastDashboardPurchaseTime');
+                if (savedTime) {
+                    recentPurchases[0].createdAt = savedTime;
+                } else {
+                    // Fallback
+                    const now = new Date();
+                    recentPurchases[0].createdAt = new Date(now.getTime() - (30 * 1000));
+                }
+            }
+        }
+        
+
+        
         // Obtener datos para gráfica (últimos 6 meses)
         const chartData = getPurchasesChartData(purchases);
+
+
 
         dashboardData.purchases = {
             totalThisMonth: currentMonthTotal,
@@ -480,7 +679,7 @@ async function loadPurchasesData() {
             recentPurchases: recentPurchases,
             chartData: chartData
         };
-        
+
     } catch (error) {
         dashboardData.purchases = {
             totalThisMonth: 0,
@@ -724,7 +923,18 @@ function updateSalesWidget() {
  * Actualiza el widget de compras
  */
 function updatePurchasesWidget() {
-    const purchasesWidget = document.querySelector('.widget:last-child');
+    // Buscar específicamente el widget de compras por título
+    const widgets = document.querySelectorAll('.widget');
+    let purchasesWidget = null;
+    
+    for (const widget of widgets) {
+        const title = widget.querySelector('.widget-title');
+        if (title && title.textContent.includes('Compras')) {
+            purchasesWidget = widget;
+            break;
+        }
+    }
+    
     if (!purchasesWidget) {
         return;
     }
@@ -763,12 +973,29 @@ function updateRecentActivity() {
     if (dashboardData.sales.recentSales.length > 0) {
         const latestSale = dashboardData.sales.recentSales[0];
         if (salesTitleElement) {
-            salesTitleElement.textContent = `Nueva venta registrada - Cliente: ${latestSale.customerName || 'Cliente'}`;
+            // Construir el nombre completo del cliente con nombre y apellido
+            let customerFullName = "Cliente";
+            
+            // Si el cliente está como objeto
+            if (latestSale.customer) {
+                if (latestSale.customer.name) {
+                    customerFullName = latestSale.customer.name;
+                    if (latestSale.customer.lastname || latestSale.customer.lastName) {
+                        customerFullName += ` ${latestSale.customer.lastname || latestSale.customer.lastName}`;
+                    }
+                } else if (latestSale.customer.companyName) {
+                    customerFullName = latestSale.customer.companyName;
+                }
+            }
+            // Si solo hay customerName (formato anterior)
+            else if (latestSale.customerName) {
+                customerFullName = latestSale.customerName;
+            }
+            
+            salesTitleElement.textContent = `Nueva venta registrada - Cliente: ${customerFullName}`;
         }
         if (salesTimeElement) {
-            // Usar fecha de creación del registro, no fecha de venta
-            const dateToUse = latestSale.createdAt || latestSale.created_at || latestSale.saleDate;
-            salesTimeElement.textContent = getTimeAgo(dateToUse);
+            salesTimeElement.textContent = getTimeAgo(latestSale.createdAt);
         }
         salesItem.style.display = 'flex';
     } else {
@@ -788,13 +1015,28 @@ function updateRecentActivity() {
     
     if (dashboardData.purchases.recentPurchases.length > 0) {
         const latestPurchase = dashboardData.purchases.recentPurchases[0];
+        
+        // Obtener nombre del proveedor exactamente como purchases.js
+        let providerName = "Sin Proveedor";
+        if (latestPurchase.provider) {
+            if (typeof latestPurchase.provider === 'object' && latestPurchase.provider.company) {
+                providerName = latestPurchase.provider.company;
+            } else if (typeof latestPurchase.provider === 'object' && latestPurchase.provider.name) {
+                providerName = latestPurchase.provider.name;
+            }
+        } else if (latestPurchase.proveedor) {
+            if (typeof latestPurchase.proveedor === 'object' && latestPurchase.proveedor.company) {
+                providerName = latestPurchase.proveedor.company;
+            } else if (typeof latestPurchase.proveedor === 'object' && latestPurchase.proveedor.name) {
+                providerName = latestPurchase.proveedor.name;
+            }
+        }
+        
         if (purchaseTitleElement) {
-            purchaseTitleElement.textContent = `Compra realizada - Proveedor: ${latestPurchase.providerName || 'Proveedor'}`;
+            purchaseTitleElement.textContent = `Compra realizada - Proveedor: ${providerName}`;
         }
         if (purchaseTimeElement) {
-            // Usar fecha de creación del registro, no fecha de compra
-            const dateToUse = latestPurchase.createdAt || latestPurchase.created_at || latestPurchase.purchaseDate;
-            purchaseTimeElement.textContent = getTimeAgo(dateToUse);
+            purchaseTimeElement.textContent = getTimeAgo(latestPurchase.createdAt);
         }
         purchaseItem.style.display = 'flex';
     } else {
@@ -815,7 +1057,18 @@ function updateRecentActivity() {
     if (dashboardData.customers.recentCustomers.length > 0) {
         const latestCustomer = dashboardData.customers.recentCustomers[0];
         if (customerTitleElement) {
-            customerTitleElement.textContent = `Nuevo cliente registrado - ${latestCustomer.name || latestCustomer.companyName || 'Cliente'}`;
+            // Construir el nombre completo con nombre y apellido
+            let customerFullName = "Cliente";
+            if (latestCustomer.name) {
+                customerFullName = latestCustomer.name;
+                if (latestCustomer.lastname || latestCustomer.lastName) {
+                    customerFullName += ` ${latestCustomer.lastname || latestCustomer.lastName}`;
+                }
+            } else if (latestCustomer.companyName) {
+                customerFullName = latestCustomer.companyName;
+            }
+            
+            customerTitleElement.textContent = `Nuevo cliente registrado - ${customerFullName}`;
         }
         if (customerTimeElement) {
             customerTimeElement.textContent = getTimeAgo(latestCustomer.createdAt);
@@ -879,8 +1132,7 @@ function updateActivityTimes() {
         const latestSale = dashboardData.sales.recentSales[0];
         const salesTimeElement = activityItems[0].querySelector('.activity-time');
         if (salesTimeElement) {
-            const dateToUse = latestSale.createdAt || latestSale.created_at || latestSale.saleDate;
-            salesTimeElement.textContent = getTimeAgo(dateToUse);
+            salesTimeElement.textContent = getTimeAgo(latestSale.createdAt);
         }
     }
     
@@ -889,8 +1141,7 @@ function updateActivityTimes() {
         const latestPurchase = dashboardData.purchases.recentPurchases[0];
         const purchaseTimeElement = activityItems[1].querySelector('.activity-time');
         if (purchaseTimeElement) {
-            const dateToUse = latestPurchase.createdAt || latestPurchase.created_at || latestPurchase.purchaseDate;
-            purchaseTimeElement.textContent = getTimeAgo(dateToUse);
+            purchaseTimeElement.textContent = getTimeAgo(latestPurchase.createdAt);
         }
     }
     
@@ -963,8 +1214,42 @@ function initializeDashboard() {
     // Cargar datos iniciales
     loadDashboardData();
     
-    // Configurar actualización automática cada 5 minutos
-    setInterval(loadDashboardData, 5 * 60 * 1000);
+    // Configurar actualización automática cada 10 segundos para detectar nuevos registros
+    setInterval(loadDashboardData, 10 * 1000);
+}
+
+// ===== FUNCIONES DE UTILIDAD PARA FECHAS =====
+
+/**
+ * Parsea una fecha de manera segura y flexible
+ */
+function parseDateSafely(dateStr) {
+    if (!dateStr) return null;
+    
+    try {
+        // Si es solo fecha (YYYY-MM-DD), agregarle hora para evitar timezone issues
+        if (typeof dateStr === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+            return new Date(dateStr + 'T12:00:00');
+        } else {
+            const date = new Date(dateStr);
+            return isNaN(date.getTime()) ? null : date;
+        }
+    } catch (e) {
+        return null;
+    }
+}
+
+/**
+ * Verifica si un registro tiene status válido
+ */
+function hasValidStatus(record) {
+    return !record.status || 
+           record.status === 'completed' || 
+           record.status === 'active' || 
+           record.status === 'processing' ||
+           record.estado === 'completed' || 
+           record.estado === 'active' || 
+           record.estado === 'processing';
 }
 
 // ===== FUNCIONES DE GRÁFICAS =====
@@ -977,25 +1262,78 @@ function getSalesChartData(salesData) {
     const chartData = [];
     
     // Generar datos para los últimos 6 meses
-    for (let i = 6; i >= 0; i--) {
+    for (let i = 5; i >= 0; i--) {
         const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
         const nextMonth = new Date(today.getFullYear(), today.getMonth() - i + 1, 1);
         
-        // Filtrar ventas de este mes
+        // Filtrar ventas de este mes con manejo flexible de fechas y estados
         const monthSales = salesData.filter(sale => {
-            if (!sale.saleDate && !sale.sales_date && !sale.fecha_venta) return false;
-            const saleDate = new Date(sale.saleDate || sale.sales_date || sale.fecha_venta);
-            return saleDate >= date && saleDate < nextMonth && (sale.status === 'completed' || sale.status === 'active');
+            // Obtener fecha de múltiples campos posibles
+            const saleDateStr = sale.saleDate || 
+                              sale.sales_date || 
+                              sale.fecha_venta || 
+                              sale.createdAt || 
+                              sale.created_at ||
+                              sale.registrationDate ||
+                              sale.salesDate;
+            
+            if (!saleDateStr) return false;
+            
+            let saleDate;
+            try {
+                // Manejo robusto de diferentes formatos de fecha
+                if (typeof saleDateStr === 'string') {
+                    // Si es formato ISO date (YYYY-MM-DD), agregar hora
+                    if (/^\d{4}-\d{2}-\d{2}$/.test(saleDateStr)) {
+                        saleDate = new Date(saleDateStr + 'T12:00:00');
+                    } else {
+                        saleDate = new Date(saleDateStr);
+                    }
+                } else {
+                    saleDate = new Date(saleDateStr);
+                }
+                
+                if (isNaN(saleDate.getTime())) return false;
+            } catch (e) {
+                return false;
+            }
+            
+            // Verificar rango del mes
+            const inRange = saleDate >= date && saleDate < nextMonth;
+            
+            // Status más flexible - incluir registros sin status o con diferentes valores
+            const validStatus = !sale.status || 
+                              sale.status === 'completed' || 
+                              sale.status === 'active' || 
+                              sale.status === 'processing' ||
+                              sale.status === 'success' ||
+                              sale.status === 'finalizada' ||
+                              sale.estado === 'completed' || 
+                              sale.estado === 'active' || 
+                              sale.estado === 'processing' ||
+                              sale.estado === 'success' ||
+                              sale.estado === 'finalizada';
+            
+            return inRange && validStatus;
         });
         
-        const monthTotal = monthSales.reduce((sum, sale) => sum + (sale.totalAmount || sale.total || sale.total_amount || 0), 0);
+        // Calcular total del mes
+        const monthTotal = monthSales.reduce((sum, sale) => {
+            const total = sale.totalAmount || 
+                         sale.total || 
+                         sale.total_amount || 
+                         sale.monto_total ||
+                         sale.amount || 0;
+            return sum + parseFloat(total || 0);
+        }, 0);
         
         const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
         
         chartData.push({
             month: monthNames[date.getMonth()],
             value: monthTotal,
-            count: monthSales.length
+            count: monthSales.length,
+            year: date.getFullYear()
         });
     }
     
@@ -1009,26 +1347,78 @@ function getPurchasesChartData(purchasesData) {
     const today = new Date();
     const chartData = [];
     
-    // Generar datos para los últimos 6 meses
-    for (let i = 6; i >= 0; i--) {
+    // Generar datos para los últimos 6 meses (incluir 7 meses para mostrar 6 + actual)
+    for (let i = 5; i >= 0; i--) {
         const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
         const nextMonth = new Date(today.getFullYear(), today.getMonth() - i + 1, 1);
         
-        // Filtrar compras de este mes
+        // Filtrar compras de este mes con manejo flexible de fechas y estados
         const monthPurchases = purchasesData.filter(purchase => {
-            if (!purchase.purchaseDate && !purchase.purchase_date && !purchase.fecha_compra) return false;
-            const purchaseDate = new Date(purchase.purchaseDate || purchase.purchase_date || purchase.fecha_compra);
-            return purchaseDate >= date && purchaseDate < nextMonth && (purchase.status === 'completed' || purchase.status === 'active');
+            // Obtener fecha de múltiples campos posibles
+            const purchaseDateStr = purchase.purchaseDate || 
+                                  purchase.purchase_date || 
+                                  purchase.fecha_compra || 
+                                  purchase.createdAt || 
+                                  purchase.created_at ||
+                                  purchase.registrationDate;
+            
+            if (!purchaseDateStr) return false;
+            
+            let purchaseDate;
+            try {
+                // Manejo robusto de diferentes formatos de fecha
+                if (typeof purchaseDateStr === 'string') {
+                    // Si es formato ISO date (YYYY-MM-DD), agregar hora
+                    if (/^\d{4}-\d{2}-\d{2}$/.test(purchaseDateStr)) {
+                        purchaseDate = new Date(purchaseDateStr + 'T12:00:00');
+                    } else {
+                        purchaseDate = new Date(purchaseDateStr);
+                    }
+                } else {
+                    purchaseDate = new Date(purchaseDateStr);
+                }
+                
+                if (isNaN(purchaseDate.getTime())) return false;
+            } catch (e) {
+                return false;
+            }
+            
+            // Verificar rango del mes
+            const inRange = purchaseDate >= date && purchaseDate < nextMonth;
+            
+            // Status más flexible - incluir registros sin status o con diferentes valores
+            const validStatus = !purchase.status || 
+                              purchase.status === 'completed' || 
+                              purchase.status === 'active' || 
+                              purchase.status === 'processing' ||
+                              purchase.status === 'success' ||
+                              purchase.status === 'finalizada' ||
+                              purchase.estado === 'completed' || 
+                              purchase.estado === 'active' || 
+                              purchase.estado === 'processing' ||
+                              purchase.estado === 'success' ||
+                              purchase.estado === 'finalizada';
+            
+            return inRange && validStatus;
         });
         
-        const monthTotal = monthPurchases.reduce((sum, purchase) => sum + (purchase.totalAmount || purchase.total || purchase.total_amount || 0), 0);
+        // Calcular total del mes
+        const monthTotal = monthPurchases.reduce((sum, purchase) => {
+            const total = purchase.totalAmount || 
+                         purchase.total || 
+                         purchase.total_amount || 
+                         purchase.monto_total ||
+                         purchase.amount || 0;
+            return sum + parseFloat(total || 0);
+        }, 0);
         
         const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
         
         chartData.push({
             month: monthNames[date.getMonth()],
             value: monthTotal,
-            count: monthPurchases.length
+            count: monthPurchases.length,
+            year: date.getFullYear()
         });
     }
     
@@ -1042,17 +1432,36 @@ function updateSalesChart() {
     const chartData = dashboardData.sales.chartData || [];
     if (chartData.length === 0) return;
     
-    const svgElement = document.querySelector('.widget:first-child .chart-container svg');
+    // Buscar específicamente el widget de ventas
+    const widgets = document.querySelectorAll('.widget');
+    let salesWidget = null;
+    
+    for (const widget of widgets) {
+        const title = widget.querySelector('.widget-title');
+        if (title && title.textContent.includes('Ventas')) {
+            salesWidget = widget;
+            break;
+        }
+    }
+    
+    if (!salesWidget) return;
+    
+    const svgElement = salesWidget.querySelector('.chart-container svg');
     if (!svgElement) return;
     
-    // Calcular valor máximo, con mínimo de 1 para evitar división por 0
-    const maxValue = Math.max(1, Math.max(...chartData.map(d => d.value || 0)));
+    // Calcular valor máximo para escalar correctamente
+    const values = chartData.map(d => d.value || 0);
+    const maxValue = Math.max(...values);
     
-    // Generar puntos para la línea
+    // Si todas las ventas tienen valor 0, usar escala mínima
+    const effectiveMaxValue = maxValue > 0 ? maxValue : 1;
+    
+    // Generar puntos para la línea con datos reales
     const points = chartData.map((data, index) => {
         const x = chartData.length > 1 ? (index / (chartData.length - 1)) * 400 : 200;
         const value = data.value || 0;
-        const y = Math.max(20, 120 - ((value / maxValue) * 100)); // Mínimo y=20
+        const heightPercentage = effectiveMaxValue > 0 ? (value / effectiveMaxValue) : 0;
+        const y = Math.max(20, 120 - (heightPercentage * 100)); // Mínimo y=20, máximo y=120
         return `${x},${y}`;
     }).join(' ');
     
@@ -1060,6 +1469,12 @@ function updateSalesChart() {
     const polyline = svgElement.querySelector('polyline');
     if (polyline) {
         polyline.setAttribute('points', points);
+        // Cambiar color de línea según si hay datos
+        if (maxValue > 0) {
+            polyline.setAttribute('stroke', '#2196F3'); // Azul para datos
+        } else {
+            polyline.setAttribute('stroke', '#e0e0e0'); // Gris para sin datos
+        }
     }
     
     // Actualizar el área
@@ -1067,6 +1482,12 @@ function updateSalesChart() {
     if (path) {
         const pathData = `M${points} L400,120 L0,120 Z`;
         path.setAttribute('d', pathData);
+        // Cambiar color de área según si hay datos
+        if (maxValue > 0) {
+            path.setAttribute('fill', 'rgba(33, 150, 243, 0.1)'); // Azul translúcido para datos
+        } else {
+            path.setAttribute('fill', 'rgba(224, 224, 224, 0.1)'); // Gris translúcido para sin datos
+        }
     }
     
     // Actualizar los círculos
@@ -1075,9 +1496,19 @@ function updateSalesChart() {
         if (circles[i] && chartData[i]) {
             const x = chartData.length > 1 ? (i / (chartData.length - 1)) * 400 : 200;
             const value = chartData[i].value || 0;
-            const y = Math.max(20, 120 - ((value / maxValue) * 100));
+            const count = chartData[i].count || 0;
+            const heightPercentage = effectiveMaxValue > 0 ? (value / effectiveMaxValue) : 0;
+            const y = Math.max(20, 120 - (heightPercentage * 100));
+            
             circles[i].setAttribute('cx', x);
             circles[i].setAttribute('cy', y);
+            
+            // Cambiar color de círculos según si hay datos
+            if (count > 0 && value > 0) {
+                circles[i].setAttribute('fill', '#2196F3'); // Azul para meses con datos
+            } else {
+                circles[i].setAttribute('fill', '#e0e0e0'); // Gris para meses sin datos
+            }
         }
     }
 }
@@ -1087,25 +1518,69 @@ function updateSalesChart() {
  */
 function updatePurchasesChart() {
     const chartData = dashboardData.purchases.chartData || [];
-    if (chartData.length === 0) return;
     
-    const svgElement = document.querySelector('.widget:last-child .chart-container svg');
+    if (chartData.length === 0) {
+        return;
+    }
+    
+    // Buscar específicamente el widget de compras
+    const widgets = document.querySelectorAll('.widget');
+    let purchasesWidget = null;
+    
+    for (const widget of widgets) {
+        const title = widget.querySelector('.widget-title');
+        if (title && title.textContent.includes('Compras')) {
+            purchasesWidget = widget;
+            break;
+        }
+    }
+    
+    if (!purchasesWidget) {
+        return;
+    }
+    
+    const svgElement = purchasesWidget.querySelector('.chart-container svg');
     if (!svgElement) return;
     
     const rects = svgElement.querySelectorAll('rect');
     if (rects.length === 0) return;
     
-    // Calcular valor máximo, con mínimo de 1 para evitar división por 0
-    const maxValue = Math.max(1, Math.max(...chartData.map(d => d.value || 0)));
+    // Calcular valor máximo para escalar correctamente
+    const values = chartData.map(d => d.value || 0);
+    const maxValue = Math.max(...values);
     
-    // Actualizar las barras - usar solo las primeras 6 barras para 6 meses
+    // Si todas las barras tienen valor 0, mostrar barras pequeñas uniformes
+    if (maxValue === 0) {
+        for (let i = 0; i < Math.min(chartData.length, rects.length); i++) {
+            if (rects[i]) {
+                rects[i].setAttribute('height', '5');
+                rects[i].setAttribute('y', '115');
+                rects[i].setAttribute('fill', '#e0e0e0');
+            }
+        }
+        return;
+    }
+    
+    // Actualizar cada barra con los datos correspondientes
     for (let i = 0; i < Math.min(chartData.length, rects.length); i++) {
         if (rects[i] && chartData[i]) {
             const value = chartData[i].value || 0;
-            const height = Math.max(5, (value / maxValue) * 90); // Mínimo 5px de altura
+            const count = chartData[i].count || 0;
+            
+            // Calcular altura proporcional (máximo 90px de altura disponible)
+            const heightPercentage = maxValue > 0 ? (value / maxValue) : 0;
+            const height = Math.max(3, heightPercentage * 90); // Mínimo 3px para visibilidad
             const y = 120 - height;
-            rects[i].setAttribute('height', height);
-            rects[i].setAttribute('y', y);
+            
+            rects[i].setAttribute('height', height.toString());
+            rects[i].setAttribute('y', y.toString());
+            
+            // Color según si hay datos o no
+            if (count > 0 && value > 0) {
+                rects[i].setAttribute('fill', '#4CAF50'); // Verde para meses con datos
+            } else {
+                rects[i].setAttribute('fill', '#e0e0e0'); // Gris para meses sin datos
+            }
         }
     }
 }

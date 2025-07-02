@@ -148,7 +148,7 @@
           <form id="productForm" novalidate>
             <label for="name">Nombre</label>
             <div class="form-field" style="margin-bottom: 15px;">
-              <input type="text" class="field-element" id="name">
+              <input type="text" class="field-element" id="name" placeholder="Nombre del producto">
               <div class="error-message" id="name-error">El campo es obligatorio.</div>
             </div>
             
@@ -156,21 +156,39 @@
             <div class="form-row">
               <div class="form-field">
                 <label for="category">Categorías</label>
-                <select class="field-element" id="category">
-                  <option value="" disabled selected hidden>Seleccionar categoría</option>
-                </select>
+                <div class="custom-select-container" id="categorySelectContainer">
+                  <input type="text" 
+                         class="field-element custom-select-input" 
+                         id="categorySearch" 
+                         placeholder="Seleccionar categoría" 
+                         autocomplete="off"
+                         readonly>
+                  <i class="material-icons custom-select-arrow">expand_more</i>
+                  <div class="custom-select-dropdown" id="categoryDropdown">
+                    <div class="custom-select-search">
+                      <input type="text" 
+                             id="categorySearchInput" 
+                             placeholder="Escriba para buscar..." 
+                             class="custom-search-input">
+                    </div>
+                    <div class="custom-select-options" id="categoryOptions">
+                      <!-- Las opciones se cargarán dinámicamente -->
+                    </div>
+                  </div>
+                </div>
+                <input type="hidden" id="category" name="category">
                 <div class="error-message" id="category-error">Debe seleccionar una categoría.</div>
               </div>
               <div class="form-field">
                 <label for="price">Precio</label>
-                <input type="number" class="field-element" id="price">
+                <input type="number" class="field-element" id="price" placeholder="0">
                 <div class="error-message" id="price-error">El precio es obligatorio.</div>
               </div>
             </div>
             <div class="form-row">
               <div class="form-field">
                 <label for="stock">Stock Inicial (Opcional)</label>
-                <input type="number" class="field-element" id="stock" min="0">
+                <input type="number" class="field-element" id="stock" min="0" placeholder="0">
                 <div class="error-message" id="stock-error">El stock debe ser un número entero no negativo.</div>
               </div>
               <div class="form-field">
@@ -218,9 +236,27 @@
             <div class="form-row">
               <div class="form-field">
                 <label for="editCategory">Categorías</label>
-                <select class="field-element" id="editCategory">
-                  <option value="" disabled selected hidden>Seleccionar categoría</option>
-                </select>
+                <div class="custom-select-container" id="editCategorySelectContainer">
+                  <input type="text" 
+                         class="field-element custom-select-input" 
+                         id="editCategorySearch" 
+                         placeholder="Seleccionar categoría" 
+                         autocomplete="off"
+                         readonly>
+                  <i class="material-icons custom-select-arrow">expand_more</i>
+                  <div class="custom-select-dropdown" id="editCategoryDropdown">
+                    <div class="custom-select-search">
+                      <input type="text" 
+                             id="editCategorySearchInput" 
+                             placeholder="Escriba para buscar..." 
+                             class="custom-search-input">
+                    </div>
+                    <div class="custom-select-options" id="editCategoryOptions">
+                      <!-- Las opciones se cargarán dinámicamente -->
+                    </div>
+                  </div>
+                </div>
+                <input type="hidden" id="editCategory" name="editCategory">
                 <div class="error-message" id="editCategory-error">Debe seleccionar una categoría.</div>
               </div>
               <div class="form-field">

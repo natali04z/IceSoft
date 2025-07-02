@@ -108,35 +108,71 @@
             <h3 id="formTitle">Detalles de la Compra</h3>
           </div>
           
-          <form id="purchaseForm" novalidate>
+          <form id="purchaseForm" novalidate style="width: 100%;">
             <div class="purchase-form-group">
               <label for="provider">Proveedor</label>
-              <select class="field-element" id="provider">
-                <option value="" disabled selected hidden>Seleccionar proveedor</option>
-                <!-- Los proveedores se cargarán dinámicamente -->
-              </select>
+              <div class="custom-select-container" id="providerSelectContainer">
+                <input type="text" 
+                       class="field-element custom-select-input" 
+                       id="providerSearch" 
+                       placeholder="Seleccionar proveedor..." 
+                       autocomplete="off"
+                       readonly>
+                <i class="material-icons custom-select-arrow">expand_more</i>
+                <div class="custom-select-dropdown" id="providerDropdown">
+                  <div class="custom-select-search">
+                    <input type="text" 
+                           id="providerSearchInput" 
+                           placeholder="Escriba para buscar..." 
+                           class="custom-search-input">
+                  </div>
+                  <div class="custom-select-options" id="providerOptions">
+                    <!-- Las opciones se cargarán dinámicamente -->
+                  </div>
+                </div>
+              </div>
+              <input type="hidden" id="provider" name="provider">
               <div class="error-message" id="provider-error" style="display:none;">El campo es obligatorio.</div>
             </div>
             
             <div class="purchase-form-group">
               <label for="product">Producto</label>
-              <select class="field-element" id="product">
-                <option value="" disabled selected hidden>Seleccionar producto</option>
-                <!-- Los productos se cargarán dinámicamente -->
-              </select>
+              <div class="custom-select-container" id="productSelectContainer">
+                <input type="text" 
+                       class="field-element custom-select-input" 
+                       id="productSearch" 
+                       placeholder="Seleccionar producto..." 
+                       autocomplete="off"
+                       readonly>
+                <i class="material-icons custom-select-arrow">expand_more</i>
+                <div class="custom-select-dropdown" id="productDropdown">
+                  <div class="custom-select-search">
+                    <input type="text" 
+                           id="productSearchInput" 
+                           placeholder="Escriba para buscar..." 
+                           class="custom-search-input">
+                  </div>
+                  <div class="custom-select-options" id="productOptions">
+                    <!-- Las opciones se cargarán dinámicamente -->
+                  </div>
+                </div>
+              </div>
+              <input type="hidden" id="product" name="product">
               <div class="error-message" id="product-error" style="display:none;">El campo es obligatorio.</div>
             </div>
             
-            <div class="purchase-form-group">
-              <label for="quantity">Cantidad</label>
-              <input type="number" class="field-element" id="quantity" min="1" value="1" onkeypress="return isNumber(event)">
-              <div class="error-message" id="quantity-error" style="display:none;">El campo es obligatorio.</div>
-            </div>
-            
-            <div class="purchase-form-group">
-              <label for="purchasePrice">Precio Compra</label>
-              <input type="number" class="field-element" id="purchasePrice" min="0" step="0.01"  onkeypress="return isNumber(event, true)">
-              <div class="error-message" id="purchasePrice-error" style="display:none;">El campo es obligatorio.</div>
+            <div class="purchase-form-inline">
+              <div class="purchase-form-group" style="flex: 0 0 30%; min-width: 120px;">
+                <label for="quantity">Cantidad</label>
+                <input type="number" class="field-element" id="quantity" min="1" value="1" onkeypress="return isNumber(event)" style="width: 100%;" >
+                <div class="error-message" id="quantity-error" style="display:none;">El campo es obligatorio.</div>
+              </div>
+              
+              <div class="purchase-form-group" style="flex: 1; min-width: 180px;">
+                <label for="purchasePrice">Precio Compra</label>
+                <input type="text" class="field-element" id="purchasePrice" placeholder="0" style="width: 100%;">
+                <div class="error-message" id="purchasePrice-error" style="display:none;">El campo es obligatorio.</div>
+              </div>
             </div>
             
             <div class="purchase-form-group">
@@ -146,9 +182,9 @@
             </div>
             
             <div class="purchase-buttons-group">
-              <div class="purchase-total-product">
-                <label>Total del producto:</label>
-                <span id="product-total">$0</span>
+              <div class="purchase-total-product" style="gap: 20px; min-width: 280px;">
+                <label>Total del Producto:</label>
+                <span id="product-total" style="min-width: 120px; text-align: right;">$0</span>
               </div>
             </div>
             
@@ -170,7 +206,7 @@
             <thead>
               <tr>
                 <th>Producto</th>
-                <th>Cant.</th>
+                <th>Cantidad</th>
                 <th>Precio Compra</th>
                 <th>Total</th>
                 <th>Acción</th>

@@ -878,10 +878,9 @@ const deleteBranch = async (id) => {
     }
     
     const data = await response.json();
-    console.log('Sucursal eliminada:', data);
     
     // El controller devuelve: { success: true, message: "Branch deleted successfully" }
-    if (data.success) {
+    if (response.ok) {
       showSuccess('La sucursal ha sido eliminada');
       loadBranchesInternal();
     }

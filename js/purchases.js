@@ -99,6 +99,76 @@ function validateQuantity(fieldId) {
   return true;
 }
 
+// Función para convertir formato colombiano a número
+function parseColombianPrice(value) {
+  if (!value) return 0;
+  
+  // Convertir a string si no lo es
+  const str = value.toString().trim();
+  
+  // Remover separadores de miles (puntos) pero mantener decimales (comas)
+  // Ejemplo: "3.000,50" -> "3000.50"
+  const normalized = str.replace(/\./g, '').replace(',', '.');
+  
+  return parseFloat(normalized) || 0;
+}
+
+// Función para formatear con puntos directamente
+function addThousandsSeparators(num) {
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+// Función para formatear entrada de precio en tiempo real
+function formatPriceInput(field) {
+  // Permitir números y puntos, eliminar todo lo demás
+  let value = field.value.replace(/[^\d.]/g, '');
+  
+  // Remover todos los puntos y usar solo números
+  value = value.replace(/\./g, '');
+  
+  if (value === '') {
+    field.value = '';
+    return;
+  }
+  
+  // Formatear con puntos directamente
+  const formatted = addThousandsSeparators(value);
+  field.value = formatted;
+}
+
+// Función para formatear mientras escribe
+function formatPriceOnInput(field) {
+  // Guardar posición del cursor
+  const cursorPosition = field.selectionStart;
+  const oldValue = field.value;
+  
+  // Permitir números y puntos, eliminar todo lo demás
+  let value = field.value.replace(/[^\d.]/g, '');
+  
+  // Remover todos los puntos y usar solo números
+  value = value.replace(/\./g, '');
+  
+  if (value === '') {
+    field.value = '';
+    return;
+  }
+  
+  // Formatear con puntos directamente
+  const formatted = addThousandsSeparators(value);
+  field.value = formatted;
+  
+  // Ajustar posición del cursor de manera más inteligente
+  const pointsInOld = (oldValue.match(/\./g) || []).length;
+  const pointsInNew = (formatted.match(/\./g) || []).length;
+  const pointDiff = pointsInNew - pointsInOld;
+  
+  let newPosition = cursorPosition + pointDiff;
+  if (newPosition < 0) newPosition = 0;
+  if (newPosition > formatted.length) newPosition = formatted.length;
+  
+  field.setSelectionRange(newPosition, newPosition);
+}
+
 function validatePrice(fieldId) {
   const field = document.getElementById(fieldId);
   const errorElement = document.getElementById(`${fieldId}-error`);
@@ -110,7 +180,7 @@ function validatePrice(fieldId) {
     return false;
   }
   
-  const price = parseFloat(field.value.trim());
+  const price = parseColombianPrice(field.value.trim());
   
   if (isNaN(price) || price <= 0) {
     errorElement.textContent = "El precio debe ser un número mayor que cero.";
@@ -132,32 +202,74 @@ function validatePrice(fieldId) {
 }
 
 function validateProvider(fieldId) {
-  const field = document.getElementById(fieldId);
+  // Para el selector personalizado de proveedores
+  if (isRegisterPage && customProviderSelector) {
+    const value = customProviderSelector.getValue();
   const errorElement = document.getElementById(`${fieldId}-error`);
+    const inputElement = document.getElementById('providerSearch');
   
-  if (!field.value) {
+    if (!value) {
     errorElement.textContent = "Debe seleccionar un proveedor.";
     errorElement.style.display = "block";
-    field.classList.add("input-error");
+      inputElement.classList.add("input-error");
     return false;
   } else {
     errorElement.style.display = "none";
+      inputElement.classList.remove("input-error");
+      return true;
+    }
+  }
+  
+  // Para selectores nativos (compatibilidad)
+  const field = document.getElementById(fieldId);
+  const errorElement = document.getElementById(`${fieldId}-error`);
+  
+  if (!field || !field.value) {
+    if (errorElement) {
+      errorElement.textContent = "Debe seleccionar un proveedor.";
+      errorElement.style.display = "block";
+    }
+    if (field) field.classList.add("input-error");
+    return false;
+  } else {
+    if (errorElement) errorElement.style.display = "none";
     field.classList.remove("input-error");
     return true;
   }
 }
 
 function validateProduct(fieldId) {
-  const field = document.getElementById(fieldId);
+  // Para el selector personalizado de productos
+  if (isRegisterPage && customProductSelector) {
+    const value = customProductSelector.getValue();
   const errorElement = document.getElementById(`${fieldId}-error`);
+    const inputElement = document.getElementById('productSearch');
   
-  if (!field.value) {
+    if (!value) {
     errorElement.textContent = "Debe seleccionar un producto.";
     errorElement.style.display = "block";
-    field.classList.add("input-error");
+      inputElement.classList.add("input-error");
     return false;
   } else {
     errorElement.style.display = "none";
+      inputElement.classList.remove("input-error");
+      return true;
+    }
+  }
+  
+  // Para selectores nativos (compatibilidad)
+  const field = document.getElementById(fieldId);
+  const errorElement = document.getElementById(`${fieldId}-error`);
+  
+  if (!field || !field.value) {
+    if (errorElement) {
+      errorElement.textContent = "Debe seleccionar un producto.";
+      errorElement.style.display = "block";
+    }
+    if (field) field.classList.add("input-error");
+    return false;
+  } else {
+    if (errorElement) errorElement.style.display = "none";
     field.classList.remove("input-error");
     return true;
   }
@@ -232,10 +344,19 @@ function getUserPermissions() {
 function isNumber(evt, allowDecimals = false) {
   const charCode = (evt.which) ? evt.which : evt.keyCode;
   
-  if (allowDecimals && charCode === 46 && evt.target.value.indexOf('.') === -1) {
+  // Permitir teclas de control (backspace, delete, tab, escape, enter)
+  if ([8, 9, 27, 13, 46].indexOf(charCode) !== -1 ||
+    // Permitir Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+    (charCode === 65 && evt.ctrlKey === true) ||
+    (charCode === 67 && evt.ctrlKey === true) ||
+    (charCode === 86 && evt.ctrlKey === true) ||
+    (charCode === 88 && evt.ctrlKey === true) ||
+    // Permitir home, end, left, right
+    (charCode >= 35 && charCode <= 39)) {
     return true;
   }
   
+  // Solo permitir números
   if (charCode > 31 && (charCode < 48 || charCode > 57)) {
     return false;
   }
@@ -287,7 +408,17 @@ const formatDate = (dateString) => {
 
 const formatCurrency = (amount) => {
   if (amount === undefined || amount === null) return "$0";
-  return `$${parseFloat(amount).toLocaleString('es-CO')}`;
+  
+  const num = parseFloat(amount);
+  if (isNaN(num)) return "$0";
+  
+  // Si es un número entero, no mostrar decimales
+  if (num % 1 === 0) {
+    return `$${Math.round(num).toLocaleString('es-CO')}`;
+  } else {
+    // Si tiene decimales, mostrar máximo 2 decimales
+    return `$${num.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
 };
 
 const getProductNameById = (productId) => {
@@ -318,7 +449,7 @@ const loadPurchasesInternal = async () => {
     
     if (!res.ok) {
       const data = await res.json();
-      showError(data.message || "No se pudo listar las compras.");
+      showError( "No se pudo listar las compras.");
       return;
     }
     
@@ -561,6 +692,329 @@ const listPurchases = async () => {
   }
 };
 
+// Clase para manejar el selector personalizado de productos
+class CustomProductSelector {
+  constructor(containerId) {
+    this.container = document.getElementById(containerId);
+    this.input = document.getElementById('productSearch');
+    this.hiddenInput = document.getElementById('product');
+    this.dropdown = document.getElementById('productDropdown');
+    this.searchInput = document.getElementById('productSearchInput');
+    this.optionsContainer = document.getElementById('productOptions');
+    this.products = [];
+    this.filteredProducts = [];
+    this.selectedProduct = null;
+    this.isOpen = false;
+
+    this.init();
+  }
+
+  init() {
+    if (!this.container) return;
+
+    // Event listeners
+    this.input.addEventListener('click', () => this.toggle());
+    this.searchInput.addEventListener('input', (e) => this.filterProducts(e.target.value));
+    this.searchInput.addEventListener('keydown', (e) => this.handleKeydown(e));
+
+    // Cerrar al hacer clic fuera
+    document.addEventListener('click', (e) => {
+      if (!this.container.contains(e.target)) {
+        this.close();
+      }
+    });
+  }
+
+  setProducts(products) {
+    this.products = products.map(product => ({
+      id: product._id,
+      name: product.name || 'Sin nombre',
+      price: product.price || 0
+    }));
+    this.filteredProducts = [...this.products];
+    this.renderOptions();
+  }
+
+  filterProducts(searchTerm) {
+    const term = searchTerm.toLowerCase().trim();
+    
+    if (!term) {
+      this.filteredProducts = [...this.products];
+    } else {
+      this.filteredProducts = this.products.filter(product => 
+        product.name.toLowerCase().includes(term)
+      );
+    }
+    
+    this.renderOptions();
+  }
+
+  renderOptions() {
+    if (this.filteredProducts.length === 0) {
+      this.optionsContainer.innerHTML = '<div class="custom-select-no-results">No se encontraron productos</div>';
+      return;
+    }
+
+    const optionsHTML = this.filteredProducts.map(product => 
+      `<div class="custom-select-option" data-id="${product.id}" data-price="${product.price}">
+        ${product.name}
+      </div>`
+    ).join('');
+
+    this.optionsContainer.innerHTML = optionsHTML;
+
+    // Agregar event listeners a las opciones
+    this.optionsContainer.querySelectorAll('.custom-select-option').forEach(option => {
+      option.addEventListener('click', () => this.selectOption(option));
+    });
+  }
+
+  selectOption(optionElement) {
+    const productId = optionElement.dataset.id;
+    const productName = optionElement.textContent.trim();
+    const productPrice = optionElement.dataset.price;
+
+    // Actualizar valores
+    this.selectedProduct = { id: productId, name: productName, price: productPrice };
+    this.input.value = productName;
+    this.hiddenInput.value = productId;
+
+    // Limpiar validación
+    this.clearValidation();
+
+    // Cerrar dropdown
+    this.close();
+
+    // Disparar evento de cambio para compatibilidad con código existente
+    const changeEvent = new Event('change', { bubbles: true });
+    this.hiddenInput.dispatchEvent(changeEvent);
+
+    // Actualizar total del producto
+    if (window.updateProductTotal) {
+      window.updateProductTotal();
+    }
+  }
+
+  toggle() {
+    if (this.isOpen) {
+      this.close();
+    } else {
+      this.open();
+    }
+  }
+
+  open() {
+    this.isOpen = true;
+    this.container.classList.add('open');
+    this.searchInput.value = '';
+    this.filteredProducts = [...this.products];
+    this.renderOptions();
+    
+    // Enfocar en el input de búsqueda
+    setTimeout(() => {
+      this.searchInput.focus();
+    }, 100);
+  }
+
+  close() {
+    this.isOpen = false;
+    this.container.classList.remove('open');
+  }
+
+  handleKeydown(e) {
+    if (e.key === 'Escape') {
+      this.close();
+    }
+  }
+
+  clearValidation() {
+    const errorElement = document.getElementById('product-error');
+    if (errorElement) {
+      errorElement.style.display = 'none';
+    }
+    this.input.classList.remove('input-error');
+  }
+
+  reset() {
+    this.selectedProduct = null;
+    this.input.value = '';
+    this.hiddenInput.value = '';
+    this.searchInput.value = '';
+    this.filteredProducts = [...this.products];
+    this.renderOptions();
+    this.close();
+  }
+
+  getValue() {
+    return this.hiddenInput.value;
+  }
+
+  getSelectedProduct() {
+    return this.selectedProduct;
+  }
+}
+
+// Instancias globales de los selectores personalizados
+let customProductSelector = null;
+let customProviderSelector = null;
+
+// Clase para manejar el selector personalizado de proveedores
+class CustomProviderSelector {
+  constructor(containerId) {
+    this.container = document.getElementById(containerId);
+    this.input = document.getElementById('providerSearch');
+    this.hiddenInput = document.getElementById('provider');
+    this.dropdown = document.getElementById('providerDropdown');
+    this.searchInput = document.getElementById('providerSearchInput');
+    this.optionsContainer = document.getElementById('providerOptions');
+    this.providers = [];
+    this.filteredProviders = [];
+    this.selectedProvider = null;
+    this.isOpen = false;
+
+    this.init();
+  }
+
+  init() {
+    if (!this.container) return;
+
+    // Event listeners
+    this.input.addEventListener('click', () => this.toggle());
+    this.searchInput.addEventListener('input', (e) => this.filterProviders(e.target.value));
+    this.searchInput.addEventListener('keydown', (e) => this.handleKeydown(e));
+
+    // Cerrar al hacer clic fuera
+    document.addEventListener('click', (e) => {
+      if (!this.container.contains(e.target)) {
+        this.close();
+      }
+    });
+  }
+
+  setProviders(providers) {
+    this.providers = providers.map(provider => ({
+      id: provider._id,
+      name: provider.company || provider.name || 'Sin nombre',
+      company: provider.company || 'Sin empresa'
+    }));
+    this.filteredProviders = [...this.providers];
+    this.renderOptions();
+  }
+
+  filterProviders(searchTerm) {
+    const term = searchTerm.toLowerCase().trim();
+    
+    if (!term) {
+      this.filteredProviders = [...this.providers];
+    } else {
+      this.filteredProviders = this.providers.filter(provider => 
+        provider.name.toLowerCase().includes(term) ||
+        provider.company.toLowerCase().includes(term)
+      );
+    }
+    
+    this.renderOptions();
+  }
+
+  renderOptions() {
+    if (this.filteredProviders.length === 0) {
+      this.optionsContainer.innerHTML = '<div class="custom-select-no-results">No se encontraron proveedores</div>';
+      return;
+    }
+
+    const optionsHTML = this.filteredProviders.map(provider => 
+      `<div class="custom-select-option" data-id="${provider.id}">
+        ${provider.name}
+      </div>`
+    ).join('');
+
+    this.optionsContainer.innerHTML = optionsHTML;
+
+    // Agregar event listeners a las opciones
+    this.optionsContainer.querySelectorAll('.custom-select-option').forEach(option => {
+      option.addEventListener('click', () => this.selectOption(option));
+    });
+  }
+
+  selectOption(optionElement) {
+    const providerId = optionElement.dataset.id;
+    const providerName = optionElement.textContent.trim();
+
+    // Actualizar valores
+    this.selectedProvider = { id: providerId, name: providerName };
+    this.input.value = providerName;
+    this.hiddenInput.value = providerId;
+
+    // Limpiar validación
+    this.clearValidation();
+
+    // Cerrar dropdown
+    this.close();
+
+    // Disparar evento de cambio para compatibilidad con código existente
+    const changeEvent = new Event('change', { bubbles: true });
+    this.hiddenInput.dispatchEvent(changeEvent);
+  }
+
+  toggle() {
+    if (this.isOpen) {
+      this.close();
+    } else {
+      this.open();
+    }
+  }
+
+  open() {
+    this.isOpen = true;
+    this.container.classList.add('open');
+    this.searchInput.value = '';
+    this.filteredProviders = [...this.providers];
+    this.renderOptions();
+    
+    // Enfocar en el input de búsqueda
+    setTimeout(() => {
+      this.searchInput.focus();
+    }, 100);
+  }
+
+  close() {
+    this.isOpen = false;
+    this.container.classList.remove('open');
+  }
+
+  handleKeydown(e) {
+    if (e.key === 'Escape') {
+      this.close();
+    }
+  }
+
+  clearValidation() {
+    const errorElement = document.getElementById('provider-error');
+    if (errorElement) {
+      errorElement.style.display = 'none';
+    }
+    this.input.classList.remove('input-error');
+  }
+
+  reset() {
+    this.selectedProvider = null;
+    this.input.value = '';
+    this.hiddenInput.value = '';
+    this.searchInput.value = '';
+    this.filteredProviders = [...this.providers];
+    this.renderOptions();
+    this.close();
+  }
+
+  getValue() {
+    return this.hiddenInput.value;
+  }
+
+  getSelectedProvider() {
+    return this.selectedProvider;
+  }
+}
+
 const loadProducts = async () => {
   try {
     const token = localStorage.getItem("token");
@@ -606,12 +1060,16 @@ const loadProducts = async () => {
       products = [];
     }
     
-    const productSelect = document.getElementById("product");
-    const editProductSelect = document.getElementById("editProduct");
-    
-    if (productSelect) {
-      productSelect.innerHTML = `<option value="" disabled selected hidden>Seleccionar producto</option>`;
+    // Inicializar selector personalizado en páginas de registro
+    if (isRegisterPage) {
+      if (!customProductSelector) {
+        customProductSelector = new CustomProductSelector('productSelectContainer');
+      }
+      customProductSelector.setProducts(products);
     }
+
+    // Mantener compatibilidad con selector nativo para otras páginas
+    const editProductSelect = document.getElementById("editProduct");
     
     if (editProductSelect) {
       editProductSelect.innerHTML = `<option value="" disabled selected hidden>Seleccionar producto</option>`;
@@ -628,7 +1086,6 @@ const loadProducts = async () => {
         productIdToNameMap[productId] = productName;
         
         const option = `<option value="${productId}" data-price="${prod.price || 0}">${productName}</option>`;
-        if (productSelect) productSelect.innerHTML += option;
         if (editProductSelect) editProductSelect.innerHTML += option;
       }
     });
@@ -682,12 +1139,16 @@ const loadProviders = async () => {
       providers = [];
     }
     
-    const providerSelect = document.getElementById("provider");
-    const editProviderSelect = document.getElementById("editProvider");
-    
-    if (providerSelect) {
-      providerSelect.innerHTML = `<option value="" disabled selected hidden>Seleccionar proveedor</option>`;
+    // Inicializar selector personalizado en páginas de registro
+    if (isRegisterPage) {
+      if (!customProviderSelector) {
+        customProviderSelector = new CustomProviderSelector('providerSelectContainer');
+      }
+      customProviderSelector.setProviders(providers);
     }
+
+    // Mantener compatibilidad con selector nativo para otras páginas
+    const editProviderSelect = document.getElementById("editProvider");
     
     if (editProviderSelect) {
       editProviderSelect.innerHTML = `<option value="" disabled selected hidden>Seleccionar proveedor</option>`;
@@ -704,7 +1165,6 @@ const loadProviders = async () => {
         providerIdToNameMap[providerId] = providerName;
         
         const option = `<option value="${providerId}">${providerName}</option>`;
-        if (providerSelect) providerSelect.innerHTML += option;
         if (editProviderSelect) editProviderSelect.innerHTML += option;
       }
     });
@@ -907,12 +1367,11 @@ const handleSwitchClick = async (event, purchaseId, currentStatus) => {
 };
 
 const addProductItem = () => {
-  const productSelect = document.getElementById("product");
   const quantityInput = document.getElementById("quantity");
   const purchasePriceInput = document.getElementById("purchasePrice");
   
-  if (!productSelect || !quantityInput || !purchasePriceInput) {
-    showError("Error: No se pudieron encontrar los campos del formulario");
+  if (!quantityInput || !purchasePriceInput) {
+    showError("No se pudieron encontrar los campos del formulario");
     return;
   }
   
@@ -924,9 +1383,31 @@ const addProductItem = () => {
     return;
   }
   
-  const productId = productSelect.value;
+  // Obtener datos del producto según el tipo de selector
+  let productId, productName;
+  
+  if (isRegisterPage && customProductSelector) {
+    // Selector personalizado con búsqueda
+    const selectedProduct = customProductSelector.getSelectedProduct();
+    if (!selectedProduct) {
+      showError("Debe seleccionar un producto.");
+      return;
+    }
+    productId = selectedProduct.id;
+    productName = selectedProduct.name;
+  } else {
+    // Selector nativo (para compatibilidad)
+    const productSelect = document.getElementById("product");
+    if (!productSelect) {
+      showError("Error: No se pudo encontrar el selector de productos");
+      return;
+    }
+    productId = productSelect.value;
+    productName = productSelect.options[productSelect.selectedIndex].text;
+  }
+  
   const quantity = parseInt(quantityInput.value);
-  const purchasePrice = parseFloat(purchasePriceInput.value);
+  const purchasePrice = parseColombianPrice(purchasePriceInput.value);
   
   if (quantity <= 0) {
     showError("La cantidad debe ser mayor que cero");
@@ -939,7 +1420,6 @@ const addProductItem = () => {
   }
   
   const total = quantity * purchasePrice;
-  const productName = productSelect.options[productSelect.selectedIndex].text;
   
   const existingProductIndex = productItems.findIndex(item => item.product === productId);
   
@@ -962,7 +1442,14 @@ const addProductItem = () => {
   
   updateProductItemsList();
   
-  productSelect.selectedIndex = 0;
+  // Limpiar campos según el tipo de selector
+  if (isRegisterPage && customProductSelector) {
+    customProductSelector.reset();
+  } else {
+    const productSelect = document.getElementById("product");
+    if (productSelect) productSelect.selectedIndex = 0;
+  }
+  
   quantityInput.value = "1";
   purchasePriceInput.value = "";
   document.getElementById("product-total").textContent = formatCurrency(0);
@@ -1032,7 +1519,7 @@ const updateProductItemsList = () => {
 
 function updateProductTotal() {
   const quantity = parseInt(document.getElementById("quantity").value) || 0;
-  const price = parseFloat(document.getElementById("purchasePrice").value) || 0;
+  const price = parseColombianPrice(document.getElementById("purchasePrice").value) || 0;
   const totalElement = document.getElementById("product-total");
   
   if (totalElement) {
@@ -1268,10 +1755,18 @@ const registerPurchase = async () => {
     return;
   }
   
-  const providerSelect = document.getElementById("provider");
   const purchaseDateInput = document.getElementById("purchaseDate");
   
-  const providerId = providerSelect.value;
+  // Obtener el ID del proveedor según el tipo de selector
+  let providerId;
+  if (isRegisterPage && customProviderSelector) {
+    // Selector personalizado con búsqueda
+    providerId = customProviderSelector.getValue();
+  } else {
+    // Selector nativo (para compatibilidad)
+    const providerSelect = document.getElementById("provider");
+    providerId = providerSelect ? providerSelect.value : '';
+  }
   const purchaseDate = purchaseDateInput.value;
   
   const total = productItems.reduce((sum, item) => sum + item.total, 0);
@@ -1322,10 +1817,11 @@ const registerPurchase = async () => {
     }
     
     if (isRegisterPage) {
-      showSuccess("Compra registrada correctamente.")
-      .then(() => {
-        window.location.href = "purchases.html";
-      });
+      // Guardar mensaje de éxito para mostrarlo en la siguiente página
+      localStorage.setItem('purchaseSuccessMessage', 'Compra registrada correctamente');
+      
+      // Redirigir inmediatamente a la lista de compras
+      window.location.href = "purchases.html";
     } else {
       showSuccess("Compra registrada correctamente.");
       closeModal('registerModal');
@@ -1614,9 +2110,20 @@ const closeDetailsModal = () => {
 function initializeValidationEvents() {
   disableNativeBrowserValidation();
   
+  // Validación de proveedores - compatible con selector personalizado y nativo
+  if (isRegisterPage) {
+    // Para el selector personalizado, la validación se maneja en la clase
+    // pero agregamos el listener al campo hidden para compatibilidad
+    const hiddenProviderInput = document.getElementById("provider");
+    if (hiddenProviderInput) {
+      hiddenProviderInput.addEventListener("change", () => validateProvider("provider"));
+    }
+  } else {
+    // Para páginas con selector nativo
   const providerSelect = document.getElementById("provider");
   if (providerSelect) {
     providerSelect.addEventListener("change", () => validateProvider("provider"));
+    }
   }
   
   const purchaseDateInput = document.getElementById("purchaseDate");
@@ -1624,9 +2131,20 @@ function initializeValidationEvents() {
     purchaseDateInput.addEventListener("blur", () => validateDate("purchaseDate"));
   }
   
+  // Validación de productos - compatible con selector personalizado y nativo
+  if (isRegisterPage) {
+    // Para el selector personalizado, la validación se maneja en la clase
+    // pero agregamos el listener al campo hidden para compatibilidad
+    const hiddenProductInput = document.getElementById("product");
+    if (hiddenProductInput) {
+      hiddenProductInput.addEventListener("change", () => validateProduct("product"));
+    }
+  } else {
+    // Para páginas con selector nativo
   const productSelect = document.getElementById("product");
   if (productSelect) {
     productSelect.addEventListener("change", () => validateProduct("product"));
+    }
   }
   
   const quantityInput = document.getElementById("quantity");
@@ -1638,9 +2156,12 @@ function initializeValidationEvents() {
   
   const purchasePriceInput = document.getElementById("purchasePrice");
   if (purchasePriceInput) {
+    purchasePriceInput.addEventListener("input", () => {
+      formatPriceOnInput(purchasePriceInput);
+      updateProductTotal();
+    });
     purchasePriceInput.addEventListener("blur", () => validatePrice("purchasePrice"));
-    purchasePriceInput.addEventListener("keypress", (evt) => isNumber(evt, true));
-    purchasePriceInput.addEventListener("input", updateProductTotal);
+    purchasePriceInput.addEventListener("keypress", (evt) => isNumber(evt));
   }
   
   const purchaseForm = document.getElementById("purchaseForm");
@@ -1696,6 +2217,30 @@ function initializeListPage() {
   const productTableBody = document.getElementById("purchaseTableBody");
   if (!productTableBody) {
     return;
+  }
+  
+  // Verificar si hay un mensaje de éxito guardado desde el registro
+  const successMessage = localStorage.getItem('purchaseSuccessMessage');
+  if (successMessage) {
+    // Función para mostrar la alerta con reintentos
+    const showSuccessAlert = () => {
+      // Verificar que SweetAlert2 esté disponible antes de mostrar la alerta
+      if (typeof Swal !== 'undefined' && typeof showSuccess === 'function') {
+        try {
+          showSuccess(successMessage);
+        } catch (error) {
+          alert(successMessage);
+        }
+      } else {
+        // Fallback en caso de que SweetAlert2 no esté disponible
+        alert(successMessage);
+      }
+      // Eliminar el mensaje del localStorage para que no se muestre de nuevo
+      localStorage.removeItem('purchaseSuccessMessage');
+    };
+    
+    // Intentar mostrar la alerta con un delay mayor
+    setTimeout(showSuccessAlert, 1000);
   }
   
   try {
@@ -1783,3 +2328,11 @@ window.updateProductTotal = updateProductTotal;
 window.hideLoadingIndicator = hideLoadingIndicator;
 window.registerPurchase = registerPurchase;
 window.handleSwitchClick = handleSwitchClick;
+window.CustomProductSelector = CustomProductSelector;
+window.CustomProviderSelector = CustomProviderSelector;
+window.customProductSelector = customProductSelector;
+window.customProviderSelector = customProviderSelector;
+window.formatPriceInput = formatPriceInput;
+window.formatPriceOnInput = formatPriceOnInput;
+window.parseColombianPrice = parseColombianPrice;
+window.addThousandsSeparators = addThousandsSeparators;

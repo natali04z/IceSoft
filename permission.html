@@ -96,7 +96,7 @@
       <!-- Search container -->
       <div class="search-container">
         <div class="search-box">
-          <input type="text" id="searchInput" placeholder="Buscar permiso...">
+                                  <input type="text" id="searchInput">
           <button onclick="searchPermission()"><i class="material-icons">search</i></button>
         </div>
       </div>
@@ -144,13 +144,15 @@
           <form id="permissionForm" novalidate>
             <div class="form-row">
               <div class="form-field">
-                <input type="text" class="field-element" id="name" placeholder="Nombre">
+                <label for="name">Nombre</label>
+                <input type="text" class="field-element" id="name" placeholder="Nombre del permiso">
                 <div class="error-message" id="name-error">El campo es obligatorio.</div>
               </div>
             </div>
             <div class="form-row">
               <div class="form-field" style="width: 100%;">
-                <textarea class="field-element" id="description" placeholder="Descripción"></textarea>
+                <label for="description">Descripción</label>
+                <textarea class="field-element" id="description" placeholder="Descripción del permiso"></textarea>
                 <div class="error-message" id="description-error">El campo es obligatorio.</div>
               </div>
             </div>
@@ -174,13 +176,13 @@
             <input type="hidden" id="editId">
             <div class="form-row">
               <div class="form-field">
-                <input type="text" class="field-element" id="editName" placeholder="Nombre">
+                <input type="text" class="field-element" id="editName">
                 <div class="error-message" id="editName-error">El campo es obligatorio.</div>
               </div>
             </div>
             <div class="form-row">
               <div class="form-field" style="width: 100%;">
-                <textarea class="field-element" id="editDescription" placeholder="Descripción"></textarea>
+                                            <textarea class="field-element" id="editDescription"></textarea>
                 <div class="error-message" id="editDescription-error">El campo es obligatorio.</div>
               </div>
             </div>

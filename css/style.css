@@ -2307,6 +2307,8 @@ body {
     font-weight: 700;
     color: #2b5e92;
     padding: 12px 0;
+    white-space: nowrap;
+    flex-wrap: nowrap;
 }
 
 .purchase-total-product label {
@@ -2319,6 +2321,24 @@ body {
     font-size: 18px;
     font-weight: 700;
     color: #030303;
+    white-space: nowrap;
+    min-width: fit-content;
+}
+
+/* Contenedor para campos en línea (cantidad y precio) */
+.purchase-form-inline {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.purchase-form-inline .purchase-form-group {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+.purchase-form-inline .field-element {
+    width: 100%;
 }
 
 
@@ -4130,3 +4150,266 @@ body.menu-collapsed .main-content {
         justify-content: center;
       }
     }
+
+/* ====================== SCROLL EN SELECTORES DE PRODUCTOS ====================== */
+/* Estilos para limitar la altura del dropdown de productos en compras */
+select#product {
+    max-height: 40px;
+    overflow-y: auto;
+}
+
+/* Para navegadores que soportan size en select */
+select#product[size] {
+    size: 6 !important; /* Máximo 6 elementos visibles */
+    height: auto !important;
+    max-height: 240px !important; /* 6 elementos * ~40px cada uno */
+    overflow-y: auto !important;
+    position: absolute;
+    z-index: 1000;
+    width: 100%;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* Estilos para las opciones del select */
+select#product option {
+    padding: 10px 12px;
+    font-size: 14px;
+    background-color: white;
+    color: #333;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.2s ease;
+}
+
+select#product option:hover {
+    background-color: #f8f9fa !important;
+}
+
+select#product option:checked,
+select#product option:selected {
+    background-color: #1b2b40 !important;
+    color: white !important;
+}
+
+/* Personalización del scrollbar para el select en navegadores webkit */
+select#product::-webkit-scrollbar {
+    width: 8px;
+}
+
+select#product::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+select#product::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+select#product::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
+}
+
+/* Estilo cuando el select está enfocado/abierto */
+select#product:focus {
+    border-color: #1b2b40;
+    box-shadow: 0 0 0 2px rgba(27, 43, 64, 0.1);
+    outline: none;
+}
+
+/* Responsivo para móviles */
+@media (max-width: 768px) {
+    select#product[size] {
+        max-height: 200px; /* Menos altura en móviles */
+        size: 5; /* Solo 5 elementos en móviles */
+    }
+}
+
+/* ====================== SELECTOR PERSONALIZADO CON BÚSQUEDA ====================== */
+.custom-select-container {
+    position: relative;
+    width: 100%;
+}
+
+.custom-select-input {
+    width: 100%;
+    padding-right: 40px !important;
+    cursor: pointer;
+    background-color: white;
+}
+
+.custom-select-arrow {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #666;
+    pointer-events: none;
+    transition: transform 0.3s ease;
+    font-size: 20px;
+}
+
+.custom-select-container.open .custom-select-arrow {
+    transform: translateY(-50%) rotate(180deg);
+}
+
+.custom-select-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-top: none;
+    border-radius: 0 0 5px 5px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    z-index: 1000;
+    max-height: 280px;
+    display: none;
+    overflow: hidden;
+}
+
+/* Dropdown que se abre hacia arriba */
+.custom-select-dropdown.dropdown-up {
+    top: auto !important;
+    bottom: 100% !important;
+    border-top: 1px solid #ddd !important;
+    border-bottom: none !important;
+    border-radius: 5px 5px 0 0 !important;
+    box-shadow: 0 -4px 8px rgba(0,0,0,0.15) !important;
+}
+
+.custom-select-container.open .custom-select-dropdown {
+    display: block;
+}
+
+.custom-select-search {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    background-color: #f8f9fa;
+}
+
+.custom-search-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.3s ease;
+}
+
+.custom-search-input:focus {
+    border-color: #1b2b40;
+    box-shadow: 0 0 0 2px rgba(27, 43, 64, 0.1);
+}
+
+.custom-select-options {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.custom-select-option {
+    padding: 12px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 14px;
+    transition: background-color 0.2s ease;
+    color: #333;
+}
+
+.custom-select-option:hover {
+    background-color: #f8f9fa;
+}
+
+.custom-select-option.selected {
+    background-color: #1b2b40;
+    color: white;
+}
+
+.custom-select-option:last-child {
+    border-bottom: none;
+}
+
+.custom-select-no-results {
+    padding: 15px;
+    text-align: center;
+    color: #666;
+    font-style: italic;
+}
+
+/* Scrollbar personalizado para las opciones */
+.custom-select-options::-webkit-scrollbar {
+    width: 6px;
+}
+
+.custom-select-options::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.custom-select-options::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.custom-select-options::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
+}
+
+/* Estados del contenedor */
+.custom-select-container.open .custom-select-input {
+    border-color: #1b2b40;
+    border-radius: 5px 5px 0 0;
+    box-shadow: 0 0 0 2px rgba(27, 43, 64, 0.1);
+}
+
+/* Estado del input cuando el dropdown se abre hacia arriba */
+.custom-select-container.open .custom-select-dropdown.dropdown-up ~ .custom-select-input {
+    border-radius: 0 0 5px 5px !important;
+}
+
+/* Estilo específico cuando tiene la clase dropdown-up */
+.custom-select-container.open .custom-select-input {
+    border-radius: 5px 5px 0 0;
+}
+
+.custom-select-container.open .custom-select-dropdown.dropdown-up ~ .custom-select-input {
+    border-radius: 0 0 5px 5px !important;
+}
+
+/* Estilos específicos para selectores dentro de modales */
+.modal .custom-select-dropdown {
+    max-height: 250px;
+}
+
+.modal .custom-select-options {
+    max-height: 180px;
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+    .custom-select-dropdown {
+        max-height: 220px;
+    }
+    
+    .custom-select-options {
+        max-height: 160px;
+    }
+    
+    .custom-select-option {
+        padding: 10px 12px;
+        font-size: 14px;
+    }
+    
+    /* Estilos móviles para modales */
+    .modal .custom-select-dropdown {
+        max-height: 200px;
+    }
+    
+    .modal .custom-select-options {
+        max-height: 140px;
+    }
+}
